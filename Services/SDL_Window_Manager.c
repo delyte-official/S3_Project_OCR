@@ -16,7 +16,11 @@
 /*  create_window();
 Description:
   Creates a window with SDL, stores it inside the given
-  windows tracking dock and returns the window.
+  window tracking dock and returns the window.
+
+  It is assumed that the tracking dock is empty or holding a bin
+  information and that the newly created window serves as the main
+  window of the project.
 
 Return: SDL_Window
 
@@ -27,13 +31,13 @@ Parameters:
   unsigned int width: Width dimension of the created window
   unsigned int height: Height dimension of the created window
   Uint32 flags: Window's general flags with supported sub-systems
-  SDL_Window** dock: Dock tracking all created windows. Must be resizable.
+  SDL_Window* dock: Dock tracking all created windows. Must be resizable.
 
   Dvelopper mode:
   force: Force initialization of SDL through the improper canal. Can lead to errors.
 */
-SDL_Window *create_window(char* title, int x, int y, unsigned int width, unsigned int height, Uint32 flags, SDL_Window** dock, int force) {
-	
+SDL_Window *create_window(char* title, int x, int y, unsigned int width, unsigned int height, Uint32 flags, SDL_Window* dock, int force) {
+
 	////CHECKING REQUIREMENTS
 	//Checking if SDL is initialized
 	if (!SDL_WasInit(SDL_INIT_VIDEO)) {
