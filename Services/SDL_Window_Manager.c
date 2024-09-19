@@ -51,7 +51,7 @@ SDL_Window *create_window(char* title, unsigned int width, unsigned int height, 
 			fprintf(stderr, "Error (create_window): SDL has not been initialized. Cancelling request of window creation. Make sure the proper initialization functions have been called beforehand.\nUse --force to force the initialization of SDL.\n\nRequest details:\ntitle: %s\nwidth:%d\nheight%d\n");
 	}
 
-	
+
 }
 
 
