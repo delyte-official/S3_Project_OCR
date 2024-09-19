@@ -29,15 +29,8 @@ Parameters:
   Dvelopper mode:
   force: Force initialization of SDL through the improper canal. Can lead to errors.
 */
-SDL_Window *create_window(char* title, unsigned int width, unsigned int height, SDL_Window** dock, int force) {
-	////Initializing variables:
-	//window: element to return and add to the tracking dock
-	SDL_Window *window = NULL;
-
-	
-
-	////Function code
-
+SDL_Window *create_window(char* title, int x, int y, unsigned int width, unsigned int height, Uint32 flags, SDL_Window** dock, int force) {
+	////CHECKING REQUIREMENTS
 	//Checking if SDL is initialized
 	if (!SDL_WasInit(SDL_INIT_VIDEO)) {
 		//Force through the Canal Error
@@ -51,7 +44,12 @@ SDL_Window *create_window(char* title, unsigned int width, unsigned int height, 
 			fprintf(stderr, "Error (create_window): SDL has not been initialized. Cancelling request of window creation. Make sure the proper initialization functions have been called beforehand.\nUse --force to force the initialization of SDL.\n\nRequest details:\ntitle: %s\nwidth:%d\nheight%d\n");
 	}
 
+	////Initializing variables:
+	//window: element to return and add to the tracking dock
+	SDL_Window *window = NULL;
 
+	//Creating the window
+	window = SDL_CreateWindow(title, x, y, width, height, flags);
 }
 
 
