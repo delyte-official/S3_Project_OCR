@@ -11,7 +11,7 @@
 
 
 List of all functions written in this file (and their type):
-[See more description on purpose and parameters down below]
+[See more description on their purpose and parameters down below]
 
 SDL_Window *create_window(char*,int,int,unsigned int,unsigned int,Uint32);
 SDL_Renderer *renderer(SDL_Window*, Uint32);
