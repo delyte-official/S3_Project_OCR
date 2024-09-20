@@ -6,10 +6,16 @@
       #                                                            #
       #         Contains all functions related to handling,        #
       #   modifying and supervising memory of SDL windows system.  #
-      #
+      #                                                            #
       ##############################################################
 
 
+List of all functions written in this file (and their type):
+[See more description on purpose and parameters down below]
+
+SDL_Window *create_window(char*,int,int,unsigned int,unsigned int,Uint32);
+SDL_Renderer *renderer(SDL_Window*, Uint32);
+void close_program(SDL_Window*,SDL_Renderer*);
 */
 
 
@@ -33,15 +39,13 @@
 //Project Headers
 
 
-
-
-
-////ALL SERVICES FUNCTIONS: SDL_Window_Manager.c
+////END HEADERS
 
 
 
 
-/*  create_window();
+
+/*  create_window():
   Creates a window with SDL and returns the window.
 
 Requisites assumed:
@@ -72,7 +76,21 @@ SDL_Window *create_window( //Parameters:
 }
 
 
-SDL_Renderer *create_renderer(SDL_Window *window, Uint32 flags) {
+
+
+
+/*  create_renderer():
+  Creates a renderer with SDL and returns the renderer.
+
+Requisites assumed:
+  No other renderer must be associated with the given window.
+  Returning renderer is the renderer of the main project window.
+  SDL and its sub-systems must be initialized beforehand.
+*/
+SDL_Renderer *create_renderer( //Parameters:
+      SDL_Window *window, //Associated window
+      Uint32 flags) { //Flags for the renderer
+
   //renderer: element to return
   SDL_Renderer *renderer = NULL;
 
@@ -89,7 +107,21 @@ SDL_Renderer *create_renderer(SDL_Window *window, Uint32 flags) {
 
 
 
-void close_program(SDL_Window* window, SDL_Renderer* renderer) {
+
+/*  close_program():
+  Destroy the main window and its associated renderer, then closes
+  SDL and its systems altogether before allowing to exit the program.
+
+Requisites assumed:
+  No other windows or renderer have been created.
+  Given window and renderer must have been correctly tracked at their creation.
+  Any other memory management must have been freed beforehand.
+  Closing the final program must be done through the main.c file afterwards.
+*/
+void close_program(
+      SDL_Window* window, //Main project window
+      SDL_Renderer* renderer) { //Renderer associated to the given window.
+
   //Destroy the renderer
   SDL_DestroyRenderer(renderer);
   //Destroy the main window (assumed to be the only one created)
