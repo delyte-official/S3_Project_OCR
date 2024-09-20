@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 //Project Libraries
-
+#include "src/Core_Manager.h"
 
 
 /*  main():
@@ -38,11 +38,11 @@ int main( //Parameters:
   int run_size; //Size of run_params
 
   //Handle and categorize every parameters given through the command line
-  Filter_Params(&init_params, &init_size, &run_params, &run_size);
+  Filter_Params(argv, argc, &init_params, &init_size, &run_params, &run_size);
 
   //Initializing all the systems and their sub-systems required for
   //the project to run properly. This is done through the main canal.
-  Initialize();
+  Initialize(init_params, init_size);
 
 
   //Calling the core function that will run, compute and links

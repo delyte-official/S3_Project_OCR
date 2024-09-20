@@ -84,17 +84,16 @@ Requisites assumed:
 void Filter_Params( //Parameters
 		char** all_params, //The given command-line parameters
 		size_t len, //The size of all_parameters
-		char*** init_params, //Array to write initialization parameters
-		size_t* init_size, //To store size of init_params
-		char*** run_params, //Array to write Application parameters
-		size_t* run_size) { //To store size of run_params
+		char** *init_params, //Array to write initialization parameters
+		size_t *init_size, //To store size of init_params
+		char** *run_params, //Array to write Application parameters
+		size_t *run_size) { //To store size of run_params
 
   //Iterating through the given parameters
   for (char** curr = &all_params; curr - &all_params < len; curr++) {
     size_t length = strlen(*curr_param);
 
     //Start checking with recognized parameters
-    
     if (length < 2) //Skipping unformalized parameters
       continue;
 
@@ -147,7 +146,7 @@ void Initialize( //Parameters:
   SDL_Init(init_flags);
 
 
-  //Defining necessary variables for SDL_CreateWindow
+  //Defining necessary variables for Window_Init
   char* title = "OCR Application";
   int x = SDL_WINDOWPOS_CENTERED;
   int y = SDL_WINDOWPOS_CENTERED;
@@ -157,6 +156,14 @@ void Initialize( //Parameters:
   int addons_window = 0;
 
   //Initialize SDL Main Project Window
-  AppState.window = SDL_CreateWindow(title,x,y,width,height,
-		  window_flags|addons_window);
+  State.window = create_window(title,x,y,width,height,
+        window_flags|addons_window);
+
+  //Defining necessary variables for Renderer_Init
+  int renderer_flags = 0;
+  int addons_renderer = 0;
+
+  //Initialize SDL Main Project Window's Renderer
+  State.renderer = create_renderer(State.window,
+        renderer_flags|addons_renderer);
 }
