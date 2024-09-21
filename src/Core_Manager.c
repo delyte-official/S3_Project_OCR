@@ -34,7 +34,8 @@ Run_Application(char**,int);
 
 
 //Project Headers
-
+#include "Services/SDL_Window_Manager.h"
+#include "Services/Memory_Handler.h"
 
 ////END HEADERS
 
@@ -166,4 +167,39 @@ void Initialize( //Parameters:
   //Initialize SDL Main Project Window's Renderer
   State.renderer = create_renderer(State.window,
         renderer_flags|addons_renderer);
+}
+
+
+
+
+
+/*  Run_Application():
+  Run the entire Application, with a first run of the systems, then
+  main loop. Main loop linkage to event Handler and other systems
+  for handling any operation on the Application.
+  This function is also responsible for closing the program properly.
+
+Requisites assumed:
+  This function must be called only once.
+  Initialize() must have been processed before being called.
+  This function must be running as long as the program is running.
+  The given parameters are valid, and their number correct.
+*/
+void Run_Application( //Parameters:
+      char** params, //Given parameters for Application startup
+      size_t len) { //Size of params
+
+  ////Startup the Application
+  //State.running: bool switch to stop or start the Application
+  State.running = 1;
+
+  //Run the Main Loop of the Application
+  while (State.running) {
+	//Linkage to the Event_Handler
+	//process_events();
+  }
+  //Past this point, the Application is instructed to close.
+
+  //Closing the Application
+  close_program(State.window, State.renderer);
 }

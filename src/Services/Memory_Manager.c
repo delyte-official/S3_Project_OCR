@@ -40,6 +40,7 @@ Memory_Init();
 typedef struct {
   SDL_Window *window; //Main Project Window
   SDL_Renderer *renderer; //Main Project Window's Renderer
+  int running; //Switch to turn on/off the Application
 } AppState
 
 //Global Application Singletone
@@ -64,6 +65,7 @@ void Memory_Init() {
   //Initializing elements of AppState to NULL or DEFAULT values
   State.window = NULL;
   State.renderer = NULL;
+  State.running = 0;
 
   //State is considered to be initialized from now on.
 }
