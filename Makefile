@@ -5,9 +5,10 @@ TARGET = main
 
 #All object files needed, categorized in directives:
 SERVICES = SDL_Window_Manager.o Memory_Manager.o
-SRC = Core_Manager.o $(SERVICES)
+SRC = Core_Manager.o $(addprefix Services/ $(SERVICES))
 
-OBJS = main.o $(SRC)
+#Put all of them together
+OBJS = main.o $(addprefix src/, $(SRC))
 
 all: $(TARGET) #All command, the default command ran by writing "make"
 $(TARGET): $(OBJS) #Creating all needed files to compile final program
