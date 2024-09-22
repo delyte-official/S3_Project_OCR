@@ -5,7 +5,7 @@ TARGET = main
 
 #All object files needed, categorized in directives:
 SERVICES = SDL_Window_Manager.o Memory_Manager.o
-SRC = Core_Manager.o $(addprefix Services/ $(SERVICES))
+SRC = Core_Manager.o $(addprefix Services/, $(SERVICES))
 
 #Put all of them together
 OBJS = main.o $(addprefix src/, $(SRC))

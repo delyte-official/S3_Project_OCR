@@ -31,19 +31,20 @@ Run_Application(char**,int);
 
 ////HEADERS Files
 //Integrated C Libraries
-
+#include <stdlib.h>
+#include <stdio.h>
 
 //Project Headers
 #include "Services/SDL_Window_Manager.h"
-#include "Services/Memory_Handler.h"
+#include "Services/Memory_Manager.h"
 
 ////END HEADERS
 
 ////DEFINING
 //Constants
-const size_t INIT_SIZE = 0;
-const char* INIT_PARAMS[INIT_SIZE] = {};
-const size_t RUN_SIZE = 1;
+#define INIT_SIZE 1
+#define RUN_SIZE 1
+const char* INIT_PARAMS[INIT_SIZE] = {NULL};
 const char* RUN_PARAMS[RUN_SIZE] = {"--force"};
 
 ////END DEFINING
