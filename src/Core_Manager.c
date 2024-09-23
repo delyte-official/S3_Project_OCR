@@ -86,9 +86,9 @@ Requisites assumed:
 void Filter_Params( //Parameters
 		char** all_params, //The given command-line parameters
 		size_t len, //The size of all_parameters
-		char** *init_params, //Array to write initialization parameters
+		char* *init_params, //Array to write initialization parameters
 		size_t *init_size, //To store size of init_params
-		char** *run_params, //Array to write Application parameters
+		char* *run_params, //Array to write Application parameters
 		size_t *run_size) { //To store size of run_params
 
   //Iterating through the given parameters

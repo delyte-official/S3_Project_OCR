@@ -31,14 +31,14 @@ int main( //Parameters:
       char *argv[]) { //All parameters passed through command line
 
   //Category of command line parameters
-  char** init_params; //Array of all initialitazion given parameters
-  int init_size; //Size of init_params
+  char* init_params[argc-1]; //Array of all initialitazion given parameters
+  size_t init_size; //Size of init_params
 
-  char** run_params; //Array of all given parameters for Run_Application()
-  int run_size; //Size of run_params
+  char* run_params[argc-1]; //Array of all given parameters for Run_Application()
+  size_t run_size; //Size of run_params
 
   //Handle and categorize every parameters given through the command line
-  Filter_Params(argv, argc, &init_params, &init_size, &run_params, &run_size);
+  Filter_Params(argv, argc, init_params, &init_size, run_params, &run_size);
 
   //Initializing all the systems and their sub-systems required for
   //the project to run properly. This is done through the main canal.
