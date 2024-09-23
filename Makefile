@@ -12,7 +12,7 @@ OBJS = main.o $(addprefix src/, $(SRC))
 
 all: $(TARGET) #All command, the default command ran by writing "make"
 $(TARGET): $(OBJS) #Creating all needed files to compile final program
-
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 #Clean command used to clean up any object and executable files
 .PHONY: clean
