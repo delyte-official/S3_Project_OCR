@@ -47,7 +47,7 @@ int main( //Parameters:
 
   //Calling the core function that will run, compute and links
   //every events and actions to its desired project systems.
-  Run_Application();
+  Run_Application(run_params, run_size);
 
   //Closing the program entirely:
   //All used memory is assumed to be freed beforehand by the Core_Manager
