@@ -34,7 +34,7 @@ int main( //Parameters:
   char* init_params[argc-1]; //Array of all initialitazion given parameters
   size_t init_size; //Size of init_params
 
-  char* run_params[argc-1]; //Array of all given parameters for Run_Application()
+  char* run_params[argc-1]; //Array of given parameters for Run_Application()
   size_t run_size; //Size of run_params
 
   //Handle and categorize every parameters given through the command line
