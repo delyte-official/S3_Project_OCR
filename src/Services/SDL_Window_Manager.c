@@ -13,6 +13,7 @@
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
+SDL_DisplayMode get_display_mode();
 SDL_Window *create_window(char*,int,int,unsigned int,unsigned int,Uint32);
 SDL_Renderer *renderer(SDL_Window*, Uint32);
 void close_program(SDL_Window*,SDL_Renderer*);
@@ -30,7 +31,7 @@ void close_program(SDL_Window*,SDL_Renderer*);
 
 ////HEADERS Files
 //Integrated C Libraries
-
+#include <err.h>
 
 //SDL Libraries
 #include <SDL2/SDL.h>
@@ -41,6 +42,24 @@ void close_program(SDL_Window*,SDL_Renderer*);
 
 ////END HEADERS
 
+
+
+
+/*  get_display_mode():
+   Collects the data of the current display mode and returns it.
+
+Requisites assumed:
+  Environment must be ran properly, with enabled permissions.
+*/
+SDL_DisplayMode get_display_mode() {
+    //Display mode: element to return
+    SDL_DisplayMode displayMode;
+    if (SDL_GetCurrentDisplayMode(0, &displayMode) != 0)
+        errx(EXIT_FAILURE, "get_display_mode: request failed.");
+    
+    //Returning element
+    return displayMode;
+}
 
 
 
@@ -127,5 +146,5 @@ void close_program(
   //Destroy the main window (assumed to be the only one created)
   SDL_DestroyWindow(window);
   //Close the program (assumed all memory usage has been freed)
-  SDL_QUIT();
+  SDL_Quit();
 }

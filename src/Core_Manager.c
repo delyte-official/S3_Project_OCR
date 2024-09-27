@@ -42,10 +42,10 @@ Run_Application(char**,int);
 
 ////DEFINING
 //Constants
-#define INIT_SIZE 1
-#define RUN_SIZE 1
-const char* INIT_PARAMS[INIT_SIZE] = {NULL};
-const char* RUN_PARAMS[RUN_SIZE] = {"--force"};
+#define ID_INIT_SIZE 1
+#define ID_RUN_SIZE 1
+const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"ff"};
+const char* ID_RUN_PARAMS[ID_RUN_SIZE] = {"--force"};
 
 ////END DEFINING
 
@@ -60,9 +60,9 @@ Requisites assumed:
   The given parameters list is correct.
   The parameter to check is in correct format.
 */
-int recognized(char** PARAMS, size_t len, char* to_check) {
+int recognized(const char** PARAMS, size_t len, char* to_check) {
   for (size_t i = 0; i < len; i++) {
-    if (to_check == PARMAS[i]) //Found
+    if (to_check == PARAMS[i]) //Found
       return 1;
   }
 
@@ -90,25 +90,24 @@ void Filter_Params( //Parameters
 		size_t *init_size, //To store size of init_params
 		char* *run_params, //Array to write Application parameters
 		size_t *run_size) { //To store size of run_params
-
   //Iterating through the given parameters
-  for (char** curr = &all_params; curr - &all_params < len; curr++) {
-    size_t length = strlen(*curr_param);
+  for (char** curr = all_params; curr < all_params + len; curr++) {
+    size_t length = strlen(*curr);
 
     //Start checking with recognized parameters
     if (length < 2) //Skipping unformalized parameters
       continue;
 
     //Checking if it is a recognized parameter
-    if (recognized(INIT_PARAMS, INIT_SIZE, curr_param)) { //Is an initialization parameter
+    if (recognized(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) { //Is an initialization parameter
       //Putting the parameter into its corresponding category
-      *init_params = curr_param;
+      *init_params = *curr;
       init_params++;
       init_size++;
     }
-    else if (recognized(RUN_PARAMS, RUN_SIZE, curr_param)) { //Is an Application parameter
+    else if (recognized(ID_RUN_PARAMS, ID_RUN_SIZE, *curr)) { //Is an Application parameter
       //Putting the parameter into its corresponding category
-      *run_params = curr_param;
+      *run_params = *curr;
       run_params++;
       run_size++;
     }
@@ -148,13 +147,16 @@ void Initialize( //Parameters:
   SDL_Init(init_flags);
 
 
+  //Get information about current devide size
+  SDL_DisplayMode displayMode = get_display_mode();
+
   //Defining necessary variables for Window_Init
   char* title = "OCR Application";
   int x = SDL_WINDOWPOS_CENTERED;
   int y = SDL_WINDOWPOS_CENTERED;
-  int width = 100;
-  int height = 100;
-  int window_flags = 0;
+  int width = displayMode.w;
+  int height = displayMode.h;
+  int window_flags = SDL_WINDOW_MAXIMIZED;
   int addons_window = 0;
 
   //Initialize SDL Main Project Window
@@ -167,7 +169,12 @@ void Initialize( //Parameters:
 
   //Initialize SDL Main Project Window's Renderer
   State.renderer = create_renderer(State.window,
-        renderer_flags|addons_renderer);
+        (renderer_flags|addons_renderer));
+
+  //Crash Test
+  SDL_SetRenderDrawColor(State.renderer,255,255,255,255);
+  SDL_RenderDrawLine(State.renderer, 0, 0, 100, 100);
+  SDL_RenderPresent(State.renderer);
 }
 
 

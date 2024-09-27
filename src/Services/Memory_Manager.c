@@ -31,19 +31,19 @@ Memory_Init();
 
 
 //Project Headers
-
+#include "Memory_Manager.h"
 
 ////END HEADERS
 
 ////DEFINING
-//Application Singletone Structure
+/*Application Singletone Structure (defined in the header)
 typedef struct {
   SDL_Window *window; //Main Project Window
   SDL_Renderer *renderer; //Main Project Window's Renderer
   int running; //Switch to turn on/off the Application
 } AppState
 
-//Global Application Singletone
+*///Global Application Singletone
 AppState State;
 
 ////END DEFINING
