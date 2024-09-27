@@ -4,7 +4,7 @@ LDFLAGS := -lSDL2 -lSDL2_image #Linkers to SDL systems
 TARGET = main
 
 #All object files needed, categorized in directives:
-SERVICES = SDL_Window_Manager.o Memory_Manager.o
+SERVICES = GTK_Window_Manager.o
 SRC = Core_Manager.o $(addprefix Services/, $(SERVICES))
 
 #Put all of them together
