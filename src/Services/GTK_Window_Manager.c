@@ -51,8 +51,10 @@ GtkWidget *create_window(
 
     //Creating the window
     window = gtk_window_new(type);
+    gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
     gtk_window_set_title(GTK_WINDOW(window), title);
     gtk_window_set_default_size(GTK_WINDOW(window), width, height);
+    gtk_window_maximize(GTK_WINDOW(window));
 
     return window;
 }

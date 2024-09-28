@@ -32,10 +32,10 @@ int main( //Parameters:
 
     //Category of command line parameters
     char* init_params[argc-1]; //Array of all initialitazion given parameters
-    size_t init_size = argc-1; //Size of init_params
+    int init_size = argc-1; //Size of init_params
 
     char* gtk_params[argc-1]; //Array of given parameters for Run_Application()
-    size_t gtk_size = argc-1; //Size of run_params
+    int gtk_size = argc-1; //Size of run_params
 
     //Handle and categorize every parameters given through the command line
     Filter_Params(argv, argc, init_params, &init_size, gtk_params, &gtk_size);

@@ -15,6 +15,7 @@ List of all functions written in this file (and their type):
 
 recognized(char**,size_t,char*);
 Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
+Standard_Signals(GtkWidget);
 StartUp(char**,size_t,char**,size_t);
 */
 
@@ -36,12 +37,15 @@ StartUp(char**,size_t,char**,size_t);
 //Project Headers
 #include "Services/GTK_Window_Manager.h"
 
+//Tools
+//#include <gtk/gtk.h>
+
 ////END HEADERS
 
 ////DEFINING
 //Constants
 #define ID_INIT_SIZE 1
-const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
+static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
 
 ////END DEFINING
 
@@ -56,8 +60,8 @@ Requisites assumed:
   The given parameters list is correct.
   The parameter to check is in correct format.
 */
-int recognized(const char** PARAMS, size_t len, char* to_check) {
-    for (size_t i = 0; i < len; i++) {
+int recognized(const char** PARAMS, int len, char* to_check) {
+    for (int i = 0; i < len; i++) {
         if (to_check == PARAMS[i]) //Found
             return 1;
     }
@@ -81,11 +85,11 @@ Requisites assumed:
 */
 void Filter_Params( //Parameters
         char** all_params, //The given command-line parameters
-        size_t len, //The size of all_parameters
+        int len, //The size of all_parameters
         char* *init_params, //Array to write initialization parameters
-        size_t *init_size, //To store size of init_params
+        int *init_size, //To store size of init_params
         char* *gtk_params, //Array to write Application parameters
-        size_t *gtk_size) { //To store size of run_params
+        int *gtk_size) { //To store size of run_params
     //Iterating through the given parameters
     for (char** curr = all_params; curr < all_params + len; curr++) {
         size_t length = strlen(*curr);
@@ -95,20 +99,33 @@ void Filter_Params( //Parameters
             continue;
 
         //Checking if it is a recognized parameter
-        if (recognized(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) {
+        if (1 == 1) {//recognized(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) {
             //Putting the parameter into its corresponding category
             *init_params = *curr;
             init_params++;
-            init_size++;
+            (*init_size)++;
         } else { //Is a garbage parameter or a GTK Parameter
                  //We let GTK treat them however it wants
             *gtk_params = *curr;
             gtk_params++;
-            gtk_size++;
+            (*gtk_size)++;
         }
     }
 }
 
+
+/*  Standard_Signals():
+  Links all events and signals to their designated functions.
+
+Requisites assumed:
+  It must be the first and last time that this function is called.
+  Other intermediate event/signal linkage must be done through
+  another function or canal.
+*/
+void Standard_Signals(GtkWidget *window) {
+    //Closing window closes the program
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+}
 
 
 
@@ -128,12 +145,12 @@ Requisites assumed:
 */
 void StartUp( //Parameters:
         char** gtk_params, //Given parameters for gtk_initialization
-        size_t gtk_len, //Size of gtk_params
+        int gtk_len, //Size of gtk_params
         char** init_params, //Given parameters for developper testing
-        size_t init_len} //Size of init_params
+        int init_len) { //Size of init_params
 
     //Initialize GTK3 and its sub-systems
-    gtk_init(gtk_params, gtk_len)
+    gtk_init(&gtk_len, &gtk_params);
 
 
     //Defining necessary variables for Window_Init
