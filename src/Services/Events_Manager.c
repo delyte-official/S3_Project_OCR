@@ -13,7 +13,6 @@
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
-void on_window_realize(GtkWidget,gpointer);
 void Standard_Signals(GtkWidget);
 */
 
@@ -41,13 +40,6 @@ void Standard_Signals(GtkWidget);
 ////END HEADERS
 
 
-/* on_window_realise():
-    Forbids the window from being resized once it is ready to display.
-*/
-void on_window_realize(GtkWidget *widget, gpointer data) {
-    //gtk_window_set_resizable(GTK_WINDOW(widget), FALSE);
-}
-
 
 
 /*  Standard_Signals():
@@ -61,8 +53,6 @@ Requisites assumed:
 void Standard_Signals(GtkWidget *window) {
     //Closing window closes the program
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    //When window can be rendered, freeze its size in its current state
-    g_signal_connect(window, "realize", G_CALLBACK(on_window_realize), NULL);
 }
 
 
@@ -92,7 +82,6 @@ void file_selector(GtkWidget *button, GtkWidget *box_left) {
         char* filename = gtk_file_chooser_get_filename(
                 GTK_FILE_CHOOSER(dialog));
         
-        return;
         printf("Filename: %s\n", filename);
         if (g_file_test(filename, G_FILE_TEST_EXISTS))
             printf("File does exist: %s\n", filename);
@@ -109,7 +98,7 @@ void file_selector(GtkWidget *button, GtkWidget *box_left) {
                 gtk_widget_destroy(GTK_WIDGET(children->data));
             
             gtk_box_pack_start(GTK_BOX(box_left), image, TRUE, TRUE, 0);
-            gtk_widget_show_all(gtk_widget_get_toplevel(button));
+            gtk_widget_show(image);
 
             //Free ressourece
             g_object_unref(pixbuf);
