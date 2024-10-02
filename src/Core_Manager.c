@@ -156,7 +156,7 @@ void StartUp( //Parameters:
     //Show the Main Window with all its widget
     gtk_widget_show_all(window);
     //Disable resize of window
-    gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
+    //gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 
     //Running the application
     gtk_main();
