@@ -113,25 +113,35 @@ void Filter_Params( //Parameters
     }
 }
 
-
+void test(GtkWidget *widget, const char *color) {
+    GdkRGBA rgba;
+    gdk_rgba_parse(&rgba, color);
+    gtk_widget_override_background_color(widget, GTK_STATE_FLAG_NORMAL, &rgba);
+}
 /* interface_builder():
     Builds the entire interface for the program.
 */
-void interface_builder(GtkWidget *window) {
+void interface_builder(GtkWidget *window, int width, int height) {
     ////Dividing interface into two spaces
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
     gtk_container_add(GTK_CONTAINER(window), hbox);
+    test(hbox, "#e0e0e0");
     ///Building left side of interface
     GtkWidget *box_left = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
     gtk_box_pack_start(GTK_BOX(hbox), box_left, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(box_left, width / 2, -1);
+    test(box_left, "#cfe3ff");
     //Box to center the button
-    GtkWidget *box_center = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
-    gtk_box_pack_start(GTK_BOX(box_left), box_center, TRUE, TRUE, 0);
+    //GtkWidget *box_center = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+    //gtk_box_pack_start(GTK_BOX(box_left), box_center, TRUE, TRUE, 0);
+    //test(box_center, "#ffd1dc");
     //Button for image selector
     GtkWidget *button = gtk_button_new_with_label("Select Image");
-    gtk_box_pack_start(GTK_BOX(box_center), button, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box_left), button, FALSE, FALSE, 0);
     g_signal_connect(button, "clicked", G_CALLBACK(file_selector), box_left);
-
+    test(button, "#ffcccb");
+    gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
+    //gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
 
     printf("PASSED\n");
     //Show all the created widgets
@@ -179,7 +189,7 @@ void StartUp( //Parameters:
     Standard_Signals(window);
 
     //Building the interface
-    interface_builder(window);
+    interface_builder(window, width, height);
 
     //Running the application
     gtk_main();
