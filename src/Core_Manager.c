@@ -118,14 +118,18 @@ void Filter_Params( //Parameters
     Builds the entire interface for the program.
 */
 void interface_builder(GtkWidget *window) {
+    ////Dividing interface into two spaces
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
     gtk_container_add(GTK_CONTAINER(window), hbox);
-    //Building left side of interface
+    ///Building left side of interface
     GtkWidget *box_left = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
-    gtk_box_pack_start(GTK_BOX(hbox), box_left, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), box_left, FALSE, FALSE, 0);
+    //Box to center the button
+    GtkWidget *box_center = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+    gtk_box_pack_start(GTK_BOX(box_left), box_center, TRUE, TRUE, 0);
     //Button for image selector
     GtkWidget *button = gtk_button_new_with_label("Select Image");
-    gtk_box_pack_start(GTK_BOX(box_left), button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(box_center), button, FALSE, FALSE, 0);
     g_signal_connect(button, "clicked", G_CALLBACK(file_selector), box_left);
 
 
