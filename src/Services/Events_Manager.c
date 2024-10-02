@@ -71,8 +71,6 @@ void Standard_Signals(GtkWidget *window) {
     Opens a file selector dialog to choose an image for the project.
 */
 void file_selector(GtkWidget *button, GtkWidget *box_left) {
-    printf("Clicked button \n");
-    return;
     GtkWidget *dialog;
     
     //Creating the dialog window
@@ -91,14 +89,19 @@ void file_selector(GtkWidget *button, GtkWidget *box_left) {
     //Run the dialog
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
         //Get the selected image
-        char *filename = gtk_file_chooser_get_filename(
+        char* filename = gtk_file_chooser_get_filename(
                 GTK_FILE_CHOOSER(dialog));
         
+        return;
+        printf("Filename: %s\n", filename);
+        if (g_file_test(filename, G_FILE_TEST_EXISTS))
+            printf("File does exist: %s\n", filename);
         //Load image
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
+        printf("Loaded into pixbuf\n");
         if (pixbuf != NULL) {
             GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
-
+            printf("Loaded as image\n");
             //Display image on given widget
             GList *children = gtk_container_get_children(
                     GTK_CONTAINER(box_left));
