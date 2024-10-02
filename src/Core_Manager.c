@@ -36,9 +36,10 @@ StartUp(char**,size_t,char**,size_t);
 //Project Headers
 #include "Services/GTK_Window_Manager.h"
 #include "Services/Events_Manager.h"
+#include "Services/Debug.h"
 
 //Tools
-//#include <gtk/gtk.h>
+#include <gtk/gtk.h>
 
 ////END HEADERS
 
@@ -113,6 +114,32 @@ void Filter_Params( //Parameters
     }
 }
 
+/* interface_builder():
+    Builds the entire interface for the program.
+*/
+void interface_builder(GtkWidget *window, int width, int height) {
+    ////Dividing interface into two spaces
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    gtk_container_add(GTK_CONTAINER(window), hbox);
+    ///Building left side of interface
+    GtkWidget *box_left = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+    gtk_box_pack_start(GTK_BOX(hbox), box_left, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(box_left, width / 2, -1);
+    //Box to center the button
+    GtkWidget *box_center = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+    gtk_box_pack_start(GTK_BOX(box_left), box_center, TRUE, TRUE, 0);
+    gtk_widget_set_halign(box_center, GTK_ALIGN_CENTER);
+    //Button for image selector
+    GtkWidget *button = gtk_button_new_with_label("Select Image");
+    gtk_box_pack_start(GTK_BOX(box_center), button, FALSE, FALSE, 0);
+    g_signal_connect(button, "clicked", G_CALLBACK(file_selector), box_center);
+    gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
+    //gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
+
+    //Show all the created widgets
+    gtk_widget_show_all(window);
+}
+
 
 /*  StartUp():
   Initialize all systems necessary for the projects:
@@ -146,17 +173,14 @@ void StartUp( //Parameters:
     int height = geometry.height;
     int type = GTK_WINDOW_TOPLEVEL;
 
-    printf("W & H: %d & %d\n", width, height);
     //Initialize GTK Main Project Window
     window = create_window(type,title,width,height);
 
-    //Link all standard signals and events
+    //Link all standard signals and events of the window
     Standard_Signals(window);
 
-    //Show the Main Window with all its widget
-    gtk_widget_show_all(window);
-    //Disable resize of window
-    //gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
+    //Building the interface
+    interface_builder(window, width, height);
 
     //Running the application
     gtk_main();
