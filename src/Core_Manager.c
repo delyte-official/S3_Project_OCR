@@ -15,7 +15,6 @@ List of all functions written in this file (and their type):
 
 recognized(char**,size_t,char*);
 Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
-Standard_Signals(GtkWidget);
 StartUp(char**,size_t,char**,size_t);
 */
 
@@ -36,6 +35,7 @@ StartUp(char**,size_t,char**,size_t);
 
 //Project Headers
 #include "Services/GTK_Window_Manager.h"
+#include "Services/Events_Manager.h"
 
 //Tools
 //#include <gtk/gtk.h>
@@ -114,22 +114,6 @@ void Filter_Params( //Parameters
 }
 
 
-/*  Standard_Signals():
-  Links all events and signals to their designated functions.
-
-Requisites assumed:
-  It must be the first and last time that this function is called.
-  Other intermediate event/signal linkage must be done through
-  another function or canal.
-*/
-void Standard_Signals(GtkWidget *window) {
-    //Closing window closes the program
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-}
-
-
-
-
 /*  StartUp():
   Initialize all systems necessary for the projects:
   - C Libraries
@@ -156,10 +140,13 @@ void StartUp( //Parameters:
     //Defining necessary variables for Window_Init
     GtkWidget *window;
     char* title = "OCR Application";
-    int width = 400;
-    int height = 300;
+    GdkRectangle geometry;
+    get_screen_size(&geometry);
+    int width = geometry.width;
+    int height = geometry.height;
     int type = GTK_WINDOW_TOPLEVEL;
 
+    printf("W & H: %d & %d\n", width, height);
     //Initialize GTK Main Project Window
     window = create_window(type,title,width,height);
 
@@ -168,6 +155,8 @@ void StartUp( //Parameters:
 
     //Show the Main Window with all its widget
     gtk_widget_show_all(window);
+    //Disable resize of window
+    gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 
     //Running the application
     gtk_main();

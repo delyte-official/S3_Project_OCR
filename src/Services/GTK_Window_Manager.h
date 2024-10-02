@@ -5,5 +5,6 @@
 
 GtkWidget *create_window(GtkWindowType type, char* title, int width,
         int height);
+void get_screen_size(GdkRectangle *geometry);
 
 #endif
