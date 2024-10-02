@@ -30,6 +30,7 @@ void Standard_Signals(GtkWidget);
 ////HEADERS Files
 //Integrated C Libraries
 #include <err.h>
+#include <stdio.h>
 
 //GTK Libraries
 #include <gtk/gtk.h>
@@ -62,4 +63,57 @@ void Standard_Signals(GtkWidget *window) {
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     //When window can be rendered, freeze its size in its current state
     g_signal_connect(window, "realize", G_CALLBACK(on_window_realize), NULL);
+}
+
+
+
+/*  file_selector():
+    Opens a file selector dialog to choose an image for the project.
+*/
+void file_selector(GtkWidget *button, GtkWidget *box_left) {
+    printf("Clicked button \n");
+    return;
+    GtkWidget *dialog;
+    
+    //Creating the dialog window
+    dialog = gtk_file_chooser_dialog_new("Select Image",
+            GTK_WINDOW(gtk_widget_get_toplevel(button)),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            "_Cancel", GTK_RESPONSE_CANCEL,
+            "_Open", GTK_RESPONSE_ACCEPT,
+            NULL);
+
+    //Only accepting images
+    GtkFileFilter *filter = gtk_file_filter_new();
+    gtk_file_filter_add_pixbuf_formats(filter);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+    //Run the dialog
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+        //Get the selected image
+        char *filename = gtk_file_chooser_get_filename(
+                GTK_FILE_CHOOSER(dialog));
+        
+        //Load image
+        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
+        if (pixbuf != NULL) {
+            GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
+
+            //Display image on given widget
+            GList *children = gtk_container_get_children(
+                    GTK_CONTAINER(box_left));
+            if (children)
+                gtk_widget_destroy(GTK_WIDGET(children->data));
+            
+            gtk_box_pack_start(GTK_BOX(box_left), image, TRUE, TRUE, 0);
+            gtk_widget_show_all(gtk_widget_get_toplevel(button));
+
+            //Free ressourece
+            g_object_unref(pixbuf);
+        }
+        g_free(filename);
+    }
+
+    //Closing dialog wether cancel or accepted
+    gtk_widget_destroy(dialog);
 }
