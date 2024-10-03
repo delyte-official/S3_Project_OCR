@@ -28,4 +28,6 @@ int main(int argc, char* argv[]) {
     if (argc != 3) {
         errx(EXIT_FAILURE, "Incorrect number of arguments.");
     }
+
+
 }
