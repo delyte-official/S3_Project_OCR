@@ -22,13 +22,27 @@ The given file and word is assumed to be in a correct format.
 #include <err.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 ////END HEADERS
 
 
 //Prototypes
-char** read_file(char* filename, size_t* width, size_t* height);
+typedef struct {
+    int row;
+    int col;
+} coords;
+char** read_file(char* filename, int* rows, int* cols);
+int search_word(char** grid, int rows, int cols, const char* word,
+        coords* start, coords* end);
 
+
+
+void toupper_str(char* str) {
+    for (size_t i = 0; i < strlen(str); i++) {
+        str[i] = toupper((unsigned char)str[i]);
+    }
+}
 
 int main(int argc, char* argv[]) {
     //Verify that we have the correct number of arguments
@@ -38,54 +52,55 @@ int main(int argc, char* argv[]) {
 
 
     //Get the dynamic memory array representing the grid:
-    size_t width, height;
-    char** grid = read_file(argv[1], &width, &height);
+    int rows, cols;
+    char** grid = read_file(argv[1], &rows, &cols);
 
-    //Printing the grid
-    for (size_t i = 0; i < height; i++) {
-        printf("%s\n", grid[i]);
-    }
+    char* word = argv[2];
+    toupper_str(word);
+    coords start, end;
+    if (search_word(grid, rows, cols, word, &start, &end))
+        printf("(%d,%d)(%d,%d)\n",start.col,start.row,end.col,end.row);
+    else
+        printf("Not found\n");
+    return EXIT_SUCCESS;
 }
 
-void get_size(char* filename, size_t* width, size_t* height) {
-    //Open file to read
-    FILE* file = fopen(filename, "r");
-    if (file == NULL) //Error in opening the file
-        errx(EXIT_FAILURE, "fopen()");
-
+void get_size(FILE* file, int* rows, int* cols) {
     char* line = NULL;
     ssize_t read;
     size_t len = 0;
-    *width = 0;
-    *height = 0;
+    *rows = 0;
+    *cols = 0;
 
     while ((read = getline(&line, &len, file)) != -1) {
-        line[strcspn(line, "\n")] = '\0';
-
-        if (*height == 0)
-            *width = strlen(line);
-
-        (*height)++;
+        if (*rows == 0) {
+            *cols = strlen(line) - 1;
+        }
+        
+        (*rows)++;
     }
     free(line);
-    fclose(file);
 }
 
-char** read_file(char* filename, size_t* width, size_t* height) {
+char** read_file(char* filename, int* rows, int* cols) {
     //Get size of grid
-    get_size(filename, width, height);
-
-    //Open the file in reading mode
     FILE* file = fopen(filename, "r");
-    if (file == NULL) //Error in opening the file
-        errx(EXIT_FAILURE, "fopen()");
+    if (file == NULL)
+        errx(EXIT_FAILURE,"fopen()");
+    get_size(file, rows, cols);
 
+    //Return to start of file
+    fseek(file, 0, SEEK_SET);
+    //If size is not minimal
+    if (*rows < 5 || *cols < 6)
+        errx(EXIT_FAILURE, "Grid size too small.");
+    
     //Allocating memory for the grid
-    char** grid = (char**)malloc(*height  * sizeof(char*));
+    char** grid = (char**)malloc(*rows  * sizeof(char*));
     if (grid == NULL)
         errx(EXIT_FAILURE, "malloc()");
-    for (size_t i = 0; i < *height; i++) {
-        grid[i] = (char*)malloc(*width * sizeof(char));
+    for (size_t i = 0; i < *rows; i++) {
+        grid[i] = (char*)malloc(*cols * sizeof(char));
         if (grid[i] == NULL)
             errx(EXIT_FAILURE, "malloc()");
     }
@@ -99,6 +114,8 @@ char** read_file(char* filename, size_t* width, size_t* height) {
         //To remove the new line character, strcspn just find the index
         line[strcspn(line, "\n")] = '\0';
 
+        //To uppercase to avoid confusion or whatever
+        toupper_str(line);
         strcpy(grid[index], line);
         
         index++;
@@ -108,4 +125,64 @@ char** read_file(char* filename, size_t* width, size_t* height) {
     fclose(file);
 
     return grid;
+}
+
+int inbounds(int y, int x, int rows, int cols) {
+    return x >= 0 && x < cols && y >= 0 && y < rows;
+}
+
+//Function to search in one direction, used when you found first eltter
+int search_direction(char** grid, int rows, int cols, const char* word,
+        coords *startSearch, coords *dir, coords *start, coords *end) {
+    int word_len = strlen(word);
+    int row = (*startSearch).row + (*dir).row;
+    int col = (*startSearch).col + (*dir).col;
+
+    for (int i = 0; i < word_len - 1; i++) {
+        if (inbounds(row, col, rows, cols)) {
+            if (grid[row][col] != word[i+1])
+                return 0;
+        } else
+            return 0;
+        row+=(*dir).row;
+        col+=(*dir).col;
+    }
+
+    //Word found
+    start->row = startSearch->row;
+    start->col = startSearch->col;
+    end->row = row - dir->row;
+    end->col = col - dir->col;
+
+    return 1;
+}
+
+int search_word(char** grid, int rows, int cols, const char* word,
+        coords* start, coords* end) {
+    int dirs[8][2] = {{0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}};
+
+    //Iterate through the grid
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            //If letter, try searching in all direction
+            if (grid[row][col] == word[0]) {
+                coords startSearch = {
+                    .row = row,
+                    .col = col
+                };
+                for (int d = 0; d < 8; d++) {
+                    coords dir = {
+                        .row = dirs[d][0],
+                        .col = dirs[d][1]
+                    };
+                    if (search_direction(grid, rows, cols, word,
+                                &startSearch, &dir, start, end))
+                        return 1;
+                }
+            }
+        }
+    }
+
+    //Not found
+    return 0;
 }
