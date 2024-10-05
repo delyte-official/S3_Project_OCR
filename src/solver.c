@@ -1,20 +1,18 @@
 /*
-
       ##############################################################
       #                                                            #
       #                           solver.c                         #
       #                                                            #
-      #         This program is independant from the main.c.       #
+      #       This program is independant from the Main Canal.     #
       #     It executes from command line and returns in stdout.   #
       #                                                            #
       ##############################################################
 
-
-This program solves a word search given a word
-and the file containing a grid.
-The given file and word is assumed to be in a correct format.
+This program solves a word search given a word as a string
+and the file containing the grid.
+The given file and word is assumed to be in the same format
+as seen in the Moodle Documentations.
 */
-
 
 
 ////HEADERS Files
@@ -23,27 +21,25 @@ The given file and word is assumed to be in a correct format.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
 ////END HEADERS
 
 
-//Prototypes
+////DEFINING
 typedef struct {
     int row;
     int col;
 } coords;
+
+void toupper_str(char* str);
 char** read_file(char* filename, int* rows, int* cols);
 int search_word(char** grid, int rows, int cols, const char* word,
         coords* start, coords* end);
+//END DEFINING
 
 
-
-void toupper_str(char* str) {
-    for (size_t i = 0; i < strlen(str); i++) {
-        str[i] = toupper((unsigned char)str[i]);
-    }
-}
-
+/* main():
+    Handles all the logic and errors.
+*/
 int main(int argc, char* argv[]) {
     //Verify that we have the correct number of arguments
     if (argc != 3) {
@@ -65,6 +61,20 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
+
+/* toupper_str():
+    Transform every letter of a string into an uppercase letter.
+*/
+void toupper_str(char* str) {
+    for (size_t i = 0; i < strlen(str); i++) {
+        str[i] = toupper((unsigned char)str[i]);
+    }
+}
+
+
+/* get_size():
+    Returns through the pointers the size of the given grid.
+*/
 void get_size(FILE* file, int* rows, int* cols) {
     char* line = NULL;
     ssize_t read;
@@ -82,6 +92,10 @@ void get_size(FILE* file, int* rows, int* cols) {
     free(line);
 }
 
+
+/* read_file():
+    Reads and writes the entire content of the file into a dynamic array.
+*/
 char** read_file(char* filename, int* rows, int* cols) {
     //Get size of grid
     FILE* file = fopen(filename, "r");
@@ -127,11 +141,18 @@ char** read_file(char* filename, int* rows, int* cols) {
     return grid;
 }
 
+
+/* inbounds():
+    Checks if a position is in bounds.
+*/
 int inbounds(int y, int x, int rows, int cols) {
     return x >= 0 && x < cols && y >= 0 && y < rows;
 }
 
-//Function to search in one direction, used when you found first eltter
+
+/* search_direction():
+    Search for a match of a word in a specified direction.
+*/
 int search_direction(char** grid, int rows, int cols, const char* word,
         coords *startSearch, coords *dir, coords *start, coords *end) {
     int word_len = strlen(word);
@@ -157,6 +178,10 @@ int search_direction(char** grid, int rows, int cols, const char* word,
     return 1;
 }
 
+
+/* search_word():
+    Search the given word in the grid in all 8 2-Dimensional directions.
+*/
 int search_word(char** grid, int rows, int cols, const char* word,
         coords* start, coords* end) {
     int dirs[8][2] = {{0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}};
