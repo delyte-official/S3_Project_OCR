@@ -7,7 +7,7 @@ LDFLAGS := -lSDL2 -lSDL2_image `pkg-config --libs gtk+-3.0`
 
 #All object files needed, categorized in directives:
 SERVICES = Events_Manager.o Debug.o
-GTK = GTK_Window_Manager.o GTK_Interface_Manager.o
+GTK = Window_Manager.o Interface_Manager.o
 SRC = Core_Manager.o \
 	$(addprefix Services/, $(SERVICES)) \
 	$(addprefix GTK/, $(GTK))

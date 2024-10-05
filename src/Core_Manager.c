@@ -23,7 +23,7 @@ StartUp(char**,size_t,char**,size_t);
 #include <stdio.h>
 
 //Project Headers
-#include "Services/GTK_Window_Manager.h"
+#include "GTK/Window_Manager.h"
 #include "Services/Events_Manager.h"
 #include "Services/Debug.h"
 

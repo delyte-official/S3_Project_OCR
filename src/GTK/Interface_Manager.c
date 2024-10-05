@@ -23,8 +23,8 @@ void Build_Interface(GtkWidget*);
 #include <stdio.h>
 
 //Project Headers
-#include "Events_Manager.h"
-#include "Debug.h"
+#include "../Services/Events_Manager.h"
+#include "../Services/Debug.h"
 
 //Tools
 #include <gtk/gtk.h>
@@ -39,7 +39,7 @@ void change_widget_color(GtkWidget *widget, const char *color) {
     gtk_widget_override_background_color(widget, GTK_STATE_FLAG_NORMAL, &rgba);
 }
 
-void Build_Interface(GtkWidget *window) {
+void Build_Interface(GtkWidget *window, int width, int height) {
     ////Dividing interface into two spaces
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_container_add(GTK_CONTAINER(window), hbox);
