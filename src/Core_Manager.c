@@ -1,5 +1,4 @@
 /*
-
       ##############################################################
       #                                                            #
       #                       Core_Manager.c                       #
@@ -8,7 +7,6 @@
       #      between every systems of the Project Application.     #
       #                                                            #
       ##############################################################
-
 
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
@@ -19,39 +17,26 @@ StartUp(char**,size_t,char**,size_t);
 */
 
 
-
-
-
-
-
-
-
-
-
 ////HEADERS Files
 //Integrated C Libraries
 #include <stdlib.h>
 #include <stdio.h>
 
 //Project Headers
-#include "Services/GTK_Window_Manager.h"
+#include "GTK/Window_Manager.h"
 #include "Services/Events_Manager.h"
 #include "Services/Debug.h"
 
 //Tools
 #include <gtk/gtk.h>
-
 ////END HEADERS
+
 
 ////DEFINING
 //Constants
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
-
 ////END DEFINING
-
-
-
 
 
 /*  recognized():
@@ -66,16 +51,13 @@ int recognized(const char** PARAMS, int len, char* to_check) {
         if (to_check == PARAMS[i]) //Found
             return 1;
     }
-
-    //Not found
-    return 0;
+    return 0; //Not found
 }
 
 
-
 /*  Filter_Params():
-  Filter every given parameters into two categories:
-  - Initialization parameters
+  Filters every given parameters into two categories:
+  - GTK parameters
   - Application parameters
   Returns them in given arrays, and their sizes.
   Every unrecognized parameters will be thrown away.
@@ -94,13 +76,11 @@ void Filter_Params( //Parameters
     //Iterating through the given parameters
     for (char** curr = all_params; curr < all_params + len; curr++) {
         size_t length = strlen(*curr);
-
-        //Start checking with recognized parameters
         if (length < 2) //Skipping unformalized parameters
             continue;
 
         //Checking if it is a recognized parameter
-        if (1 == 1) {//recognized(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) {
+        if (recognized(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) {
             //Putting the parameter into its corresponding category
             *init_params = *curr;
             init_params++;
@@ -114,37 +94,11 @@ void Filter_Params( //Parameters
     }
 }
 
-/* interface_builder():
-    Builds the entire interface for the program.
-*/
-void interface_builder(GtkWidget *window, int width, int height) {
-    ////Dividing interface into two spaces
-    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-    gtk_container_add(GTK_CONTAINER(window), hbox);
-    ///Building left side of interface
-    GtkWidget *box_left = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
-    gtk_box_pack_start(GTK_BOX(hbox), box_left, FALSE, FALSE, 0);
-    gtk_widget_set_size_request(box_left, width / 2, -1);
-    //Box to center the button
-    GtkWidget *box_center = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-    gtk_box_pack_start(GTK_BOX(box_left), box_center, TRUE, TRUE, 0);
-    gtk_widget_set_halign(box_center, GTK_ALIGN_CENTER);
-    //Button for image selector
-    GtkWidget *button = gtk_button_new_with_label("Select Image");
-    gtk_box_pack_start(GTK_BOX(box_center), button, FALSE, FALSE, 0);
-    g_signal_connect(button, "clicked", G_CALLBACK(file_selector), box_center);
-    gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
-    //gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
-
-    //Show all the created widgets
-    gtk_widget_show_all(window);
-}
-
 
 /*  StartUp():
   Initialize all systems necessary for the projects:
   - C Libraries
-  - Memory Tracking
+  - Signals Tracking
   - SDL/GTK Systems
   - Others
   Then run the application.
@@ -159,14 +113,12 @@ void StartUp( //Parameters:
         int gtk_len, //Size of gtk_params
         char** init_params, //Given parameters for developper testing
         int init_len) { //Size of init_params
-
     //Initialize GTK3 and its sub-systems
     gtk_init(&gtk_len, &gtk_params);
 
-
     //Defining necessary variables for Window_Init
     GtkWidget *window;
-    char* title = "OCR Application";
+    char* title = "OCR Word Search Solver";
     GdkRectangle geometry;
     get_screen_size(&geometry);
     int width = geometry.width;
@@ -176,11 +128,11 @@ void StartUp( //Parameters:
     //Initialize GTK Main Project Window
     window = create_window(type,title,width,height);
 
+    //Building the interface and setup the associated signals and events
+    Build_Interface(window, width, height);
+    
     //Link all standard signals and events of the window
     Standard_Signals(window);
-
-    //Building the interface
-    interface_builder(window, width, height);
 
     //Running the application
     gtk_main();

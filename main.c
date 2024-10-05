@@ -1,5 +1,4 @@
 /*
-
       #################################################################
       #                                                               #
       #                             Main.c                            #
@@ -8,8 +7,8 @@
       #    The final version of the project must be run from here.    #
       #                                                               #
       #################################################################
-
 */
+
 
 ////HEADER Files
 //C Libraries
@@ -17,10 +16,11 @@
 
 //Project Libraries
 #include "src/Core_Manager.h"
+////END HEADERS
 
 
 /*  main():
-  Official function to start the application properly ~Main Canal.
+  Official function to start the application properly: ~Main Canal.
 
 Requisites assumed:
   No other instance of the program must be running.

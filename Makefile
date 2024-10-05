@@ -6,11 +6,15 @@ LDFLAGS := -lSDL2 -lSDL2_image `pkg-config --libs gtk+-3.0`
 
 
 #All object files needed, categorized in directives:
-SERVICES = GTK_Window_Manager.o Events_Manager.o Debug.o
-SRC = Core_Manager.o $(addprefix Services/, $(SERVICES))
+SERVICES = Events_Manager.o Debug.o
+GTK = Window_Manager.o Interface_Manager.o
+SRC = Core_Manager.o \
+	$(addprefix Services/, $(SERVICES)) \
+	$(addprefix GTK/, $(GTK))
 
 #Put all of them together
-OBJS = main.o $(addprefix src/, $(SRC))
+OBJS = main.o \
+	$(addprefix src/, $(SRC))
 
 TARGET = main
 all: $(TARGET) #All command, the default command ran by writing "make"
