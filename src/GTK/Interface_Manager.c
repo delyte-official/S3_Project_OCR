@@ -13,6 +13,10 @@
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
+GtkWidget* auto_pack_box(GtkOrientation,int,GtkWidget*,int,int,int,int,int);
+GtkWidget* center_new(GtkWidget*);
+GdkPixbuf* resize(GdkPixbuf*,int,int,int,int);
+GdkPixbuf* resize_from_container(GdkPixbuf*,int,int,GtkWidget*);
 void Build_Interface(GtkWidget*);
 */
 
@@ -32,14 +36,10 @@ void Build_Interface(GtkWidget*);
 ////END HEADERS
 
 
-void change_widget_color(
-        GtkWidget *widget,
-        const char *color) {
-    GdkRGBA rgba;
-    gdk_rgba_parse(&rgba, color);
-    gtk_widget_override_background_color(widget, GTK_STATE_FLAG_NORMAL, &rgba);
-}
-
+/* auto_pack_box():
+    Shortcut function to automatically create a box, pack it inside
+    the pointed parent and set its requested size.
+*/
 GtkWidget* auto_pack_box(
         GtkOrientation orientation,
         int child_padd,
@@ -59,6 +59,28 @@ GtkWidget* auto_pack_box(
 }
 
 
+/* center_new():
+    Shortcut function that creates a custom widget centering the pointed
+    child in it. Is an alternative to the deprecated GTK Widget alignment.
+*/
+GtkWidget* center_new(GtkWidget* child) {
+    //Creating vertical box
+    GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    //Creating horizontal box
+    GtkWidget* hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
+    gtk_widget_set_halign(hbox, GTK_ALIGN_CENTER);
+    //Attaching child
+    gtk_box_pack_start(GTK_BOX(hbox), child, FALSE, FALSE, 0);
+    gtk_widget_set_valign(child, GTK_ALIGN_CENTER);
+    return vbox;
+}
+
+
+/* resize():
+    Resize a pixbuf to the maximum ratio possible while keeping
+    the proportions of the given pixbuf.
+*/
 GdkPixbuf* resize(
         GdkPixbuf* pixbuf,
         int origin_w,
@@ -78,6 +100,9 @@ GdkPixbuf* resize(
 }
 
 
+/* resize_from_container():
+    Shortcut to resize() by automatically getting the maximum size possible.
+*/
 GdkPixbuf* resize_from_container(
         GdkPixbuf* pixbuf,
         int origin_w,
@@ -90,6 +115,20 @@ GdkPixbuf* resize_from_container(
 }
 
 
+/* spacing_new():
+    Returns a Label that acts as a spacing widget
+*/
+GtkWidget* spacing_new(int horizontal) {
+    //Creating the horizontal spacing
+    char space_horizontal[horizontal];
+    return gtk_label_new(space_horizontal);
+}
+
+
+/* Build_Interface():
+    Creates every widget and the structure of the starting project menu.
+    Creates every needed signals for the application to run properly.
+*/
 void Build_Interface(
         GtkWidget *window,
         int width,
@@ -117,28 +156,33 @@ void Build_Interface(
     GtkWidget *display_b = auto_pack_box(GTK_ORIENTATION_HORIZONTAL,
             0, left_b, TRUE, TRUE, 0, -1, -1);
     change_widget_color(display_b, "#42f593");
-    ///Box to center the button
-    GtkWidget *center_b = gtk_alignment_new(0.5, 0.5, 1, 1);
-    gtk_box_pack_start(GTK_BOX(display_b), center_b, TRUE, TRUE, 0);
-    change_widget_color(center_b, "#a89732");
     ///Button for image selector
     GtkWidget *select_btn = gtk_button_new_with_label("Select Image");
-    gtk_container_add(GTK_CONTAINER(center_b), select_btn);
     g_signal_connect(select_btn, "clicked", G_CALLBACK(file_selector),
             display_b);
-    gtk_widget_set_valign(select_btn, GTK_ALIGN_CENTER);
-    gtk_widget_set_halign(select_btn, GTK_ALIGN_CENTER);
+    GtkWidget *center_b = center_new(select_btn);
+    gtk_box_pack_start(GTK_BOX(display_b), center_b, TRUE, TRUE, 0);
 
     ////Right side containing the interface
     ///Vertical box for the right side
     GtkWidget *right_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, main_b, TRUE, TRUE, 0, -1, -1);
     change_widget_color(right_b, "#32a852");
-    ///Header of the vertical section
-    GtkWidget *header_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, right_b, FALSE, FALSE, 0, -1, height /4);
-    change_widget_color(header_b, "#f542ce");
-    ///Helper of vertical section
+    ///Header of the vertical section (in form of a grid)
+    GtkWidget *header_g = gtk_grid_new();
+    gtk_box_pack_start(GTK_BOX(right_b), header_g, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(header_g, -1, height / 4);
+    change_widget_color(header_g, "#f542ce");
+    //Button Control: Exit
+    GtkWidget *exit_btn = gtk_button_new_with_label("Exit");
+    gtk_grid_attach(GTK_GRID(header_g), exit_btn, 0, 0, 1, 1);
+    //Space out the grid
+    gtk_grid_attach(GTK_GRID(header_g), spacing_new(), 1, 0, 2, 1);
+    //gtk_grid_attach(GTK_GRID(header_g), spacing_new(), 1, 0, 3, 1);
+    //Button Control: Next
+    GtkWidget *next_btn = gtk_button_new_with_label("Next Step");
+    gtk_grid_attach(GTK_GRID(header_g), next_btn, 3, 1, 1, 1);
+    //Helper of vertical section
     GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, -1, height / 8);
     change_widget_color(helper_b, "#139485");
