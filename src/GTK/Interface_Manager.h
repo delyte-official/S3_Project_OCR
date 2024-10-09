@@ -1,7 +1,6 @@
 #ifndef INTERFACE_MANAGER_H
 #define INTERFACE_MANAGER_H
 
-void change_widget_color(GtkWidget *widget, const char *color);
 GdkPixbuf* resize(GdkPixbuf* pixbuf, int origin_w, int origin_h,
         int max_w, int max_h);
 GdkPixbuf* resize_from_container(GdkPixbuf* pixbuf, int origin_w,

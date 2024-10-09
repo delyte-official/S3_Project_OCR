@@ -1,3 +1,7 @@
+#Custom Ignored Files
+main
+src/solver
+
 # Prerequisites
 *.d
 

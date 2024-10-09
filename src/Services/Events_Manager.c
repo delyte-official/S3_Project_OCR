@@ -1,5 +1,4 @@
 /*
-
       ##############################################################
       #                                                            #
       #                      Events_Manager.c                      #
@@ -9,11 +8,11 @@
       #                                                            #
       ##############################################################
 
-
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
 void Standard_Signals(GtkWidget);
+void file_selector(GtkWidget*,GtkWidget*);
 */
 
 
@@ -59,7 +58,7 @@ void Standard_Signals(GtkWidget *window) {
 /*  file_selector():
     Opens a file selector dialog to choose an image for the project.
 */
-void file_selector(GtkWidget *button, GtkWidget *left_b) {
+void file_selector(GtkWidget *button, GtkWidget *display_b) {
     GtkWidget *dialog;
     
     //Creating the dialog window
@@ -83,17 +82,19 @@ void file_selector(GtkWidget *button, GtkWidget *left_b) {
         //Load image
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
         if (pixbuf != NULL) {
+            //Resizing the image to fit the display section
             int width = gdk_pixbuf_get_width(pixbuf);
             int height = gdk_pixbuf_get_height(pixbuf);
-            pixbuf = resize_from_container(pixbuf,width, height, left_b);
+            pixbuf = resize_from_container(pixbuf,width, height, display_b);
+            //Creating the image
             GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
-            //Display image on given widget
+            //Clear the display section
             GList *children = gtk_container_get_children(
-                    GTK_CONTAINER(left_b));
+                    GTK_CONTAINER(display_b));
             if (children)
                 gtk_widget_destroy(GTK_WIDGET(children->data));
-            
-            gtk_box_pack_start(GTK_BOX(left_b), image, TRUE, TRUE, 0);
+            //Display the image
+            gtk_box_pack_start(GTK_BOX(display_b), image, TRUE, TRUE, 0);
             gtk_widget_show(image);
 
             //Free ressourece
