@@ -129,7 +129,7 @@ void StartUp( //Parameters:
     window = create_window(type,title,width,height);
 
     //Building the interface and setup the associated signals and events
-    Build_Interface(window, width, height);
+    Build_Interface(window, width, height, title);
     
     //Link all standard signals and events of the window
     Standard_Signals(window);
