@@ -35,8 +35,7 @@ void Standard_Signals(GtkWidget);
 #include <gtk/gtk.h>
 
 //Project Headers
-
-
+#include "../GTK/Interface_Manager.h"
 ////END HEADERS
 
 
@@ -60,7 +59,7 @@ void Standard_Signals(GtkWidget *window) {
 /*  file_selector():
     Opens a file selector dialog to choose an image for the project.
 */
-void file_selector(GtkWidget *button, GtkWidget *box_left) {
+void file_selector(GtkWidget *button, GtkWidget *left_b) {
     GtkWidget *dialog;
     
     //Creating the dialog window
@@ -70,7 +69,6 @@ void file_selector(GtkWidget *button, GtkWidget *box_left) {
             "_Cancel", GTK_RESPONSE_CANCEL,
             "_Open", GTK_RESPONSE_ACCEPT,
             NULL);
-
     //Only accepting images
     GtkFileFilter *filter = gtk_file_filter_new();
     gtk_file_filter_add_pixbuf_formats(filter);
@@ -82,22 +80,20 @@ void file_selector(GtkWidget *button, GtkWidget *box_left) {
         char* filename = gtk_file_chooser_get_filename(
                 GTK_FILE_CHOOSER(dialog));
         
-        printf("Filename: %s\n", filename);
-        if (g_file_test(filename, G_FILE_TEST_EXISTS))
-            printf("File does exist: %s\n", filename);
         //Load image
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
-        printf("Loaded into pixbuf\n");
         if (pixbuf != NULL) {
+            int width = gdk_pixbuf_get_width(pixbuf);
+            int height = gdk_pixbuf_get_height(pixbuf);
+            pixbuf = resize_from_container(pixbuf,width, height, left_b);
             GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
-            printf("Loaded as image\n");
             //Display image on given widget
             GList *children = gtk_container_get_children(
-                    GTK_CONTAINER(box_left));
+                    GTK_CONTAINER(left_b));
             if (children)
                 gtk_widget_destroy(GTK_WIDGET(children->data));
             
-            gtk_box_pack_start(GTK_BOX(box_left), image, TRUE, TRUE, 0);
+            gtk_box_pack_start(GTK_BOX(left_b), image, TRUE, TRUE, 0);
             gtk_widget_show(image);
 
             //Free ressourece
