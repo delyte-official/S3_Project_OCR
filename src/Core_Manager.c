@@ -11,9 +11,10 @@
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
-recognized(char**,size_t,char*);
-Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
-StartUp(char**,size_t,char**,size_t);
+int recognized(char**,size_t,char*);
+void Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
+void StartUp(char**,size_t,char**,size_t);
+void NextStep(GtkWidget,void*);
 */
 
 
@@ -26,17 +27,25 @@ StartUp(char**,size_t,char**,size_t);
 #include "GTK/Window_Manager.h"
 #include "Services/Events_Manager.h"
 #include "Services/Debug.h"
-
+#include "Core_Manager.h"
 //Tools
 #include <gtk/gtk.h>
 ////END HEADERS
-
-
 ////DEFINING
 //Constants
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
 ////END DEFINING
+
+
+/* get_step():
+    Returns a pointer to the static variable representing the current
+    step that the program is at.
+*/
+STEP* get_step() {
+    static STEP curr_step = 0;
+    return &curr_step;
+}
 
 
 /*  recognized():
@@ -136,4 +145,35 @@ void StartUp( //Parameters:
 
     //Running the application
     gtk_main();
+}
+
+
+/* NextStep():
+    Performs the next operation of the OCR Word Search program.
+*/
+void NextStep(GtkWidget* next_btn, int* curr_step) {
+    //Performing operation according to curr_step
+    switch (*curr_step) {
+        case STEP_START:
+            printf("STARTING\n");
+            break;
+        case STEP_LOAD:
+            break;
+        case STEP_FILTER:
+            break;
+        case STEP_EXTRACT:
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_RECONSTRUCT:
+            break;
+        case STEP_END:
+            break;
+        default:
+            errx(EXIT_FAILURE, "STEP is in incorrect form.");
+    }
+
+    //Advancing the current step
+    (*curr_step)++;
+    printf("New step: %d\n", *curr_step);
 }
