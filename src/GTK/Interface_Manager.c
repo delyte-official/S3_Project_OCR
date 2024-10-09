@@ -115,6 +115,16 @@ GdkPixbuf* resize_from_container(
 }
 
 
+/* spacing_new():
+    Returns a Label that acts as a spacing widget
+*/
+GtkWidget* spacing_new(int horizontal) {
+    //Creating the horizontal spacing
+    char space_horizontal[horizontal];
+    return gtk_label_new(space_horizontal);
+}
+
+
 /* Build_Interface():
     Creates every widget and the structure of the starting project menu.
     Creates every needed signals for the application to run properly.
@@ -158,11 +168,21 @@ void Build_Interface(
     GtkWidget *right_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, main_b, TRUE, TRUE, 0, -1, -1);
     change_widget_color(right_b, "#32a852");
-    ///Header of the vertical section
-    GtkWidget *header_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, right_b, FALSE, FALSE, 0, -1, height /4);
-    change_widget_color(header_b, "#f542ce");
-    ///Helper of vertical section
+    ///Header of the vertical section (in form of a grid)
+    GtkWidget *header_g = gtk_grid_new();
+    gtk_box_pack_start(GTK_BOX(right_b), header_g, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(header_g, -1, height / 4);
+    change_widget_color(header_g, "#f542ce");
+    //Button Control: Exit
+    GtkWidget *exit_btn = gtk_button_new_with_label("Exit");
+    gtk_grid_attach(GTK_GRID(header_g), exit_btn, 0, 0, 1, 1);
+    //Space out the grid
+    gtk_grid_attach(GTK_GRID(header_g), spacing_new(), 1, 0, 2, 1);
+    //gtk_grid_attach(GTK_GRID(header_g), spacing_new(), 1, 0, 3, 1);
+    //Button Control: Next
+    GtkWidget *next_btn = gtk_button_new_with_label("Next Step");
+    gtk_grid_attach(GTK_GRID(header_g), next_btn, 3, 1, 1, 1);
+    //Helper of vertical section
     GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, -1, height / 8);
     change_widget_color(helper_b, "#139485");
