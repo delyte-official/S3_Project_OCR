@@ -1,5 +1,4 @@
 /*
-
       ##############################################################
       #                                                            #
       #                       Core_Manager.c                       #
@@ -9,48 +8,79 @@
       #                                                            #
       ##############################################################
 
-
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
-recognized(char**,size_t,char*);
-Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
-Standard_Signals(GtkWidget);
-StartUp(char**,size_t,char**,size_t);
+STEP* get_step();
+GtkWidget* get_display(GtkWidget*);
+int recognized(char**,size_t,char*);
+void Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
+void StartUp(char**,size_t,char**,size_t);
+void NextStep(GtkWidget,void*);
 */
-
-
-
-
-
-
-
-
-
 
 
 ////HEADERS Files
 //Integrated C Libraries
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <err.h>
 //Project Headers
-#include "Services/GTK_Window_Manager.h"
-
+#include "Interface/Window_Manager.h"
+#include "Interface/Interface_Manager.h"
+#include "Interface/Events_Manager.h"
+#include "Debug.h"
+#include "Core_Manager.h"
 //Tools
-//#include <gtk/gtk.h>
-
+#include <gtk/gtk.h>
 ////END HEADERS
-
 ////DEFINING
 //Constants
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
-
 ////END DEFINING
 
 
+/* get_step():
+    Returns a pointer to the static variable representing the current
+    step that the program is at.
+*/
+STEP* get_step() {
+    static STEP curr_step = 0;
+    return &curr_step;
+}
 
+
+/* get_display():
+    Returns the the display section of the Application.
+    If first time called:
+        - initialize the display box through the pointer "widget"
+    else, widget is considered to be pointing towards the child of display:
+        If widget is NULL:
+           - returns through the pointer the child of display
+        else:
+           - clear the child of display and replace it by "*widget".
+*/
+GtkWidget* get_display(GtkWidget** widget) {
+    static GtkWidget* display;
+    if (display==NULL)
+        display = *widget;
+    else if (widget != NULL) {
+        GList *children = gtk_container_get_children(GTK_CONTAINER(display));
+        if (*widget == NULL) {
+            if (children)
+                *widget = GTK_WIDGET(children->data);
+        } else {
+            //Clear children
+            if (children)
+                gtk_widget_destroy(GTK_WIDGET(children->data));
+            //Add the child
+            gtk_box_pack_start(GTK_BOX(display), *widget, TRUE, TRUE, 0);
+            gtk_widget_show(*widget);
+        }
+    }
+    return display;
+}
 
 
 /*  recognized():
@@ -65,16 +95,13 @@ int recognized(const char** PARAMS, int len, char* to_check) {
         if (to_check == PARAMS[i]) //Found
             return 1;
     }
-
-    //Not found
-    return 0;
+    return 0; //Not found
 }
 
 
-
 /*  Filter_Params():
-  Filter every given parameters into two categories:
-  - Initialization parameters
+  Filters every given parameters into two categories:
+  - GTK parameters
   - Application parameters
   Returns them in given arrays, and their sizes.
   Every unrecognized parameters will be thrown away.
@@ -93,13 +120,11 @@ void Filter_Params( //Parameters
     //Iterating through the given parameters
     for (char** curr = all_params; curr < all_params + len; curr++) {
         size_t length = strlen(*curr);
-
-        //Start checking with recognized parameters
         if (length < 2) //Skipping unformalized parameters
             continue;
 
         //Checking if it is a recognized parameter
-        if (1 == 1) {//recognized(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) {
+        if (recognized(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) {
             //Putting the parameter into its corresponding category
             *init_params = *curr;
             init_params++;
@@ -114,26 +139,10 @@ void Filter_Params( //Parameters
 }
 
 
-/*  Standard_Signals():
-  Links all events and signals to their designated functions.
-
-Requisites assumed:
-  It must be the first and last time that this function is called.
-  Other intermediate event/signal linkage must be done through
-  another function or canal.
-*/
-void Standard_Signals(GtkWidget *window) {
-    //Closing window closes the program
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-}
-
-
-
-
 /*  StartUp():
   Initialize all systems necessary for the projects:
   - C Libraries
-  - Memory Tracking
+  - Signals Tracking
   - SDL/GTK Systems
   - Others
   Then run the application.
@@ -148,27 +157,65 @@ void StartUp( //Parameters:
         int gtk_len, //Size of gtk_params
         char** init_params, //Given parameters for developper testing
         int init_len) { //Size of init_params
-
+    //Unused parameters - TO REMOVE)
+    (void) init_params;
+    (void) init_len;
     //Initialize GTK3 and its sub-systems
     gtk_init(&gtk_len, &gtk_params);
 
-
     //Defining necessary variables for Window_Init
     GtkWidget *window;
-    char* title = "OCR Application";
-    int width = 400;
-    int height = 300;
+    char* title = "OCR Word Search Solver";
+    GdkRectangle geometry;
+    get_screen_size(&geometry);
+    int width = geometry.width;
+    int height = geometry.height;
     int type = GTK_WINDOW_TOPLEVEL;
 
     //Initialize GTK Main Project Window
     window = create_window(type,title,width,height);
 
-    //Link all standard signals and events
+    //Building the interface and setup the associated signals and events
+    Build_Interface(window, width, height, title);
+    
+    //Link all standard signals and events of the window
     Standard_Signals(window);
-
-    //Show the Main Window with all its widget
-    gtk_widget_show_all(window);
 
     //Running the application
     gtk_main();
+}
+
+
+/* NextStep():
+    Performs the next operation of the OCR Word Search program.
+*/
+void NextStep(GtkWidget* next_btn, gpointer) {
+    STEP* curr_step = get_step();
+    //Performing operation according to curr_step
+    switch (*curr_step) {
+        case STEP_LOAD:
+            break;
+        case STEP_FILTER:
+            GtkWidget *image = NULL;
+            get_display(&image);
+            GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
+            GtkWidget *new_image = gtk_image_new_from_pixbuf(pixbuf);
+            get_display(&new_image);
+            break;
+        case STEP_EXTRACT:
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_RECONSTRUCT:
+            break;
+        case STEP_END:
+            //Hide and deactivate the button
+            gtk_widget_hide(next_btn);
+            break;
+        default:
+            errx(EXIT_FAILURE, "STEP is in incorrect form.");
+    }
+
+    //Advancing the current step
+    (*curr_step)++;
 }
