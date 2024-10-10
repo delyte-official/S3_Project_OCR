@@ -11,9 +11,12 @@
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
-recognized(char**,size_t,char*);
-Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
-StartUp(char**,size_t,char**,size_t);
+STEP* get_step();
+GtkWidget* get_display(GtkWidget*);
+int recognized(char**,size_t,char*);
+void Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
+void StartUp(char**,size_t,char**,size_t);
+void NextStep(GtkWidget,void*);
 */
 
 
@@ -21,22 +24,63 @@ StartUp(char**,size_t,char**,size_t);
 //Integrated C Libraries
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <err.h>
 //Project Headers
-#include "GTK/Window_Manager.h"
-#include "Services/Events_Manager.h"
-#include "Services/Debug.h"
-
+#include "Interface/Window_Manager.h"
+#include "Interface/Interface_Manager.h"
+#include "Interface/Events_Manager.h"
+#include "Debug.h"
+#include "Core_Manager.h"
 //Tools
 #include <gtk/gtk.h>
 ////END HEADERS
-
-
 ////DEFINING
 //Constants
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
 ////END DEFINING
+
+
+/* get_step():
+    Returns a pointer to the static variable representing the current
+    step that the program is at.
+*/
+STEP* get_step() {
+    static STEP curr_step = 0;
+    return &curr_step;
+}
+
+
+/* get_display():
+    Returns the the display section of the Application.
+    If first time called:
+        - initialize the display box through the pointer "widget"
+    else, widget is considered to be pointing towards the child of display:
+        If widget is NULL:
+           - returns through the pointer the child of display
+        else:
+           - clear the child of display and replace it by "*widget".
+*/
+GtkWidget* get_display(GtkWidget** widget) {
+    static GtkWidget* display;
+    if (display==NULL)
+        display = *widget;
+    else if (widget != NULL) {
+        GList *children = gtk_container_get_children(GTK_CONTAINER(display));
+        if (*widget == NULL) {
+            if (children)
+                *widget = GTK_WIDGET(children->data);
+        } else {
+            //Clear children
+            if (children)
+                gtk_widget_destroy(GTK_WIDGET(children->data));
+            //Add the child
+            gtk_box_pack_start(GTK_BOX(display), *widget, TRUE, TRUE, 0);
+            gtk_widget_show(*widget);
+        }
+    }
+    return display;
+}
 
 
 /*  recognized():
@@ -113,6 +157,9 @@ void StartUp( //Parameters:
         int gtk_len, //Size of gtk_params
         char** init_params, //Given parameters for developper testing
         int init_len) { //Size of init_params
+    //Unused parameters - TO REMOVE)
+    (void) init_params;
+    (void) init_len;
     //Initialize GTK3 and its sub-systems
     gtk_init(&gtk_len, &gtk_params);
 
@@ -136,4 +183,39 @@ void StartUp( //Parameters:
 
     //Running the application
     gtk_main();
+}
+
+
+/* NextStep():
+    Performs the next operation of the OCR Word Search program.
+*/
+void NextStep(GtkWidget* next_btn, gpointer) {
+    STEP* curr_step = get_step();
+    //Performing operation according to curr_step
+    switch (*curr_step) {
+        case STEP_LOAD:
+            break;
+        case STEP_FILTER:
+            GtkWidget *image = NULL;
+            get_display(&image);
+            GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
+            GtkWidget *new_image = gtk_image_new_from_pixbuf(pixbuf);
+            get_display(&new_image);
+            break;
+        case STEP_EXTRACT:
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_RECONSTRUCT:
+            break;
+        case STEP_END:
+            //Hide and deactivate the button
+            gtk_widget_hide(next_btn);
+            break;
+        default:
+            errx(EXIT_FAILURE, "STEP is in incorrect form.");
+    }
+
+    //Advancing the current step
+    (*curr_step)++;
 }

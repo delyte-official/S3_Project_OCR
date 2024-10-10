@@ -15,29 +15,16 @@ void Standard_Signals(GtkWidget);
 void file_selector(GtkWidget*,GtkWidget*);
 */
 
-
-
-
-
-
-
-
-
-
-
 ////HEADERS Files
 //Integrated C Libraries
 #include <err.h>
 #include <stdio.h>
-
 //GTK Libraries
 #include <gtk/gtk.h>
-
 //Project Headers
-#include "../GTK/Interface_Manager.h"
+#include "Interface_Manager.h"
+#include "../Core_Manager.h"
 ////END HEADERS
-
-
 
 
 /*  Standard_Signals():
@@ -54,16 +41,15 @@ void Standard_Signals(GtkWidget *window) {
 }
 
 
-
 /*  file_selector():
     Opens a file selector dialog to choose an image for the project.
 */
-void file_selector(GtkWidget *button, GtkWidget *display_b) {
-    GtkWidget *dialog;
-    
+void file_selector(GtkWidget, gpointer) {
+    //Retrieve the display section
+    GtkWidget* display_b = get_display(NULL);
     //Creating the dialog window
-    dialog = gtk_file_chooser_dialog_new("Select Image",
-            GTK_WINDOW(gtk_widget_get_toplevel(button)),
+    GtkWidget* dialog = gtk_file_chooser_dialog_new("Select Image",
+            GTK_WINDOW(gtk_widget_get_toplevel(display_b)),
             GTK_FILE_CHOOSER_ACTION_OPEN,
             "_Cancel", GTK_RESPONSE_CANCEL,
             "_Open", GTK_RESPONSE_ACCEPT,
@@ -88,13 +74,11 @@ void file_selector(GtkWidget *button, GtkWidget *display_b) {
             pixbuf = resize_from_container(pixbuf,width, height, display_b);
             //Creating the image
             GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
-            //Clear the display section
-            GList *children = gtk_container_get_children(
-                    GTK_CONTAINER(display_b));
-            if (children)
-                gtk_widget_destroy(GTK_WIDGET(children->data));
-            //Display the image
-            gtk_box_pack_start(GTK_BOX(display_b), image, TRUE, TRUE, 0);
+            //Storing the pixbuf inside the image widget
+            g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
+            g_object_ref(pixbuf);
+            //Updating the display section
+            get_display(&image);
             gtk_widget_show(image);
 
             //Free ressourece

@@ -1,5 +1,4 @@
 /*
-
       ##############################################################
       #                                                            #
       #                  GTK_Interface_Manager.c                   #
@@ -8,7 +7,6 @@
       #  Offer easy access to widgets and redirects their events.  #
       #                                                            #
       ##############################################################
-
 
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
@@ -25,11 +23,10 @@ void Build_Interface(GtkWidget*);
 //Integrated C Libraries
 #include <stdlib.h>
 #include <stdio.h>
-
 //Project Headers
-#include "../Services/Events_Manager.h"
-#include "../Services/Debug.h"
-
+#include "Events_Manager.h"
+#include "../Debug.h"
+#include "../Core_Manager.h"
 //Tools
 #include <gtk/gtk.h>
 #include <pango/pango.h>
@@ -118,10 +115,20 @@ GdkPixbuf* resize_from_container(
 /* spacing_new():
     Returns a Label that acts as a spacing widget
 */
-GtkWidget* spacing_new(int horizontal) {
+GtkWidget* spacing_new(
+        int horizontal,
+        int vertical,
+        int expand_h,
+        int expand_v) {
     //Creating the horizontal spacing
     char space_horizontal[horizontal];
-    return gtk_label_new(space_horizontal);
+    for (int i = 0; i < horizontal; i++)
+        space_horizontal[i] = ' ';
+    GtkWidget* res = gtk_label_new(space_horizontal);
+    gtk_widget_set_vexpand(res, expand_v);
+    gtk_widget_set_hexpand(res, expand_h);
+    gtk_widget_set_size_request(res, -1, vertical);
+    return res;
 }
 
 
@@ -156,10 +163,11 @@ void Build_Interface(
     GtkWidget *display_b = auto_pack_box(GTK_ORIENTATION_HORIZONTAL,
             0, left_b, TRUE, TRUE, 0, -1, -1);
     change_widget_color(display_b, "#42f593");
+    ///Initializing the static getter of the Application's display section
+    get_display(&display_b);
     ///Button for image selector
     GtkWidget *select_btn = gtk_button_new_with_label("Select Image");
-    g_signal_connect(select_btn, "clicked", G_CALLBACK(file_selector),
-            display_b);
+    g_signal_connect(select_btn, "clicked", G_CALLBACK(file_selector), NULL);
     GtkWidget *center_b = center_new(select_btn);
     gtk_box_pack_start(GTK_BOX(display_b), center_b, TRUE, TRUE, 0);
 
@@ -173,15 +181,12 @@ void Build_Interface(
     gtk_box_pack_start(GTK_BOX(right_b), header_g, FALSE, FALSE, 0);
     gtk_widget_set_size_request(header_g, -1, height / 4);
     change_widget_color(header_g, "#f542ce");
-    //Button Control: Exit
-    GtkWidget *exit_btn = gtk_button_new_with_label("Exit");
-    gtk_grid_attach(GTK_GRID(header_g), exit_btn, 0, 0, 1, 1);
     //Space out the grid
-    gtk_grid_attach(GTK_GRID(header_g), spacing_new(), 1, 0, 2, 1);
-    //gtk_grid_attach(GTK_GRID(header_g), spacing_new(), 1, 0, 3, 1);
+    gtk_grid_attach(GTK_GRID(header_g),spacing_new(150, 140, 0, 0), 0, 0, 1, 1);
     //Button Control: Next
     GtkWidget *next_btn = gtk_button_new_with_label("Next Step");
     gtk_grid_attach(GTK_GRID(header_g), next_btn, 3, 1, 1, 1);
+    g_signal_connect(next_btn, "clicked", G_CALLBACK(NextStep), NULL);
     //Helper of vertical section
     GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, -1, height / 8);

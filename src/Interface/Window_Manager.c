@@ -1,5 +1,4 @@
 /*
-
       ##############################################################
       #                                                            #
       #                    GTK_Window_Manager.c                    #
@@ -9,7 +8,6 @@
       #                                                            #
       ##############################################################
 
-
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
@@ -17,25 +15,12 @@ GtkWidget *create_window();
 */
 
 
-
-
-
-
-
-
-
-
-
 ////HEADERS Files
 //Integrated C Libraries
 #include <err.h>
-
-//GTK Libraries
+//Tools
 #include <gtk/gtk.h>
-
 //Project Headers
-
-
 ////END HEADERS
 
 
