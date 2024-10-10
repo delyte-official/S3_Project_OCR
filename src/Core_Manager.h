@@ -1,21 +1,23 @@
 #ifndef CORE_MANAGER_H
 #define CORE_MANAGER_H
 
+#include <gtk/gtk.h>
+
 typedef enum {
-    STEP_START = 0,
-    STEP_LOAD = 1,
-    STEP_FILTER = 2,
-    STEP_EXTRACT = 3,
-    STEP_SOLVE = 4,
-    STEP_RECONSTRUCT = 5,
-    STEP_END = 6
+    STEP_LOAD = 0,
+    STEP_FILTER = 1,
+    STEP_EXTRACT = 2,
+    STEP_SOLVE = 3,
+    STEP_RECONSTRUCT = 4,
+    STEP_END = 5
 } STEP;
 
 STEP* get_step();
+GtkWidget* get_display(GtkWidget** widget);
 void Filter_Params(char** all_params, int len, char* *init_params,
         int *init_size, char* *gtk_params, int *gtk_size);
 void StartUp(char** gtk_params, int gtk_len,
         char** init_params, int init_len);
-void NextStep();
+void NextStep(GtkWidget* next_btn, gpointer);
 
 #endif

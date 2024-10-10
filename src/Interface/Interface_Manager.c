@@ -1,5 +1,4 @@
 /*
-
       ##############################################################
       #                                                            #
       #                  GTK_Interface_Manager.c                   #
@@ -8,7 +7,6 @@
       #  Offer easy access to widgets and redirects their events.  #
       #                                                            #
       ##############################################################
-
 
 List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
@@ -25,12 +23,10 @@ void Build_Interface(GtkWidget*);
 //Integrated C Libraries
 #include <stdlib.h>
 #include <stdio.h>
-
 //Project Headers
-#include "../Services/Events_Manager.h"
-#include "../Services/Debug.h"
+#include "Events_Manager.h"
+#include "../Debug.h"
 #include "../Core_Manager.h"
-
 //Tools
 #include <gtk/gtk.h>
 #include <pango/pango.h>
@@ -126,7 +122,7 @@ GtkWidget* spacing_new(
         int expand_v) {
     //Creating the horizontal spacing
     char space_horizontal[horizontal];
-    for (size_t i = 0; i < horizontal; i++)
+    for (int i = 0; i < horizontal; i++)
         space_horizontal[i] = ' ';
     GtkWidget* res = gtk_label_new(space_horizontal);
     gtk_widget_set_vexpand(res, expand_v);
@@ -167,10 +163,11 @@ void Build_Interface(
     GtkWidget *display_b = auto_pack_box(GTK_ORIENTATION_HORIZONTAL,
             0, left_b, TRUE, TRUE, 0, -1, -1);
     change_widget_color(display_b, "#42f593");
+    ///Initializing the static getter of the Application's display section
+    get_display(&display_b);
     ///Button for image selector
     GtkWidget *select_btn = gtk_button_new_with_label("Select Image");
-    g_signal_connect(select_btn, "clicked", G_CALLBACK(file_selector),
-            display_b);
+    g_signal_connect(select_btn, "clicked", G_CALLBACK(file_selector), NULL);
     GtkWidget *center_b = center_new(select_btn);
     gtk_box_pack_start(GTK_BOX(display_b), center_b, TRUE, TRUE, 0);
 
@@ -189,7 +186,7 @@ void Build_Interface(
     //Button Control: Next
     GtkWidget *next_btn = gtk_button_new_with_label("Next Step");
     gtk_grid_attach(GTK_GRID(header_g), next_btn, 3, 1, 1, 1);
-    g_signal_connect(next_btn, "clicked", G_CALLBACK(NextStep), get_step());
+    g_signal_connect(next_btn, "clicked", G_CALLBACK(NextStep), NULL);
     //Helper of vertical section
     GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, -1, height / 8);
