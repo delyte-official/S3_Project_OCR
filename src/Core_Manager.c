@@ -76,10 +76,24 @@ GtkWidget* get_display(GtkWidget** widget) {
                 gtk_widget_destroy(GTK_WIDGET(children->data));
             //Add the child
             gtk_box_pack_start(GTK_BOX(display), *widget, TRUE, TRUE, 0);
-            gtk_widget_show(*widget);
+            gtk_widget_show_all(*widget);
         }
     }
     return display;
+}
+
+
+/* step_widget():
+    Set the value of the widget associated with step
+    Returns the widget associated with the given step
+*/
+GtkWidget* step_widget(STEP step, GtkWidget* set) {
+    static GtkWidget* step_widgets[5] = {NULL};
+    if (set != NULL)
+        step_widgets[step] = set;
+    if (step < 0)
+        step_widgets[-1 * step -1] = NULL;
+    return step_widgets[step];
 }
 
 
@@ -189,16 +203,30 @@ void StartUp( //Parameters:
 /* NextStep():
     Performs the next operation of the OCR Word Search program.
 */
-void NextStep(GtkWidget* next_btn, gpointer) {
+void NextStep(GtkWidget* next_btn, int* show) {
+    //Changing visibility of widget
+    if (show != NULL) {
+        if (*show)
+            gtk_widget_show(next_btn);
+        else
+            gtk_widget_hide(next_btn);
+        return;
+    }
+
     STEP* curr_step = get_step();
     //Performing operation according to curr_step
     switch (*curr_step) {
         case STEP_LOAD:
+            if (!file_selector(NULL, NULL))
+                return;
+            GtkWidget* prev_btn;
+            get_controls(NULL, &prev_btn);
+            gtk_widget_show(prev_btn);
             break;
         case STEP_FILTER:
-            GtkWidget *image = NULL;
-            get_display(&image);
+            GtkWidget *image = step_widget(0, NULL);
             GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
+            //FOR FUTURE: MODIFY PIXBUF WITH FILTERING
             GtkWidget *new_image = gtk_image_new_from_pixbuf(pixbuf);
             get_display(&new_image);
             break;
@@ -207,8 +235,6 @@ void NextStep(GtkWidget* next_btn, gpointer) {
         case STEP_SOLVE:
             break;
         case STEP_RECONSTRUCT:
-            break;
-        case STEP_END:
             //Hide and deactivate the button
             gtk_widget_hide(next_btn);
             break;
@@ -218,4 +244,51 @@ void NextStep(GtkWidget* next_btn, gpointer) {
 
     //Advancing the current step
     (*curr_step)++;
+}
+
+
+/* PreviousStep():
+    Returns to the last step. DOES NOT CANCEL IT:
+    - History is kept
+    - All operations are kept
+    - Only display is changed to visualize a previous step
+*/
+void PreviousStep(GtkWidget* prev_btn, int* show) {
+    //Changing visibility of widget
+    if (show != NULL) {
+        if (*show)
+            gtk_widget_show(prev_btn);
+        else
+            gtk_widget_hide(prev_btn);
+        return;
+    }
+
+    STEP* curr_step = get_step();
+    //Performing operation according to curr_step
+    switch (*curr_step) {
+        case STEP_END:
+            //Show Next_Btn
+            GtkWidget* next_btn;
+            get_controls(&next_btn, NULL);
+            gtk_widget_show(next_btn);
+            break;
+        case STEP_RECONSTRUCT:
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_EXTRACT:
+            break;
+        case STEP_FILTER:
+            //Reshow select file button
+            GtkWidget* btn = new_select_image();
+            get_display(&btn);
+            //Hide button
+            gtk_widget_hide(prev_btn);
+            break;
+        default:
+            errx(EXIT_FAILURE, "STEP is in incorrect form.");
+    }
+
+    //Regressing the current step
+    (*curr_step)--;
 }

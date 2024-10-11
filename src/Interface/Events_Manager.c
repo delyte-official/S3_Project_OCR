@@ -41,52 +41,24 @@ void Standard_Signals(GtkWidget *window) {
 }
 
 
-/*  file_selector():
-    Opens a file selector dialog to choose an image for the project.
+/* _on_select_image_btn():
+    Handles the event of "clicked" from the select image button.
 */
-void file_selector(GtkWidget, gpointer) {
-    //Retrieve the display section
-    GtkWidget* display_b = get_display(NULL);
-    //Creating the dialog window
-    GtkWidget* dialog = gtk_file_chooser_dialog_new("Select Image",
-            GTK_WINDOW(gtk_widget_get_toplevel(display_b)),
-            GTK_FILE_CHOOSER_ACTION_OPEN,
-            "_Cancel", GTK_RESPONSE_CANCEL,
-            "_Open", GTK_RESPONSE_ACCEPT,
-            NULL);
-    //Only accepting images
-    GtkFileFilter *filter = gtk_file_filter_new();
-    gtk_file_filter_add_pixbuf_formats(filter);
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-
-    //Run the dialog
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-        //Get the selected image
-        char* filename = gtk_file_chooser_get_filename(
-                GTK_FILE_CHOOSER(dialog));
-        
-        //Load image
-        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
-        if (pixbuf != NULL) {
-            //Resizing the image to fit the display section
-            int width = gdk_pixbuf_get_width(pixbuf);
-            int height = gdk_pixbuf_get_height(pixbuf);
-            pixbuf = resize_from_container(pixbuf,width, height, display_b);
-            //Creating the image
-            GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
-            //Storing the pixbuf inside the image widget
-            g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
-            g_object_ref(pixbuf);
-            //Updating the display section
-            get_display(&image);
-            gtk_widget_show(image);
-
-            //Free ressourece
-            g_object_unref(pixbuf);
+void _on_select_image_btn(GtkWidget*, gpointer) {
+    GtkWidget* curr_widget = step_widget(0, NULL);
+    if (curr_widget == NULL) {
+        if (file_selector(NULL, NULL)) {
+            STEP* curr_step = get_step();
+            (*curr_step)++;
         }
-        g_free(filename);
+    } else if (1) {//Ask dialog to continue
+        if (file_selector(NULL, NULL)) {
+            //Reset work
+            for (int i = 1; i < 6; i++) {
+                step_widget(-i-1, NULL);
+            }
+            STEP* curr_step = get_step();
+            (*curr_step)++;
+        }
     }
-
-    //Closing dialog wether cancel or accepted
-    gtk_widget_destroy(dialog);
 }

@@ -4,6 +4,6 @@
 #include <gtk/gtk.h>
 
 void Standard_Signals(GtkWidget *window);
-void file_selector(GtkWidget*, gpointer);
+int _on_select_image_btn(GtkWidget*, gpointer);
 
 #endif
