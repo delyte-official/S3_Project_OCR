@@ -137,18 +137,6 @@ void get_controls(
 }
 
 
-/* new_select_image():
-    Creates and returns the button to select an image
-*/
-GtkWidget* new_select_image() {
-    GtkWidget *select_btn = gtk_button_new_with_label("Select Image");
-    g_signal_connect(select_btn, "clicked",
-            G_CALLBACK(_on_select_image_btn), NULL);
-    GtkWidget *center_b = center_new(select_btn);
-    return center_b;
-}
-
-
 /* Build_Interface():
     Creates every widget and the structure of the starting project menu.
     Creates every needed signals for the application to run properly.
@@ -183,8 +171,12 @@ void Build_Interface(
     ///Initializing the static getter of the Application's display section
     get_display(&display_b);
     ///Button for image selector
-    GtkWidget* select_btn = new_select_image();
-    get_display(&select_btn);
+    GtkWidget *select_btn = gtk_button_new_with_label("Select Image");
+    g_signal_connect(select_btn, "clicked",
+            G_CALLBACK(_on_select_image_btn), NULL);
+    GtkWidget *center_b = center_new(select_btn);
+    step_widget(0, center_b);
+    set_display(center_b);
 
     ////Right side containing the interface
     ///Vertical box for the right side
@@ -216,7 +208,7 @@ void Build_Interface(
     GtkWidget *prev_btn = gtk_button_new_with_label("Previous");
     gtk_box_pack_start(GTK_BOX(control_b), prev_btn, FALSE, FALSE, 0);
     gtk_widget_set_size_request(GTK_WIDGET(prev_btn), width / 16, -1);
-    g_signal_connect(prev_btn, "clicked", G_CALLBACK(PreviousStep), NULL);
+    g_signal_connect(prev_btn, "clicked", G_CALLBACK(ShowPrevious), NULL);
     //Updating controls pointers
     get_controls(&next_btn, &prev_btn);
 
@@ -271,13 +263,7 @@ int file_selector(GtkWidget, gpointer) {
             g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
             g_object_ref(pixbuf);
             //Saving that widget as a STEP WIDGET
-            step_widget(0, image);
-            //Updating the display section
-            get_display(&image);
-            gtk_widget_show(image);
-
-            //Free ressourece
-            g_object_unref(pixbuf);
+            step_widget(1, image);
         }
         g_free(filename);
     }

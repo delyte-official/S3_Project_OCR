@@ -6,7 +6,6 @@ GdkPixbuf* resize(GdkPixbuf* pixbuf, int origin_w, int origin_h,
 GdkPixbuf* resize_from_container(GdkPixbuf* pixbuf, int origin_w,
         int origin_h, GtkWidget *container);
 void get_controls(GtkWidget** next, GtkWidget** prev);
-GtkWidget* new_select_image();
 void Build_Interface(GtkWidget *window, int width, int height, char* title);
 int file_selector();
 

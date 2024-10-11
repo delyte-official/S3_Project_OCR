@@ -29,11 +29,6 @@ void file_selector(GtkWidget*,GtkWidget*);
 
 /*  Standard_Signals():
   Links all events and signals to their designated functions.
-
-Requisites assumed:
-  It must be the first and last time that this function is called.
-  Other intermediate event/signal linkage must be done through
-  another function or canal.
 */
 void Standard_Signals(GtkWidget *window) {
     //Closing window closes the program
@@ -45,18 +40,16 @@ void Standard_Signals(GtkWidget *window) {
     Handles the event of "clicked" from the select image button.
 */
 void _on_select_image_btn(GtkWidget*, gpointer) {
-    GtkWidget* curr_widget = step_widget(0, NULL);
+    GtkWidget* curr_widget = step_widget(1, NULL);
     if (curr_widget == NULL) {
-        if (file_selector(NULL, NULL)) {
-            STEP* curr_step = get_step();
-            (*curr_step)++;
-        }
+        NextStep(NULL, NULL);
     } else if (1) {//Ask dialog to continue
         if (file_selector(NULL, NULL)) {
             //Reset work
-            for (int i = 1; i < 6; i++) {
-                step_widget(-i-1, NULL);
+            for (int i = -2; i > -6; i--) {
+                step_widget(i, NULL);
             }
+            ShowNext();
             STEP* curr_step = get_step();
             (*curr_step)++;
         }

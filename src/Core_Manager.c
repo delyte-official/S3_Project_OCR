@@ -12,11 +12,14 @@ List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
 STEP* get_step();
-GtkWidget* get_display(GtkWidget*);
+GtkWidget* get_display(GtkWidget**);
+void set_display(GtkWidget*);
+GtkWidget* step_widget(int step, GtkWidget* widget);
 int recognized(char**,size_t,char*);
 void Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
 void StartUp(char**,size_t,char**,size_t);
-void NextStep(GtkWidget,void*);
+void NextStep(GtkWidget,int);
+void PreviousStep(GtkWidget,int);
 */
 
 
@@ -52,34 +55,36 @@ STEP* get_step() {
 
 
 /* get_display():
-    Returns the the display section of the Application.
-    If first time called:
-        - initialize the display box through the pointer "widget"
-    else, widget is considered to be pointing towards the child of display:
-        If widget is NULL:
-           - returns through the pointer the child of display
-        else:
-           - clear the child of display and replace it by "*widget".
+    Returns the the display section and its child thru the pointer
+    Initialize on first call.
 */
 GtkWidget* get_display(GtkWidget** widget) {
     static GtkWidget* display;
     if (display==NULL)
         display = *widget;
-    else if (widget != NULL) {
+    if (widget != NULL) {
         GList *children = gtk_container_get_children(GTK_CONTAINER(display));
-        if (*widget == NULL) {
-            if (children)
-                *widget = GTK_WIDGET(children->data);
-        } else {
-            //Clear children
-            if (children)
-                gtk_widget_destroy(GTK_WIDGET(children->data));
-            //Add the child
-            gtk_box_pack_start(GTK_BOX(display), *widget, TRUE, TRUE, 0);
-            gtk_widget_show_all(*widget);
-        }
+        if (children)
+            *widget = GTK_WIDGET(children->data);
     }
     return display;
+}
+
+
+/* set_display():
+    Change the child of the display section or clear it
+*/
+void set_display(GtkWidget* widget) {
+    GtkWidget* display = get_display(NULL);
+    GList *children = gtk_container_get_children(GTK_CONTAINER(display));
+    if (children) {
+        g_object_ref(children->data);
+        gtk_container_remove(GTK_CONTAINER(display), children->data);
+    }
+    if (widget != NULL) {
+       gtk_box_pack_start(GTK_BOX(display), widget, TRUE, TRUE, 0);
+       gtk_widget_show_all(widget);
+    }
 }
 
 
@@ -87,12 +92,16 @@ GtkWidget* get_display(GtkWidget** widget) {
     Set the value of the widget associated with step
     Returns the widget associated with the given step
 */
-GtkWidget* step_widget(STEP step, GtkWidget* set) {
-    static GtkWidget* step_widgets[5] = {NULL};
-    if (set != NULL)
+GtkWidget* step_widget(int step, GtkWidget* set) {
+    static GtkWidget* step_widgets[6] = {NULL};
+    if (step < 0) {
+        int new_step = step * (-1);
+        if (step_widgets[new_step] != NULL) {
+            gtk_widget_destroy(step_widgets[new_step]);
+            step_widgets[new_step] = NULL;
+        }
+    } else if (set != NULL)
         step_widgets[step] = set;
-    if (step < 0)
-        step_widgets[-1 * step -1] = NULL;
     return step_widgets[step];
 }
 
@@ -200,6 +209,36 @@ void StartUp( //Parameters:
 }
 
 
+/* ShowNext():
+    Show the next operation that has already been done.
+*/
+void ShowNext() {
+    STEP* curr_step = get_step();
+
+    switch (*curr_step) {
+        case STEP_LOAD:
+            //Grab the image to display
+            GtkWidget *image = step_widget(1, NULL);
+            set_display(image);
+            
+            GtkWidget* prev_btn;
+            get_controls(NULL, &prev_btn);
+            gtk_widget_show(prev_btn);
+            break;
+        case STEP_FILTER:
+            break;
+        case STEP_EXTRACT:
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_RECONSTRUCT:
+            break;
+        default:
+            errx(EXIT_FAILURE, "STEP is in incorrect format.");
+    }
+}
+
+
 /* NextStep():
     Performs the next operation of the OCR Word Search program.
 */
@@ -214,14 +253,18 @@ void NextStep(GtkWidget* next_btn, int* show) {
     }
 
     STEP* curr_step = get_step();
+    if (step_widget(*curr_step + 1, NULL) != NULL) {
+        ShowNext();
+        (*curr_step)++; //Readjusting the current step
+        return;
+    }
+
     //Performing operation according to curr_step
     switch (*curr_step) {
         case STEP_LOAD:
             if (!file_selector(NULL, NULL))
                 return;
-            GtkWidget* prev_btn;
-            get_controls(NULL, &prev_btn);
-            gtk_widget_show(prev_btn);
+            ShowNext();
             break;
         case STEP_FILTER:
             GtkWidget *image = step_widget(0, NULL);
@@ -239,7 +282,7 @@ void NextStep(GtkWidget* next_btn, int* show) {
             gtk_widget_hide(next_btn);
             break;
         default:
-            errx(EXIT_FAILURE, "STEP is in incorrect form.");
+            errx(EXIT_FAILURE, "STEP is in incorrect format.");
     }
 
     //Advancing the current step
@@ -247,13 +290,13 @@ void NextStep(GtkWidget* next_btn, int* show) {
 }
 
 
-/* PreviousStep():
+/* ShowPrevious():
     Returns to the last step. DOES NOT CANCEL IT:
     - History is kept
     - All operations are kept
     - Only display is changed to visualize a previous step
 */
-void PreviousStep(GtkWidget* prev_btn, int* show) {
+void ShowPrevious(GtkWidget* prev_btn, int* show) {
     //Changing visibility of widget
     if (show != NULL) {
         if (*show)
@@ -280,8 +323,8 @@ void PreviousStep(GtkWidget* prev_btn, int* show) {
             break;
         case STEP_FILTER:
             //Reshow select file button
-            GtkWidget* btn = new_select_image();
-            get_display(&btn);
+            GtkWidget* btn = step_widget(0, NULL);
+            set_display(btn);
             //Hide button
             gtk_widget_hide(prev_btn);
             break;
