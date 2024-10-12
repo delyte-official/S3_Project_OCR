@@ -122,18 +122,15 @@ GdkPixbuf* resize_from_container(
     Returns pointers to the control buttons.
 */
 void get_controls(
-        GtkWidget** next,
-        GtkWidget** prev) {
-    static GtkWidget* next_btn = NULL;
-    static GtkWidget* prev_btn = NULL;
-    if (next_btn == NULL)
-        next_btn = *next;
-    if (prev_btn == NULL)
-        prev_btn = *prev;
-    if (next != NULL)
-        *next = next_btn;
-    if (prev != NULL)
-        *prev = prev_btn;
+        int place,
+        GtkWidget** widget) {
+    //0: Prev    //2: Auto
+    //1: Next    //3: Save
+    static GtkWidget* controls[3] = {NULL};
+    if (controls[place] == NULL)
+        controls[place] = *widget;
+    if (widget != NULL)
+        *widget = controls[place];
 }
 
 
@@ -204,13 +201,23 @@ void Build_Interface(
     gtk_box_pack_end(GTK_BOX(control_b), next_btn, FALSE, FALSE, 0);
     gtk_widget_set_size_request(GTK_WIDGET(next_btn), width / 16, -1);
     g_signal_connect(next_btn, "clicked", G_CALLBACK(NextStep), NULL);
+    get_controls(1, &next_btn);
     //Button Control: Prev
     GtkWidget *prev_btn = gtk_button_new_with_label("Previous");
     gtk_box_pack_start(GTK_BOX(control_b), prev_btn, FALSE, FALSE, 0);
     gtk_widget_set_size_request(GTK_WIDGET(prev_btn), width / 16, -1);
     g_signal_connect(prev_btn, "clicked", G_CALLBACK(ShowPrevious), NULL);
-    //Updating controls pointers
-    get_controls(&next_btn, &prev_btn);
+    get_controls(0, &prev_btn);
+    gtk_widget_set_sensitive(prev_btn, FALSE);
+    //Spacing
+    auto_pack_box(GTK_ORIENTATION_VERTICAL, 0, control_b, FALSE, FALSE, 0,
+            TRUE, width / 16, -1);
+    //Button Control: Auto
+    GtkWidget *auto_btn = gtk_button_new_with_label("Auto");
+    gtk_box_pack_start(GTK_BOX(control_b), auto_btn, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(GTK_WIDGET(auto_btn), width / 16, -1);
+    g_signal_connect(auto_btn, "clicked", G_CALLBACK(_on_auto_btn), NULL);
+    get_controls(2, &auto_btn);
 
     //Helper of vertical section
     GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
@@ -219,9 +226,6 @@ void Build_Interface(
 
     ////Show all the created widgets
     gtk_widget_show_all(window);
-
-    //Hide some widgets
-    gtk_widget_hide(prev_btn);
 }
 
 

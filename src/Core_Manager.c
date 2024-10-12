@@ -214,7 +214,6 @@ void StartUp( //Parameters:
 */
 void ShowNext() {
     STEP* curr_step = get_step();
-
     switch (*curr_step) {
         case STEP_LOAD:
             //Grab the image to display
@@ -222,8 +221,8 @@ void ShowNext() {
             set_display(image);
             
             GtkWidget* prev_btn;
-            get_controls(NULL, &prev_btn);
-            gtk_widget_show(prev_btn);
+            get_controls(0, &prev_btn);
+            gtk_widget_set_sensitive(prev_btn, TRUE);
             break;
         case STEP_FILTER:
             break;
@@ -232,6 +231,12 @@ void ShowNext() {
         case STEP_SOLVE:
             break;
         case STEP_RECONSTRUCT:
+            GtkWidget* next_btn;
+            get_controls(1, &next_btn);
+            gtk_widget_set_sensitive(next_btn, FALSE);
+            GtkWidget* auto_btn;
+            get_controls(2, &auto_btn);
+            gtk_widget_set_sensitive(auto_btn, FALSE);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect format.");
@@ -241,29 +246,21 @@ void ShowNext() {
 
 /* NextStep():
     Performs the next operation of the OCR Word Search program.
+    Returns true if operation succeeded.
 */
-void NextStep(GtkWidget* next_btn, int* show) {
-    //Changing visibility of widget
-    if (show != NULL) {
-        if (*show)
-            gtk_widget_show(next_btn);
-        else
-            gtk_widget_hide(next_btn);
-        return;
-    }
-
+int NextStep(GtkWidget*, gpointer) {
     STEP* curr_step = get_step();
     if (step_widget(*curr_step + 1, NULL) != NULL) {
         ShowNext();
         (*curr_step)++; //Readjusting the current step
-        return;
+        return !EXIT_SUCCESS;
     }
 
     //Performing operation according to curr_step
     switch (*curr_step) {
         case STEP_LOAD:
             if (!file_selector(NULL, NULL))
-                return;
+                return !EXIT_FAILURE;
             ShowNext();
             break;
         case STEP_FILTER:
@@ -278,15 +275,14 @@ void NextStep(GtkWidget* next_btn, int* show) {
         case STEP_SOLVE:
             break;
         case STEP_RECONSTRUCT:
-            //Hide and deactivate the button
-            gtk_widget_hide(next_btn);
+            ShowNext();
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect format.");
     }
-
     //Advancing the current step
     (*curr_step)++;
+    return !EXIT_SUCCESS;
 }
 
 
@@ -296,24 +292,18 @@ void NextStep(GtkWidget* next_btn, int* show) {
     - All operations are kept
     - Only display is changed to visualize a previous step
 */
-void ShowPrevious(GtkWidget* prev_btn, int* show) {
-    //Changing visibility of widget
-    if (show != NULL) {
-        if (*show)
-            gtk_widget_show(prev_btn);
-        else
-            gtk_widget_hide(prev_btn);
-        return;
-    }
-
+void ShowPrevious(GtkWidget*, gpointer) {
     STEP* curr_step = get_step();
     //Performing operation according to curr_step
     switch (*curr_step) {
         case STEP_END:
-            //Show Next_Btn
+            //Activate control buttons
             GtkWidget* next_btn;
-            get_controls(&next_btn, NULL);
-            gtk_widget_show(next_btn);
+            get_controls(1, &next_btn);
+            gtk_widget_set_sensitive(next_btn, TRUE);
+            GtkWidget* auto_btn;
+            get_controls(2, &auto_btn);
+            gtk_widget_set_sensitive(auto_btn, TRUE);
             break;
         case STEP_RECONSTRUCT:
             break;
@@ -325,8 +315,10 @@ void ShowPrevious(GtkWidget* prev_btn, int* show) {
             //Reshow select file button
             GtkWidget* btn = step_widget(0, NULL);
             set_display(btn);
-            //Hide button
-            gtk_widget_hide(prev_btn);
+            //Deactivate button
+            GtkWidget* prev_btn;
+            get_controls(0, &prev_btn);
+            gtk_widget_set_sensitive(prev_btn, FALSE);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");

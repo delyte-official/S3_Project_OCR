@@ -55,3 +55,15 @@ void _on_select_image_btn(GtkWidget*, gpointer) {
         }
     }
 }
+
+
+/**/
+void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
+    STEP* curr_step = get_step();
+    //Perform every step
+    for (int i = *curr_step; i < 5; i++) {
+        if (!NextStep(NULL, NULL))
+            return; //Error, stop
+    }
+    gtk_widget_set_sensitive(auto_btn, FALSE);
+}

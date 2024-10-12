@@ -21,7 +21,7 @@ void Filter_Params(char** all_params, int len, char* *init_params,
 void StartUp(char** gtk_params, int gtk_len,
         char** init_params, int init_len);
 void ShowNext();
-void NextStep(GtkWidget* next_btn, int* show);
-void ShowPrevious(GtkWidget* prev_btn, int* show);
+int NextStep(GtkWidget*, gpointer);
+void ShowPrevious(GtkWidget*, gpointer);
 
 #endif
