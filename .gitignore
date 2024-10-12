@@ -1,6 +1,7 @@
 #Custom Ignored Files
 main
 src/solver
+.vscode/
 
 # Prerequisites
 *.d
