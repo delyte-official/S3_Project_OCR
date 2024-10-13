@@ -12,7 +12,9 @@ List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
 void Standard_Signals(GtkWidget);
-void file_selector(GtkWidget*,GtkWidget*);
+void _on_select_image_btn(GtkWidget*, gpointer);
+void _on_auto_btn(GtkWidget*, gpointer);
+void _on_save_btn(GtkWidget*, gpointer);
 */
 
 ////HEADERS Files
@@ -57,7 +59,9 @@ void _on_select_image_btn(GtkWidget*, gpointer) {
 }
 
 
-/**/
+/* _on_auto_btn():
+    Handles the event of "clicked" from the auto complete button.
+*/
 void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
     STEP* curr_step = get_step();
     //Perform every step
@@ -66,4 +70,32 @@ void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
             return; //Error, stop
     }
     gtk_widget_set_sensitive(auto_btn, FALSE);
+}
+
+
+/* _on_save_btn():
+    Handles the event of "clicked" from the save step button.
+*/
+void _on_save_btn(GtkWidget*, gpointer) {
+    STEP* curr_step = get_step();
+    switch (*curr_step) {
+        case STEP_FILTER:
+            GtkWidget *image1 = step_widget(1, NULL);
+            GdkPixbuf *pixbuf1 = g_object_get_data(G_OBJECT(image1), "pixbuf");
+            file_save(&pixbuf1, EXT_PNG);
+            break;
+        case STEP_EXTRACT:
+            GtkWidget *image2= step_widget(2, NULL);
+            GdkPixbuf *pixbuf2 = g_object_get_data(G_OBJECT(image2), "pixbuf");
+            file_save(&pixbuf2, EXT_PNG);
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_RECONSTRUCT:
+            break;
+        case STEP_END:
+            break;
+        default: //Nothing to save
+            return;
+    }
 }

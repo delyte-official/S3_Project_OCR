@@ -217,26 +217,30 @@ void ShowNext() {
     switch (*curr_step) {
         case STEP_LOAD:
             //Grab the image to display
-            GtkWidget *image = step_widget(1, NULL);
-            set_display(image);
+            GtkWidget *image1 = step_widget(1, NULL);
+            set_display(image1);
             
-            GtkWidget* prev_btn;
-            get_controls(0, &prev_btn);
-            gtk_widget_set_sensitive(prev_btn, TRUE);
+            GtkWidget* control03_btn;
+            get_controls(0, &control03_btn);
+            gtk_widget_set_sensitive(control03_btn, TRUE);
+            get_controls(3, &control03_btn);
+            gtk_widget_set_sensitive(control03_btn, TRUE);
             break;
         case STEP_FILTER:
+            //Grab the image to display
+            GtkWidget *image2 = step_widget(2, NULL);
+            set_display(image2);
             break;
         case STEP_EXTRACT:
             break;
         case STEP_SOLVE:
             break;
         case STEP_RECONSTRUCT:
-            GtkWidget* next_btn;
-            get_controls(1, &next_btn);
-            gtk_widget_set_sensitive(next_btn, FALSE);
-            GtkWidget* auto_btn;
-            get_controls(2, &auto_btn);
-            gtk_widget_set_sensitive(auto_btn, FALSE);
+            GtkWidget* control12_btn;
+            get_controls(1, &control12_btn);
+            gtk_widget_set_sensitive(control12_btn, FALSE);
+            get_controls(2, &control12_btn);
+            gtk_widget_set_sensitive(control12_btn, FALSE);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect format.");
@@ -264,11 +268,16 @@ int NextStep(GtkWidget*, gpointer) {
             ShowNext();
             break;
         case STEP_FILTER:
-            GtkWidget *image = step_widget(0, NULL);
+            GtkWidget *image = step_widget(1, NULL);
             GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
             //FOR FUTURE: MODIFY PIXBUF WITH FILTERING
-            GtkWidget *new_image = gtk_image_new_from_pixbuf(pixbuf);
-            get_display(&new_image);
+            GdkPixbuf *new_pixbuf = gdk_pixbuf_copy(pixbuf);
+            GtkWidget *new_image = gtk_image_new_from_pixbuf(new_pixbuf);
+            g_object_ref(new_pixbuf);
+            g_object_set_data(G_OBJECT(new_image), "pixbuf", new_pixbuf);
+            step_widget(2, new_image);
+            //TO PLACE IN ZYPAW FUNCTION (whats between comments)
+            ShowNext();
             break;
         case STEP_EXTRACT:
             break;
@@ -298,12 +307,11 @@ void ShowPrevious(GtkWidget*, gpointer) {
     switch (*curr_step) {
         case STEP_END:
             //Activate control buttons
-            GtkWidget* next_btn;
-            get_controls(1, &next_btn);
-            gtk_widget_set_sensitive(next_btn, TRUE);
-            GtkWidget* auto_btn;
-            get_controls(2, &auto_btn);
-            gtk_widget_set_sensitive(auto_btn, TRUE);
+            GtkWidget* control12_btn;
+            get_controls(1, &control12_btn);
+            gtk_widget_set_sensitive(control12_btn, TRUE);
+            get_controls(2, &control12_btn);
+            gtk_widget_set_sensitive(control12_btn, TRUE);
             break;
         case STEP_RECONSTRUCT:
             break;
@@ -316,9 +324,11 @@ void ShowPrevious(GtkWidget*, gpointer) {
             GtkWidget* btn = step_widget(0, NULL);
             set_display(btn);
             //Deactivate button
-            GtkWidget* prev_btn;
-            get_controls(0, &prev_btn);
-            gtk_widget_set_sensitive(prev_btn, FALSE);
+            GtkWidget* control03_btn;
+            get_controls(0, &control03_btn);
+            gtk_widget_set_sensitive(control03_btn, FALSE);
+            get_controls(3, &control03_btn);
+            gtk_widget_set_sensitive(control03_btn, FALSE);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");

@@ -6,5 +6,6 @@
 void Standard_Signals(GtkWidget *window);
 int _on_select_image_btn(GtkWidget*, gpointer);
 void _on_auto_btn(GtkWidget* auto_btn, gpointer);
+void _on_save_btn(GtkWidget*, gpointer);
 
 #endif
