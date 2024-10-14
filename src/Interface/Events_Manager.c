@@ -12,7 +12,9 @@ List of all functions written in this file (and their type):
 [See more description on their purpose and parameters down below]
 
 void Standard_Signals(GtkWidget);
-void file_selector(GtkWidget*,GtkWidget*);
+void _on_select_image_btn(GtkWidget*, gpointer);
+void _on_auto_btn(GtkWidget*, gpointer);
+void _on_save_btn(GtkWidget*, gpointer);
 */
 
 ////HEADERS Files
@@ -29,11 +31,6 @@ void file_selector(GtkWidget*,GtkWidget*);
 
 /*  Standard_Signals():
   Links all events and signals to their designated functions.
-
-Requisites assumed:
-  It must be the first and last time that this function is called.
-  Other intermediate event/signal linkage must be done through
-  another function or canal.
 */
 void Standard_Signals(GtkWidget *window) {
     //Closing window closes the program
@@ -41,52 +38,64 @@ void Standard_Signals(GtkWidget *window) {
 }
 
 
-/*  file_selector():
-    Opens a file selector dialog to choose an image for the project.
+/* _on_select_image_btn():
+    Handles the event of "clicked" from the select image button.
 */
-void file_selector(GtkWidget, gpointer) {
-    //Retrieve the display section
-    GtkWidget* display_b = get_display(NULL);
-    //Creating the dialog window
-    GtkWidget* dialog = gtk_file_chooser_dialog_new("Select Image",
-            GTK_WINDOW(gtk_widget_get_toplevel(display_b)),
-            GTK_FILE_CHOOSER_ACTION_OPEN,
-            "_Cancel", GTK_RESPONSE_CANCEL,
-            "_Open", GTK_RESPONSE_ACCEPT,
-            NULL);
-    //Only accepting images
-    GtkFileFilter *filter = gtk_file_filter_new();
-    gtk_file_filter_add_pixbuf_formats(filter);
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-
-    //Run the dialog
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-        //Get the selected image
-        char* filename = gtk_file_chooser_get_filename(
-                GTK_FILE_CHOOSER(dialog));
-        
-        //Load image
-        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
-        if (pixbuf != NULL) {
-            //Resizing the image to fit the display section
-            int width = gdk_pixbuf_get_width(pixbuf);
-            int height = gdk_pixbuf_get_height(pixbuf);
-            pixbuf = resize_from_container(pixbuf,width, height, display_b);
-            //Creating the image
-            GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
-            //Storing the pixbuf inside the image widget
-            g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
-            g_object_ref(pixbuf);
-            //Updating the display section
-            get_display(&image);
-            gtk_widget_show(image);
-
-            //Free ressourece
-            g_object_unref(pixbuf);
+void _on_select_image_btn(GtkWidget*, gpointer) {
+    GtkWidget* curr_widget = step_widget(1, NULL);
+    if (curr_widget == NULL) {
+        NextStep(NULL, NULL);
+    } else if (1) {//Ask dialog to continue
+        if (file_selector(NULL, NULL)) {
+            //Reset work
+            for (int i = -2; i > -6; i--) {
+                step_widget(i, NULL);
+            }
+            ShowNext();
+            STEP* curr_step = get_step();
+            (*curr_step)++;
         }
-        g_free(filename);
     }
+}
 
-    //Closing dialog wether cancel or accepted
-    gtk_widget_destroy(dialog);
+
+/* _on_auto_btn():
+    Handles the event of "clicked" from the auto complete button.
+*/
+void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
+    STEP* curr_step = get_step();
+    //Perform every step
+    for (int i = *curr_step; i < 5; i++) {
+        if (!NextStep(NULL, NULL))
+            return; //Error, stop
+    }
+    gtk_widget_set_sensitive(auto_btn, FALSE);
+}
+
+
+/* _on_save_btn():
+    Handles the event of "clicked" from the save step button.
+*/
+void _on_save_btn(GtkWidget*, gpointer) {
+    STEP* curr_step = get_step();
+    switch (*curr_step) {
+        case STEP_FILTER:
+            GtkWidget *image1 = step_widget(1, NULL);
+            GdkPixbuf *pixbuf1 = g_object_get_data(G_OBJECT(image1), "pixbuf");
+            file_save(&pixbuf1, EXT_PNG);
+            break;
+        case STEP_EXTRACT:
+            GtkWidget *image2= step_widget(2, NULL);
+            GdkPixbuf *pixbuf2 = g_object_get_data(G_OBJECT(image2), "pixbuf");
+            file_save(&pixbuf2, EXT_PNG);
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_RECONSTRUCT:
+            break;
+        case STEP_END:
+            break;
+        default: //Nothing to save
+            return;
+    }
 }
