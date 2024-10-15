@@ -29,9 +29,9 @@ void PreviousStep(GtkWidget,int);
 #include <stdio.h>
 #include <err.h>
 //Project Headers
-#include "Interface/Window_Manager.h"
+#include "Interface/GTK_Window.h"
 #include "Interface/Interface_Manager.h"
-#include "Interface/Events_Manager.h"
+#include "Interface/Events.h"
 #include "Debug.h"
 #include "Core_Manager.h"
 //Tools

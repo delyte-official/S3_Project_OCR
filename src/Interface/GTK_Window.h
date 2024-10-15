@@ -1,5 +1,5 @@
-#ifndef WINDOW_MANAGER_H
-#define WINDOW_MANAGER_H
+#ifndef GTK_WINDOW_H
+#define GTK_WINDOW_H
 
 #include <gtk/gtk.h>
 
