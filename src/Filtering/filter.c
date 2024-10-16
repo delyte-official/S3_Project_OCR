@@ -4,82 +4,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-// Function to apply a simple box blur (approximate Gaussian blur)
-void gaussian_blur(guchar *pixels, int width, int height, int rowstride, int n_channels, int kernel_size) {
-    int half_kernel = kernel_size / 2;
-    guchar *copy = malloc(width * height * n_channels);
-    memcpy(copy, pixels, width * height * n_channels);
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int r_sum = 0, g_sum = 0, b_sum = 0;
-            int count = 0;
-
-            for (int ky = -half_kernel; ky <= half_kernel; ky++) {
-                for (int kx = -half_kernel; kx <= half_kernel; kx++) {
-                    int nx = x + kx;
-                    int ny = y + ky;
-
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                        guchar *p = copy + ny * rowstride + nx * n_channels;
-                        r_sum += p[0];
-                        g_sum += p[1];
-                        b_sum += p[2];
-                        count++;
-                    }
-                }
-            }
-
-            guchar *p = pixels + y * rowstride + x * n_channels;
-            p[0] = r_sum / count;
-            p[1] = g_sum / count;
-            p[2] = b_sum / count;
-        }
-    }
-
-    free(copy);
-}
-
-// Function to apply a median filter
-void median_filter(guchar *pixels, int width, int height, int rowstride, int n_channels, int kernel_size) {
-    int half_kernel = kernel_size / 2;
-    guchar *copy = malloc(width * height * n_channels);
-    memcpy(copy, pixels, width * height * n_channels);
-
-    int window_size = kernel_size * kernel_size;
-    guchar *window = malloc(window_size);
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int r_count = 0, g_count = 0, b_count = 0;
-
-            for (int ky = -half_kernel; ky <= half_kernel; ky++) {
-                for (int kx = -half_kernel; kx <= half_kernel; kx++) {
-                    int nx = x + kx;
-                    int ny = y + ky;
-
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                        guchar *p = copy + ny * rowstride + nx * n_channels;
-                        window[r_count++] = p[0];
-                        window[g_count++] = p[1];
-                        window[b_count++] = p[2];
-                    }
-                }
-            }
-
-            // Find the median for each color channel
-            qsort(window, r_count, sizeof(guchar), (int(*)(const void*, const void*))strcmp);
-            guchar *p = pixels + y * rowstride + x * n_channels;
-            p[0] = window[r_count / 2];
-            p[1] = window[g_count / 2];
-            p[2] = window[b_count / 2];
-        }
-    }
-
-    free(copy);
-    free(window);
-}
-
 // Function to calculate the local mean and standard deviation for Sauvola's method
 void calculate_local_mean_and_std(guchar *pixels, int width, int height, int rowstride, int n_channels, int window_size, guchar *mean, guchar *std) {
     int half_window = window_size / 2;
@@ -173,13 +97,12 @@ void sauvola_thresholding(guchar *pixels, int width, int height, int rowstride, 
     free(std);
 }
 
-GdkPixbuf main(int argc, char *argv[]) {
+GdkPixbuf *get_pixbuf(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
 
     // Check if the user provided the correct number of arguments
-    if (argc < 5) {
-        fprintf(stderr, "Usage: %s <image_path> <window_size> <k_value> <filter_type> <filter_kernel_size>\n", argv[0]);
-        fprintf(stderr, "Filter types: gaussian, median\n");
+    if (argc < 4) {
+        fprintf(stderr, "Usage: %s <image_path> <window_size> <k_value>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -187,7 +110,6 @@ GdkPixbuf main(int argc, char *argv[]) {
     const char *image_path = argv[1];
     int window_size = atoi(argv[2]);
     double k = atof(argv[3]);
-    const char *filter_type = argv[4];
 
     // Validate the input parameters
     if (window_size <= 0) {
@@ -198,10 +120,6 @@ GdkPixbuf main(int argc, char *argv[]) {
         fprintf(stderr, "k value must be between 0.0 and 1.0.\n");
         return EXIT_FAILURE;
     }
-    // if (filter_kernel_size <= 0) {
-    //     fprintf(stderr, "Filter kernel size must be a positive integer.\n");
-    //     return EXIT_FAILURE;
-    // }
 
     // Load the image using GdkPixbuf from the specified file path
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(image_path, NULL);
@@ -217,24 +135,19 @@ GdkPixbuf main(int argc, char *argv[]) {
     int n_channels = gdk_pixbuf_get_n_channels(pixbuf);
     guchar *pixels = gdk_pixbuf_get_pixels(pixbuf);
 
+    // Apply Sauvola's thresholding with the specified parameters
     sauvola_thresholding(pixels, width, height, rowstride, n_channels, window_size, k);
-    // Apply the chosen noise reduction filter
-    if (strcmp(filter_type, "gaussian") == 0) {
-        int filter_kernel_size = atoi(argv[5]);
-        gaussian_blur(pixels, width, height, rowstride, n_channels, filter_kernel_size);
-    } else if (strcmp(filter_type, "median") == 0) {
-        int filter_kernel_size = atoi(argv[5]);
-        median_filter(pixels, width, height, rowstride, n_channels, filter_kernel_size);
-    } else if (strcmp(filter_type, "none") == 0) {
-        
-    }
-    else {
-        fprintf(stderr, "Unknown filter type: %s. Use 'gaussian' or 'median'.\n", filter_type);
+
+    return pixbuf;
+}
+
+int main(int argc, char *argv[]) {
+    // Get the processed pixbuf using Sauvola's thresholding
+    GdkPixbuf *pixbuf = get_pixbuf(argc, argv);
+
+    if (pixbuf == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
-
-    // Apply Sauvola's thresholding with the specified parameters
-
 
     // Save the modified image to a file named "output.png"
     gdk_pixbuf_save(pixbuf, "output.png", "png", NULL, "quality", "100", NULL);
@@ -244,6 +157,5 @@ GdkPixbuf main(int argc, char *argv[]) {
 
     printf("Processing complete. Output saved to output.png\n");
 
-    return pixbuf;
-    // return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

@@ -15,7 +15,10 @@ GtkWidget* auto_pack_box(GtkOrientation,int,GtkWidget*,int,int,int,int,int);
 GtkWidget* center_new(GtkWidget*);
 GdkPixbuf* resize(GdkPixbuf*,int,int,int,int);
 GdkPixbuf* resize_from_container(GdkPixbuf*,int,int,GtkWidget*);
+void get_controls(int,GtkWidget**);
 void Build_Interface(GtkWidget*);
+int file_selector();
+int file_save();
 */
 
 
@@ -27,6 +30,7 @@ void Build_Interface(GtkWidget*);
 #include "Events_Manager.h"
 #include "../Debug.h"
 #include "../Core_Manager.h"
+#include "Interface_Manager.h"
 //Tools
 #include <gtk/gtk.h>
 #include <pango/pango.h>
@@ -44,12 +48,18 @@ GtkWidget* auto_pack_box(
         int expand,
         int fill,
         int extra_padd,
+        int origin,
         int width_req,
         int height_req) {
     //Creating the box
     GtkWidget *new_b = gtk_box_new(orientation, child_padd);
     //Putting box in parent box
-    gtk_box_pack_start(GTK_BOX(parent_box), new_b, expand, fill, extra_padd);
+    if (origin)
+        gtk_box_pack_start(GTK_BOX(parent_box), new_b, expand, fill,
+                extra_padd);
+    else
+        gtk_box_pack_end(GTK_BOX(parent_box), new_b, expand, fill,
+                extra_padd);
     //Request size
     gtk_widget_set_size_request(new_b, width_req, height_req);
     return new_b;
@@ -60,17 +70,25 @@ GtkWidget* auto_pack_box(
     Shortcut function that creates a custom widget centering the pointed
     child in it. Is an alternative to the deprecated GTK Widget alignment.
 */
-GtkWidget* center_new(GtkWidget* child) {
-    //Creating vertical box
-    GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    //Creating horizontal box
-    GtkWidget* hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
-    gtk_widget_set_halign(hbox, GTK_ALIGN_CENTER);
-    //Attaching child
-    gtk_box_pack_start(GTK_BOX(hbox), child, FALSE, FALSE, 0);
-    gtk_widget_set_valign(child, GTK_ALIGN_CENTER);
-    return vbox;
+GtkWidget* center_new(GtkWidget* child, int ori) {
+    GtkWidget* parent;
+    if (ori == GTK_ORIENTATION_HORIZONTAL) {
+        //Creating horizontal box
+        parent = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        gtk_box_pack_start(GTK_BOX(parent), child, FALSE, FALSE, 0);
+        gtk_widget_set_valign(child, GTK_ALIGN_CENTER);
+    } else if (ori == GTK_ORIENTATION_VERTICAL) {
+        //Creating vertical box
+        parent = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+        gtk_box_pack_start(GTK_BOX(parent), child, FALSE, FALSE, 0);
+        gtk_widget_set_halign(child, GTK_ALIGN_CENTER);
+    } else {
+        GtkWidget* interm = center_new(child, GTK_ORIENTATION_VERTICAL);
+        parent = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        gtk_box_pack_start(GTK_BOX(parent), interm, TRUE, TRUE, 0);
+        gtk_widget_set_valign(interm, GTK_ALIGN_CENTER);
+    }
+    return parent;
 }
 
 
@@ -112,23 +130,19 @@ GdkPixbuf* resize_from_container(
 }
 
 
-/* spacing_new():
-    Returns a Label that acts as a spacing widget
+/* get_controls():
+    Returns pointers to the control buttons.
 */
-GtkWidget* spacing_new(
-        int horizontal,
-        int vertical,
-        int expand_h,
-        int expand_v) {
-    //Creating the horizontal spacing
-    char space_horizontal[horizontal];
-    for (int i = 0; i < horizontal; i++)
-        space_horizontal[i] = ' ';
-    GtkWidget* res = gtk_label_new(space_horizontal);
-    gtk_widget_set_vexpand(res, expand_v);
-    gtk_widget_set_hexpand(res, expand_h);
-    gtk_widget_set_size_request(res, -1, vertical);
-    return res;
+void get_controls(
+        int place,
+        GtkWidget** widget) {
+    //0: Prev    //2: Auto
+    //1: Next    //3: Save
+    static GtkWidget* controls[4] = {NULL};
+    if (controls[place] == NULL)
+        controls[place] = *widget;
+    if (widget != NULL)
+        *widget = controls[place];
 }
 
 
@@ -147,10 +161,10 @@ void Build_Interface(
 
     ////Building left side of interface
     GtkWidget *left_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, main_b, FALSE, FALSE, 0, width / 2, -1);
+            0, main_b, FALSE, FALSE, 0, TRUE, width / 2, -1);
     ///Box for TITLE
     GtkWidget *title_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, left_b, FALSE, FALSE, 0, -1, height /6);
+            0, left_b, FALSE, FALSE, 0, TRUE, -1, height /6);
     change_widget_color(title_b, "#1b4a45");
     //<Title
     GtkWidget *title_lbl = gtk_label_new(title);
@@ -161,37 +175,176 @@ void Build_Interface(
     gtk_widget_override_font(title_lbl, font_desc);
     ///Display screen
     GtkWidget *display_b = auto_pack_box(GTK_ORIENTATION_HORIZONTAL,
-            0, left_b, TRUE, TRUE, 0, -1, -1);
+            0, left_b, TRUE, TRUE, 0, TRUE, -1, -1);
     change_widget_color(display_b, "#42f593");
     ///Initializing the static getter of the Application's display section
     get_display(&display_b);
     ///Button for image selector
     GtkWidget *select_btn = gtk_button_new_with_label("Select Image");
-    g_signal_connect(select_btn, "clicked", G_CALLBACK(file_selector), NULL);
-    GtkWidget *center_b = center_new(select_btn);
-    gtk_box_pack_start(GTK_BOX(display_b), center_b, TRUE, TRUE, 0);
+    g_signal_connect(select_btn, "clicked",
+            G_CALLBACK(_on_select_image_btn), NULL);
+    GtkWidget *center_b = center_new(select_btn, 2);
+    step_widget(0, center_b);
+    set_display(center_b);
 
     ////Right side containing the interface
     ///Vertical box for the right side
     GtkWidget *right_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, main_b, TRUE, TRUE, 0, -1, -1);
+            0, main_b, TRUE, TRUE, 0, TRUE, -1, -1);
     change_widget_color(right_b, "#32a852");
-    ///Header of the vertical section (in form of a grid)
-    GtkWidget *header_g = gtk_grid_new();
-    gtk_box_pack_start(GTK_BOX(right_b), header_g, FALSE, FALSE, 0);
-    gtk_widget_set_size_request(header_g, -1, height / 4);
-    change_widget_color(header_g, "#f542ce");
-    //Space out the grid
-    gtk_grid_attach(GTK_GRID(header_g),spacing_new(150, 140, 0, 0), 0, 0, 1, 1);
+
+    ///Header of the vertical section
+    GtkWidget *header_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
+            0, right_b, FALSE, FALSE, 0, TRUE, -1, height / 4);
+    change_widget_color(header_b, "#f542ce");
+    //Spacing header_b
+    auto_pack_box(GTK_ORIENTATION_HORIZONTAL, 0, header_b,
+            FALSE, FALSE, 0, FALSE, -1, height / 32);
+    //Controls Button
+    GtkWidget *control_b = auto_pack_box(GTK_ORIENTATION_HORIZONTAL,
+            0, header_b, FALSE, FALSE, 0, FALSE, -1, height / 24);
+    //Spacing control_b
+    auto_pack_box(GTK_ORIENTATION_VERTICAL, 0, control_b, FALSE, FALSE, 0,
+            TRUE, width / 16, -1);
+    auto_pack_box(GTK_ORIENTATION_VERTICAL, 0, control_b, FALSE, FALSE, 0,
+            FALSE, width / 16, -1);
     //Button Control: Next
-    GtkWidget *next_btn = gtk_button_new_with_label("Next Step");
-    gtk_grid_attach(GTK_GRID(header_g), next_btn, 3, 1, 1, 1);
+    GtkWidget *next_btn = gtk_button_new_with_label("Next");
+    gtk_box_pack_end(GTK_BOX(control_b), next_btn, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(GTK_WIDGET(next_btn), width / 16, -1);
     g_signal_connect(next_btn, "clicked", G_CALLBACK(NextStep), NULL);
+    get_controls(1, &next_btn);
+    //Button Control: Prev
+    GtkWidget *prev_btn = gtk_button_new_with_label("Previous");
+    gtk_box_pack_start(GTK_BOX(control_b), prev_btn, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(GTK_WIDGET(prev_btn), width / 16, -1);
+    g_signal_connect(prev_btn, "clicked", G_CALLBACK(ShowPrevious), NULL);
+    get_controls(0, &prev_btn);
+    gtk_widget_set_sensitive(prev_btn, FALSE);
+    //Spacing
+    auto_pack_box(GTK_ORIENTATION_VERTICAL, 0, control_b, FALSE, FALSE, 0,
+            TRUE, width / 16, -1);
+    //Button Control: Auto
+    GtkWidget *auto_btn = gtk_button_new_with_label("Auto Complete");
+    gtk_box_pack_start(GTK_BOX(control_b), auto_btn, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(GTK_WIDGET(auto_btn), width / 8, -1);
+    g_signal_connect(auto_btn, "clicked", G_CALLBACK(_on_auto_btn), NULL);
+    get_controls(2, &auto_btn);
+
+    //Button Control: Save
+    GtkWidget* save_btn = gtk_button_new_with_label("Save Step");
+    GtkWidget* save_h = center_new(save_btn, 2);
+    gtk_box_pack_end(GTK_BOX(header_b), save_h, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(GTK_WIDGET(save_h), -1, height / 24);
+    g_signal_connect(save_btn, "clicked", G_CALLBACK(_on_save_btn), NULL);
+    gtk_widget_set_sensitive(save_btn, FALSE);
+    get_controls(3, &save_btn);
+
     //Helper of vertical section
     GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, right_b, FALSE, FALSE, 0, -1, height / 8);
+            0, right_b, FALSE, FALSE, 0, TRUE, -1, height / 8);
     change_widget_color(helper_b, "#139485");
 
     ////Show all the created widgets
     gtk_widget_show_all(window);
+}
+
+
+/*  file_selector():
+    Opens a file selector dialog to choose an image for the project.
+*/
+int file_selector() {
+    //Retrieve the display section
+    GtkWidget* display_b = get_display(NULL);
+    //Creating the dialog window
+    GtkWidget* dialog = gtk_file_chooser_dialog_new("Select Image",
+            GTK_WINDOW(gtk_widget_get_toplevel(display_b)),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            "_Cancel", GTK_RESPONSE_CANCEL,
+            "_Open", GTK_RESPONSE_ACCEPT,
+            NULL);
+    //Only accepting images
+    GtkFileFilter *filter = gtk_file_filter_new();
+    gtk_file_filter_add_pixbuf_formats(filter);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+    //Run the dialog
+    int response = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT;
+    if (response) {
+        //Get the selected image
+        char* filename = gtk_file_chooser_get_filename(
+                GTK_FILE_CHOOSER(dialog));
+
+        //Load image
+        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
+        if (pixbuf != NULL) {
+            //Resizing the image to fit the display section
+            int width = gdk_pixbuf_get_width(pixbuf);
+            int height = gdk_pixbuf_get_height(pixbuf);
+            pixbuf = resize_from_container(pixbuf,width, height, display_b);
+            //Creating the image
+            GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
+            //Storing the pixbuf inside the image widget
+            g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
+            g_object_ref(pixbuf);
+            //Saving that widget as a STEP WIDGET
+            step_widget(1, image);
+        }
+        g_free(filename);
+    }
+
+    //Closing dialog wether cancel or accepted
+    gtk_widget_destroy(dialog);
+    return response;
+}
+
+
+/* file_save():
+    Opens a file dialog to save a file for the user.
+*/
+int file_save(void* data, EXTENSION type) {
+    //Retrieve the display section
+    GtkWidget* display_b = get_display(NULL);
+    //Creating the dialog window
+    GtkWidget* dialog = gtk_file_chooser_dialog_new("Save File",
+            GTK_WINDOW(gtk_widget_get_toplevel(display_b)),
+            GTK_FILE_CHOOSER_ACTION_SAVE,
+            "_Cancel", GTK_RESPONSE_CANCEL,
+            "_Save", GTK_RESPONSE_ACCEPT,
+            NULL);
+    GtkFileChooser* chooser = GTK_FILE_CHOOSER(dialog);
+    //Filter
+    GtkFileFilter *filter = gtk_file_filter_new();
+    if (type == EXT_PNG) {
+        gtk_file_filter_set_name(filter, "PNG files");
+        gtk_file_filter_add_mime_type(filter, "image/png");
+        gtk_file_chooser_set_current_name(chooser, "untilted.png");
+    } else if (type == EXT_TXT) {
+        gtk_file_filter_set_name(filter, "Text files");
+        gtk_file_filter_add_pattern(filter, "*.txt");
+        gtk_file_chooser_set_current_name(chooser, "untitlted.txt");
+    }
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+    //Run the dialog
+    int response = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT;
+    if (response) {
+        //Get the selected image
+        char* filename = gtk_file_chooser_get_filename(chooser);
+
+        if (type == EXT_PNG) {
+            //Data is a pixbuf
+            GdkPixbuf *pixbuf = *(GdkPixbuf**)data;
+            //Save to file
+            if (!gdk_pixbuf_save(pixbuf, filename, "png", NULL, NULL))
+                response = 0;
+        } else if (type == EXT_TXT) {
+
+        }
+        g_free(filename);
+    }
+
+    //Closing dialog wether cancel or accepted
+    gtk_widget_destroy(dialog);
+    return response;
 }

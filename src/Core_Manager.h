@@ -14,10 +14,14 @@ typedef enum {
 
 STEP* get_step();
 GtkWidget* get_display(GtkWidget** widget);
+void set_display(GtkWidget* widget);
+GtkWidget* step_widget(int step, GtkWidget* set);
 void Filter_Params(char** all_params, int len, char* *init_params,
         int *init_size, char* *gtk_params, int *gtk_size);
 void StartUp(char** gtk_params, int gtk_len,
         char** init_params, int init_len);
-void NextStep(GtkWidget* next_btn, gpointer);
+void ShowNext();
+int NextStep(GtkWidget*, gpointer);
+void ShowPrevious(GtkWidget*, gpointer);
 
 #endif
