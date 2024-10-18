@@ -1,5 +1,5 @@
-#ifndef EVENTS_MANAGER_H
-#define EVENTS_MANAGER_H
+#ifndef EVENTS_H
+#define EVENTS_H
 
 #include <gtk/gtk.h>
 

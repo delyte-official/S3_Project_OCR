@@ -29,9 +29,10 @@ void PreviousStep(GtkWidget,int);
 #include <stdio.h>
 #include <err.h>
 //Project Headers
-#include "Interface/Window_Manager.h"
+#include "Interface/GTK_Window.h"
 #include "Interface/Interface_Manager.h"
-#include "Interface/Events_Manager.h"
+#include "Interface/Events.h"
+#include "Solving/Solver_Manager.h"
 #include "Debug.h"
 #include "Core_Manager.h"
 //Tools
@@ -234,6 +235,9 @@ void ShowNext() {
         case STEP_EXTRACT:
             break;
         case STEP_SOLVE:
+            //Grab the widget to display
+            GtkWidget *widget = step_widget(STEP_SOLVE+1, NULL);
+            set_display(widget);
             break;
         case STEP_RECONSTRUCT:
             GtkWidget* control12_btn;
@@ -282,6 +286,8 @@ int NextStep(GtkWidget*, gpointer) {
         case STEP_EXTRACT:
             break;
         case STEP_SOLVE:
+            Solver_Run("src/bin/grid", "src/bin/word_list", 8);
+            ShowNext();
             break;
         case STEP_RECONSTRUCT:
             ShowNext();
@@ -306,6 +312,9 @@ void ShowPrevious(GtkWidget*, gpointer) {
     //Performing operation according to curr_step
     switch (*curr_step) {
         case STEP_END:
+            //Reshow solution
+            GtkWidget *buffer = step_widget(STEP_SOLVE+1, NULL);
+            set_display(buffer);
             //Activate control buttons
             GtkWidget* control12_btn;
             get_controls(1, &control12_btn);
@@ -316,8 +325,14 @@ void ShowPrevious(GtkWidget*, gpointer) {
         case STEP_RECONSTRUCT:
             break;
         case STEP_SOLVE:
+            //Reshow filtered image
+            GtkWidget* image3 = step_widget(STEP_FILTER+1, NULL);
+            set_display(image3);
             break;
         case STEP_EXTRACT:
+            //Reshow loaded image not filtered
+            GtkWidget* image4 = step_widget(STEP_LOAD+1, NULL);
+            set_display(image4);
             break;
         case STEP_FILTER:
             //Reshow select file button

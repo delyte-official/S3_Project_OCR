@@ -1,7 +1,7 @@
 /*
       ##############################################################
       #                                                            #
-      #                      Events_Manager.c                      #
+      #                           Events.c                         #
       #                                                            #
       #       Contains all functions receiving, handling and       #
       #    sending signals and events to other declared systems.   #
