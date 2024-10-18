@@ -24,7 +24,9 @@ int Solver_Run(char*,char*);
 //Tools
 #include <gtk/gtk.h>
 //Project Headers
+#include "../Core_Manager.h"
 #include "Solver_Manager.h"
+#include "../Debug.h"
 ////END HEADERS
 
 
@@ -145,6 +147,41 @@ int readall(
     return EXIT_SUCCESS;
 }
 
+
+/* set_result():
+    Finalize the result of the Solving branch by creating the widget and
+    linking it to the application, with its associated data.
+*/
+void set_result(solution** p, int count) {
+    GtkWidget *widget = gtk_scrolled_window_new(NULL, NULL);
+    GtkWidget *text_view = gtk_text_view_new();
+    gtk_container_add(GTK_CONTAINER(widget), text_view);
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+    
+    //Setting the text
+    for (int i = 0; i < count; i++) {
+        GtkTextIter end;
+        gtk_text_buffer_get_end_iter(buffer, &end);
+        //Creating the string
+        char buffering[100];
+        if (p[i] != NULL)
+            snprintf(buffering, sizeof(buffering),
+                    "(%d,%d) to (%d,%d)\n",
+                    p[i]->ini_col,p[i]->ini_row,p[i]->end_col,p[i]->end_row);
+        else
+            snprintf(buffering, sizeof(buffering), "NULL\n");
+
+        gtk_text_buffer_insert(buffer, &end, buffering, -1);
+    }/*
+    GtkWidget *widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    change_widget_color(widget, "#000000");*/
+
+    //Store result
+    g_object_set_data(G_OBJECT(widget), "data", p);
+    step_widget(STEP_SOLVE+1, widget);
+}
+
+
 /* Solver_Run:
     Call the solver on every word of the words_file and store their result.
 */
@@ -221,15 +258,8 @@ int Solver_Run(
         return EXIT_FAILURE;
     }
 
-    //Checking
-    for (int i = 0; i < words_count; i++) {
-        if (p[i] == NULL)
-            printf("NULL\n");
-        else {
-            printf("((%d,%d) to (%d,%d))\n",(p[i])->ini_col, (p[i])->ini_row,
-                    (p[i])->end_col, (p[i])->end_row);
-        }
-    }
+    //Store the result for the application to use
+    set_result(p, w_index);
 
     free(fds);
     return EXIT_SUCCESS;
