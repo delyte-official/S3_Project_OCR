@@ -10,7 +10,8 @@ INTERFACE = Events.o GTK_Window.o Interface_Manager.o
 SOLVING = Solver_Manager.o
 SOLVER = src/Solving/solver #Independent compiling, so independant category
 SRC = Core_Manager.o Debug.o \
-	$(addprefix Interface/, $(INTERFACE))
+	$(addprefix Interface/, $(INTERFACE)) \
+	$(addprefix Solving/, $(SOLVING))
 
 #Put all of them together
 OBJS = main.o \
@@ -23,6 +24,14 @@ $(TARGET): $(OBJS) #Creating all needed files to compile final program
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 #Clean command used to clean up any object and executable files
-.PHONY: clean
 clean:
 	$(RM) $(OBJS) $(TARGET) $(SOLVER)
+
+#Reset command to clean, clear and make
+remake:
+	make clean
+	clear
+	make
+
+# PHONY Targets
+.PHONY: all make reset

@@ -32,6 +32,7 @@ void PreviousStep(GtkWidget,int);
 #include "Interface/GTK_Window.h"
 #include "Interface/Interface_Manager.h"
 #include "Interface/Events.h"
+#include "Solving/Solver_Manager.h"
 #include "Debug.h"
 #include "Core_Manager.h"
 //Tools
@@ -282,6 +283,7 @@ int NextStep(GtkWidget*, gpointer) {
         case STEP_EXTRACT:
             break;
         case STEP_SOLVE:
+            Solver_Run("src/bin/grid", "src/bin/word_list", 8);
             break;
         case STEP_RECONSTRUCT:
             ShowNext();
