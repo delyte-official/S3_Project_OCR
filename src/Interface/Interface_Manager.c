@@ -244,6 +244,21 @@ void Build_Interface(
     GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, TRUE, -1, height / 8);
     change_widget_color(helper_b, "#139485");
+    
+    ////History Scrollable Container
+    GtkWidget *fill_scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_box_pack_end(GTK_BOX(right_b), fill_scroll, TRUE, TRUE, 0);
+    GtkWidget *history_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_container_add(GTK_CONTAINER(fill_scroll), history_b);
+    change_widget_color(history_b, "#000000");
+
+    //Fake Tiles for example
+    for (int i = 0; i < 20; i++) {
+        GtkWidget *tile = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        gtk_box_pack_start(GTK_BOX(history_b), tile, FALSE, FALSE, 5);
+        gtk_widget_set_size_request(tile, -1, height / 12);
+        change_widget_color(tile, "#097ab7");
+    }
 
     ////Show all the created widgets
     gtk_widget_show_all(window);
