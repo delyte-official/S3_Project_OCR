@@ -233,6 +233,9 @@ void ShowNext() {
             set_display(image2);
             break;
         case STEP_EXTRACT:
+            //Grab the container to display
+            GtkWidget *container3 = step_widget(3, NULL);
+            set_display(container3);
             break;
         case STEP_SOLVE:
             //Grab the widget to display
@@ -284,6 +287,22 @@ int NextStep(GtkWidget*, gpointer) {
             ShowNext();
             break;
         case STEP_EXTRACT:
+            //TO REPLACE WITH NOE's FUNCTION:
+            GtkWidget *widget = gtk_scrolled_window_new(NULL, NULL);
+            GtkWidget *text_view = gtk_text_view_new();
+            gtk_container_add(GTK_CONTAINER(widget), text_view);
+            GtkTextBuffer *buffer = gtk_text_view_get_buffer(
+                    GTK_TEXT_VIEW(text_view));
+            FILE* file = fopen("src/bin/grid", "r");
+            //Assume no erros
+            char line[1024];
+            while (fgets(line, sizeof(line), file)) {
+                gtk_text_buffer_insert_at_cursor(buffer, line, -1);
+            }
+            g_object_set_data(G_OBJECT(widget), "path", "src/bin/grid");
+            step_widget(STEP_SOLVE, widget);
+            //END OF REPLACING
+            ShowNext();
             break;
         case STEP_SOLVE:
             Solver_Run("src/bin/grid", "src/bin/word_list", 8);
@@ -323,6 +342,9 @@ void ShowPrevious(GtkWidget*, gpointer) {
             gtk_widget_set_sensitive(control12_btn, TRUE);
             break;
         case STEP_RECONSTRUCT:
+            //Reshow extraction
+            GtkWidget *container2 = step_widget(STEP_EXTRACT+1, NULL);
+            set_display(container2);
             break;
         case STEP_SOLVE:
             //Reshow filtered image
