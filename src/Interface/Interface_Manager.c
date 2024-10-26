@@ -145,6 +145,17 @@ void get_controls(
         *widget = controls[place];
 }
 
+/* image_load_from_pixbuf():
+    Loads an image from a file and return its image widget.
+*/
+GtkWidget* image_load_from_pixbuf(
+        char* filename) {
+    GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
+    GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
+    g_object_unref(pixbuf);
+    return image;
+}
+
 
 /* Build_Interface():
     Creates every widget and the structure of the starting project menu.
@@ -158,10 +169,8 @@ void Build_Interface(
     ////MAIN CONTAINER
     GtkWidget *main_o = gtk_overlay_new();
     gtk_container_add(GTK_CONTAINER(window), main_o);
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("src/assets/app_bg.png",NULL);
-    GtkWidget *image_bg = gtk_image_new_from_pixbuf(pixbuf);
-    g_object_unref(pixbuf);
-    gtk_overlay_add_overlay(GTK_OVERLAY(main_o), image_bg);
+    gtk_overlay_add_overlay(GTK_OVERLAY(main_o),
+            image_load_from_pixbuf("src/assets/app_bg.png"));
 
     ////Dividing interface into two spaces
     GtkWidget *divide_b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -170,21 +179,19 @@ void Build_Interface(
     ////Building left side of interface
     GtkWidget *left_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, divide_b, FALSE, FALSE, 0, TRUE, width / 2, -1);
-    ///Box for TITLE
-    GtkWidget *title_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, left_b, FALSE, FALSE, 0, TRUE, -1, height /6);
-    //change_widget_color(title_b, "#1b4a45");
-    //<Title
-    GtkWidget *title_lbl = gtk_label_new(title);
-    gtk_box_pack_start(GTK_BOX(title_b), title_lbl, TRUE, TRUE, 0);
-    gtk_widget_set_halign(title_lbl, GTK_ALIGN_CENTER);
-    PangoFontDescription *font_desc = pango_font_description_new();
-    pango_font_description_set_size(font_desc, 24 * PANGO_SCALE);
-    gtk_widget_override_font(title_lbl, font_desc);
+    //Holder of display
+    GtkWidget *holder_o = gtk_overlay_new();
+    gtk_widget_set_size_request(holder_o, -1, (float)(height * 9) / 12);
+    gtk_box_pack_end(GTK_BOX(left_b), holder_o, FALSE, FALSE, 0);
+    gtk_overlay_add_overlay(GTK_OVERLAY(holder_o),
+        image_load_from_pixbuf("src/assets/display_section.png"));
     ///Display screen
-    GtkWidget *display_b = auto_pack_box(GTK_ORIENTATION_HORIZONTAL,
-            0, left_b, TRUE, TRUE, 0, TRUE, -1, -1);
-    //change_widget_color(display_b, "#42f593");
+    GtkWidget *display_b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_size_request(display_b, (float)(width * 17) / 40,
+        (float)(height * 9 * 17) / (12 * 20));
+    gtk_overlay_add_overlay(GTK_OVERLAY(holder_o), display_b);
+    gtk_widget_set_halign(display_b, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(display_b, GTK_ALIGN_CENTER);
     ///Initializing the static getter of the Application's display section
     get_display(&display_b);
     ///Button for image selector
@@ -194,6 +201,14 @@ void Build_Interface(
     GtkWidget *center_b = center_new(select_btn, 2);
     step_widget(0, center_b);
     set_display(center_b);
+    ///Box for TITLE
+    GtkWidget *title_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
+            0, left_b, TRUE, TRUE, 0, FALSE, -1, -1);
+    change_widget_color(title_b, "#1b4a45");
+    //<Title
+    GtkWidget *title_lbl = gtk_label_new(title);
+    gtk_box_pack_start(GTK_BOX(title_b), title_lbl, TRUE, TRUE, 0);
+    gtk_widget_set_halign(title_lbl, GTK_ALIGN_CENTER);
 
     ////Right side containing the interface
     ///Vertical box for the right side
