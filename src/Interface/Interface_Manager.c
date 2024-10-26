@@ -155,17 +155,25 @@ void Build_Interface(
         int width,
         int height,
         char* title) {
+    ////MAIN CONTAINER
+    GtkWidget *main_o = gtk_overlay_new();
+    gtk_container_add(GTK_CONTAINER(window), main_o);
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("src/assets/app_bg.png",NULL);
+    GtkWidget *image_bg = gtk_image_new_from_pixbuf(pixbuf);
+    g_object_unref(pixbuf);
+    gtk_overlay_add_overlay(GTK_OVERLAY(main_o), image_bg);
+
     ////Dividing interface into two spaces
-    GtkWidget *main_b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_container_add(GTK_CONTAINER(window), main_b);
+    GtkWidget *divide_b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_overlay_add_overlay(GTK_OVERLAY(main_o), divide_b);
 
     ////Building left side of interface
     GtkWidget *left_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, main_b, FALSE, FALSE, 0, TRUE, width / 2, -1);
+            0, divide_b, FALSE, FALSE, 0, TRUE, width / 2, -1);
     ///Box for TITLE
     GtkWidget *title_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, left_b, FALSE, FALSE, 0, TRUE, -1, height /6);
-    change_widget_color(title_b, "#1b4a45");
+    //change_widget_color(title_b, "#1b4a45");
     //<Title
     GtkWidget *title_lbl = gtk_label_new(title);
     gtk_box_pack_start(GTK_BOX(title_b), title_lbl, TRUE, TRUE, 0);
@@ -176,7 +184,7 @@ void Build_Interface(
     ///Display screen
     GtkWidget *display_b = auto_pack_box(GTK_ORIENTATION_HORIZONTAL,
             0, left_b, TRUE, TRUE, 0, TRUE, -1, -1);
-    change_widget_color(display_b, "#42f593");
+    //change_widget_color(display_b, "#42f593");
     ///Initializing the static getter of the Application's display section
     get_display(&display_b);
     ///Button for image selector
@@ -190,13 +198,13 @@ void Build_Interface(
     ////Right side containing the interface
     ///Vertical box for the right side
     GtkWidget *right_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, main_b, TRUE, TRUE, 0, TRUE, -1, -1);
-    change_widget_color(right_b, "#32a852");
+            0, divide_b, TRUE, TRUE, 0, TRUE, -1, -1);
+    //change_widget_color(right_b, "#32a852");
 
     ///Header of the vertical section
     GtkWidget *header_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, TRUE, -1, height / 4);
-    change_widget_color(header_b, "#f542ce");
+    //change_widget_color(header_b, "#f542ce");
     //Spacing header_b
     auto_pack_box(GTK_ORIENTATION_HORIZONTAL, 0, header_b,
             FALSE, FALSE, 0, FALSE, -1, height / 32);
@@ -243,17 +251,17 @@ void Build_Interface(
     //Helper of vertical section
     GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, TRUE, -1, height / 8);
-    change_widget_color(helper_b, "#139485");
+    //change_widget_color(helper_b, "#139485");
     
     ////History Scrollable Container
     GtkWidget *fill_scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_box_pack_end(GTK_BOX(right_b), fill_scroll, TRUE, TRUE, 0);
     GtkWidget *history_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_add(GTK_CONTAINER(fill_scroll), history_b);
-    change_widget_color(history_b, "#000000");
+    //change_widget_color(history_b, "#000000");
 
     //Fake Tiles for example
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 3; i++) {
         GtkWidget *tile = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_box_pack_start(GTK_BOX(history_b), tile, FALSE, FALSE, 5);
         gtk_widget_set_size_request(tile, -1, height / 12);
