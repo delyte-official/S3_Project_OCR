@@ -35,6 +35,10 @@ int file_save();
 #include <gtk/gtk.h>
 #include <pango/pango.h>
 ////END HEADERS
+////DEFINE
+static int display_height = 0;
+static int display_width = 0;
+////END DEFINE
 
 
 /* auto_pack_box():
@@ -157,6 +161,15 @@ GtkWidget* image_load_from_pixbuf(
 }
 
 
+/* center_widget();
+    Center the given widget in its parent.
+*/
+void center_widget(GtkWidget* widget) {
+    gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
+}
+
+
 /* Build_Interface():
     Creates every widget and the structure of the starting project menu.
     Creates every needed signals for the application to run properly.
@@ -166,6 +179,9 @@ void Build_Interface(
         int width,
         int height,
         char* title) {
+    //Setting static variables
+    display_width = (float)(width * 17) / 40;
+    display_height = (float)(height * 9 * 17) / (12 * 20);
     ////MAIN CONTAINER
     GtkWidget *main_o = gtk_overlay_new();
     gtk_container_add(GTK_CONTAINER(window), main_o);
@@ -186,21 +202,27 @@ void Build_Interface(
     gtk_overlay_add_overlay(GTK_OVERLAY(holder_o),
         image_load_from_pixbuf("src/assets/display_section.png"));
     ///Display screen
-    GtkWidget *display_b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_widget_set_size_request(display_b, (float)(width * 17) / 40,
-        (float)(height * 9 * 17) / (12 * 20));
-    gtk_overlay_add_overlay(GTK_OVERLAY(holder_o), display_b);
-    gtk_widget_set_halign(display_b, GTK_ALIGN_CENTER);
-    gtk_widget_set_valign(display_b, GTK_ALIGN_CENTER);
+    GtkWidget* display_o = gtk_overlay_new();
+    gtk_widget_set_size_request(display_o, display_width, display_height);
+    gtk_overlay_add_overlay(GTK_OVERLAY(holder_o), display_o);
+    center_widget(display_o);
+    gtk_widget_set_hexpand(display_o, FALSE);
+    gtk_widget_set_vexpand(display_o, FALSE);
     ///Initializing the static getter of the Application's display section
-    get_display(&display_b);
+    get_display(&display_o);
     ///Button for image selector
-    GtkWidget *select_btn = gtk_button_new_with_label("Select Image");
-    g_signal_connect(select_btn, "clicked",
+    GtkWidget *select_btn = gtk_button_new();
+    gtk_button_set_image(GTK_BUTTON(select_btn),
+            image_load_from_pixbuf("src/assets/button_import.png"));
+    gtk_button_set_relief(GTK_BUTTON(select_btn), GTK_RELIEF_NONE);
+    gtk_widget_set_size_request(select_btn, display_width, display_height);
+    g_signal_connect(select_btn, "button-press-event",
             G_CALLBACK(_on_select_image_btn), NULL);
-    GtkWidget *center_b = center_new(select_btn, 2);
-    step_widget(0, center_b);
-    set_display(center_b);
+    g_signal_connect(select_btn, "enter-notify-event",
+            G_CALLBACK(_null_event), NULL);
+    center_widget(select_btn);
+    step_widget(0, select_btn);
+    set_display(select_btn);
     ///Box for TITLE
     GtkWidget *title_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, left_b, TRUE, TRUE, 0, FALSE, -1, -1);

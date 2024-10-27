@@ -38,6 +38,12 @@ void Standard_Signals(GtkWidget *window) {
 }
 
 
+/* _null_event():
+    Deactivates any events connected to it.
+*/
+void _null_event(GtkWidget*, gpointer) {}
+
+
 /* _on_select_image_btn():
     Handles the event of "clicked" from the select image button.
 */

@@ -83,8 +83,8 @@ void set_display(GtkWidget* widget) {
         gtk_container_remove(GTK_CONTAINER(display), children->data);
     }
     if (widget != NULL) {
-       gtk_box_pack_start(GTK_BOX(display), widget, TRUE, TRUE, 0);
-       gtk_widget_show_all(widget);
+        gtk_overlay_add_overlay(GTK_OVERLAY(display), widget);
+        gtk_widget_show_all(widget);
     }
 }
 
@@ -260,6 +260,8 @@ void ShowNext() {
     Returns true if operation succeeded.
 */
 int NextStep(GtkWidget*, gpointer) {
+    GtkWidget* display = get_display(NULL);
+
     STEP* curr_step = get_step();
     if (step_widget(*curr_step + 1, NULL) != NULL) {
         ShowNext();
