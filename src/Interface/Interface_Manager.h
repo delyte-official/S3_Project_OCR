@@ -11,7 +11,7 @@ GdkPixbuf* resize(GdkPixbuf* pixbuf, int origin_w, int origin_h,
 GdkPixbuf* resize_from_container(GdkPixbuf* pixbuf, int origin_w,
         int origin_h, GtkWidget *container);
 void get_controls(int place, GtkWidget** widget);
-void Build_Interface(GtkWidget *window, int width, int height, char* title);
+void Build_Interface(GtkWidget *window, int width, int height);
 int file_selector();
 int file_save(void* data, EXTENSION type);
 

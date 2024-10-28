@@ -26,6 +26,7 @@ void _on_save_btn(GtkWidget*, gpointer);
 //Project Headers
 #include "Interface_Manager.h"
 #include "../Core_Manager.h"
+#include "Events.h"
 ////END HEADERS
 
 
@@ -35,6 +36,27 @@ void _on_save_btn(GtkWidget*, gpointer);
 void Standard_Signals(GtkWidget *window) {
     //Closing window closes the program
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "size-allocate",
+            G_CALLBACK(_application_init), NULL);
+}
+
+
+/* _application_init():
+    Initialize all the content of the window of the application as soon
+    as the windowh as been realized.
+*/
+void _application_init(
+        GtkWidget *window,
+        GtkAllocation*,
+        gpointer) {
+    int width, height;
+    gtk_window_get_size(GTK_WINDOW(window), &width, &height);
+    if (width > global_width || height >= global_height)
+        return;
+    printf("Size: %d;%d\n", width, height);
+    Build_Interface(window, width, height);
+    g_signal_handlers_disconnect_matched(window, G_SIGNAL_MATCH_FUNC, 0, 0,
+            NULL, G_CALLBACK(_application_init), NULL);
 }
 
 

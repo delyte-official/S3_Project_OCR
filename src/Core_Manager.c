@@ -42,6 +42,7 @@ void PreviousStep(GtkWidget,int);
 //Constants
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
+int global_width, global_height = 0;
 ////END DEFINING
 
 
@@ -63,7 +64,7 @@ GtkWidget* get_display(GtkWidget** widget) {
     static GtkWidget* display;
     if (display==NULL)
         display = *widget;
-    if (widget != NULL) {
+    if (widget != NULL && 1 == 0) {
         GList *children = gtk_container_get_children(GTK_CONTAINER(display));
         if (children)
             *widget = GTK_WIDGET(children->data);
@@ -192,18 +193,16 @@ void StartUp( //Parameters:
     char* title = "OCR Word Search Solver";
     GdkRectangle geometry;
     get_screen_size(&geometry);
-    int width = geometry.width;
-    int height = geometry.height;
+    global_width = geometry.width;
+    global_height = geometry.height;
     int type = GTK_WINDOW_TOPLEVEL;
 
     //Initialize GTK Main Project Window
-    window = create_window(type,title,width,height);
+    window = create_window(type, title, global_width, global_height);
 
-    //Building the interface and setup the associated signals and events
-    Build_Interface(window, width, height, title);
-    
-    //Link all standard signals and events of the window
+    //Link all standar signals and events of the window
     Standard_Signals(window);
+    gtk_widget_show(window);
 
     //Running the application
     gtk_main();

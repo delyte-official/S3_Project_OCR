@@ -177,8 +177,7 @@ void center_widget(GtkWidget* widget) {
 void Build_Interface(
         GtkWidget *window,
         int width,
-        int height,
-        char* title) {
+        int height) {
     //Setting static variables
     display_width = (float)(width * 17) / 40;
     display_height = (float)(height * 9 * 17) / (12 * 20);
@@ -209,7 +208,7 @@ void Build_Interface(
     gtk_widget_set_hexpand(display_o, FALSE);
     gtk_widget_set_vexpand(display_o, FALSE);
     ///Initializing the static getter of the Application's display section
-    get_display(&display_o);
+    //get_display(&display_o);
     ///Button for image selector
     GtkWidget *select_btn = gtk_button_new();
     gtk_button_set_image(GTK_BUTTON(select_btn),
@@ -222,13 +221,13 @@ void Build_Interface(
             G_CALLBACK(_null_event), NULL);
     center_widget(select_btn);
     step_widget(0, select_btn);
-    set_display(select_btn);
+    //set_display(select_btn);
     ///Box for TITLE
     GtkWidget *title_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, left_b, TRUE, TRUE, 0, FALSE, -1, -1);
     change_widget_color(title_b, "#1b4a45");
     //<Title
-    GtkWidget *title_lbl = gtk_label_new(title);
+    GtkWidget *title_lbl = gtk_label_new("Dashboard");
     gtk_box_pack_start(GTK_BOX(title_b), title_lbl, TRUE, TRUE, 0);
     gtk_widget_set_halign(title_lbl, GTK_ALIGN_CENTER);
 
@@ -236,6 +235,7 @@ void Build_Interface(
     ///Vertical box for the right side
     GtkWidget *right_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, divide_b, TRUE, TRUE, 0, TRUE, -1, -1);
+    get_display(&window);
     //change_widget_color(right_b, "#32a852");
 
     ///Header of the vertical section
@@ -292,13 +292,14 @@ void Build_Interface(
     
     ////History Scrollable Container
     GtkWidget *fill_scroll = gtk_scrolled_window_new(NULL, NULL);
+    //gtk_widget_set_size_request(fill_scroll, -1, (float)(height*5) / 8 - 1);
     gtk_box_pack_end(GTK_BOX(right_b), fill_scroll, TRUE, TRUE, 0);
     GtkWidget *history_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_add(GTK_CONTAINER(fill_scroll), history_b);
     //change_widget_color(history_b, "#000000");
 
     //Fake Tiles for example
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 20; i++) {
         GtkWidget *tile = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_box_pack_start(GTK_BOX(history_b), tile, FALSE, FALSE, 5);
         gtk_widget_set_size_request(tile, -1, height / 12);
