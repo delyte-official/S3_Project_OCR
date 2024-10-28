@@ -53,7 +53,6 @@ void _application_init(
     gtk_window_get_size(GTK_WINDOW(window), &width, &height);
     if (width > global_width || height >= global_height)
         return;
-    printf("Size: %d;%d\n", width, height);
     Build_Interface(window, width, height);
     g_signal_handlers_disconnect_matched(window, G_SIGNAL_MATCH_FUNC, 0, 0,
             NULL, G_CALLBACK(_application_init), NULL);

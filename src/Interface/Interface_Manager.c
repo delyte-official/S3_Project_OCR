@@ -70,32 +70,6 @@ GtkWidget* auto_pack_box(
 }
 
 
-/* center_new():
-    Shortcut function that creates a custom widget centering the pointed
-    child in it. Is an alternative to the deprecated GTK Widget alignment.
-*/
-GtkWidget* center_new(GtkWidget* child, int ori) {
-    GtkWidget* parent;
-    if (ori == GTK_ORIENTATION_HORIZONTAL) {
-        //Creating horizontal box
-        parent = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-        gtk_box_pack_start(GTK_BOX(parent), child, FALSE, FALSE, 0);
-        gtk_widget_set_valign(child, GTK_ALIGN_CENTER);
-    } else if (ori == GTK_ORIENTATION_VERTICAL) {
-        //Creating vertical box
-        parent = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-        gtk_box_pack_start(GTK_BOX(parent), child, FALSE, FALSE, 0);
-        gtk_widget_set_halign(child, GTK_ALIGN_CENTER);
-    } else {
-        GtkWidget* interm = center_new(child, GTK_ORIENTATION_VERTICAL);
-        parent = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-        gtk_box_pack_start(GTK_BOX(parent), interm, TRUE, TRUE, 0);
-        gtk_widget_set_valign(interm, GTK_ALIGN_CENTER);
-    }
-    return parent;
-}
-
-
 /* resize():
     Resize a pixbuf to the maximum ratio possible while keeping
     the proportions of the given pixbuf.
@@ -167,6 +141,43 @@ GtkWidget* image_load_from_pixbuf(
 void center_widget(GtkWidget* widget) {
     gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
     gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
+}
+
+
+/* get_history():
+    Returns the history scroll container.
+*/
+GtkWidget* get_history(GtkWidget *widget) {
+    static GtkWidget* history = NULL;
+    if (history == NULL)
+        history = widget;
+    return history;
+}
+
+
+/* add_history_step():
+    Add a tile to the history scroll container, representing a step done.
+*/
+void add_history_step() {
+    //Creating the tile
+    GtkWidget *tile_o = gtk_overlay_new();
+    //Add image
+    //gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), image);
+    gtk_widget_set_size_request(tile_o,(float)(global_width * 3) / 8,
+            global_height / 12);
+    center_widget(tile_o);
+
+    //Content
+    GtkWidget *container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), container);
+
+    ///Preview
+    //Spacing
+    auto_pack_box(GTK_ORIENTATION_HORIZONTAL, 0, container, FALSE, FALSE, 0,
+            1, (float)(global_width * 3) / 160, -1);
+
+    //Add to history
+    gtk_box_pack_start(GTK_BOX(get_history(NULL)), tile_o, FALSE, FALSE, 0);
 }
 
 
@@ -277,9 +288,9 @@ void Build_Interface(
 
     //Button Control: Save
     GtkWidget* save_btn = gtk_button_new_with_label("Save Step");
-    GtkWidget* save_h = center_new(save_btn, 2);
-    gtk_box_pack_end(GTK_BOX(header_b), save_h, FALSE, FALSE, 0);
-    gtk_widget_set_size_request(GTK_WIDGET(save_h), -1, height / 24);
+    center_widget(save_btn);
+    gtk_box_pack_end(GTK_BOX(header_b), save_btn, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(GTK_WIDGET(save_btn), -1, height / 24);
     g_signal_connect(save_btn, "clicked", G_CALLBACK(_on_save_btn), NULL);
     gtk_widget_set_sensitive(save_btn, FALSE);
     get_controls(3, &save_btn);
@@ -291,18 +302,15 @@ void Build_Interface(
     
     ////History Scrollable Container
     GtkWidget *fill_scroll = gtk_scrolled_window_new(NULL, NULL);
-    //gtk_widget_set_size_request(fill_scroll, -1, (float)(height*5) / 8 - 1);
+    gtk_widget_set_size_request(fill_scroll, -1, (float)(height*5) / 8);
     gtk_box_pack_end(GTK_BOX(right_b), fill_scroll, TRUE, TRUE, 0);
     GtkWidget *history_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    get_history(history_b);
     gtk_container_add(GTK_CONTAINER(fill_scroll), history_b);
-    //change_widget_color(history_b, "#000000");
 
     //Fake Tiles for example
     for (int i = 0; i < 20; i++) {
-        GtkWidget *tile = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-        gtk_box_pack_start(GTK_BOX(history_b), tile, FALSE, FALSE, 5);
-        gtk_widget_set_size_request(tile, -1, height / 12);
-        change_widget_color(tile, "#097ab7");
+        add_history_step();
     }
 
     ////Show all the created widgets
