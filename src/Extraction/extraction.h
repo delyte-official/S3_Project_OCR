@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
+#include <math.h>
 #include <gtk/gtk.h>
 
 /*
