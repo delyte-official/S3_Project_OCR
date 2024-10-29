@@ -26,6 +26,7 @@ int file_save();
 //Integrated C Libraries
 #include <stdlib.h>
 #include <stdio.h>
+#include <err.h>
 //Project Headers
 #include "Events.h"
 #include "../Debug.h"
@@ -215,7 +216,7 @@ void add_history_step(STEP step) {
     center_widget(tile_o);
 
     //Content
-    GtkWidget *container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkWidget *container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), container);
     change_widget_color(container, "#000000");
 
@@ -225,10 +226,48 @@ void add_history_step(STEP step) {
             1, (float)(global_width * 3) / 160, -1);
     //Converting
     GtkWidget* preview = get_resized_step(step,
-            (float)(global_width*7656)/100000,
+            (float)(global_width*7656) / 100000,
             (float)(global_height * 9)/ 60);
     center_widget(preview);
     gtk_box_pack_start(GTK_BOX(container), preview, FALSE, FALSE, 0);
+    ///Description
+    GtkWidget *info = auto_pack_box(GTK_ORIENTATION_VERTICAL, 10, container,
+            FALSE, FALSE, 10, 1, (float)(global_width * 3) / 40, -1);
+    //Label AND desc
+    GtkWidget *title = NULL;
+    GtkWidget *desc = NULL;
+    switch (step) {
+        case STEP_LOAD:
+            title = gtk_label_new("Loaded Image");
+            desc = gtk_label_new("The selected image\nhas been loaded into\n"
+                    "memory and displayed.");
+            break;
+        case STEP_FILTER:
+            title = gtk_label_new("Filtered Image");
+            desc = gtk_label_new("The image has been\nfiltered to help the\n"
+                    "next operations of extraction.");
+            break;
+        case STEP_EXTRACT:
+            title = gtk_label_new("Extracted Data");
+            desc = gtk_label_new("The grid details and\nthe word list has "
+                    "been\nextracted and saved in\ncache files.");
+            break;
+        case STEP_SOLVE:
+            title = gtk_label_new("Solved Word Search");
+            desc = gtk_label_new("The word search, given\nby the grid and word"
+                    "\nlist, has been solved.");
+            break;
+        case STEP_RECONSTRUCT:
+            title = gtk_label_new("Reconstructed Image");
+            desc = gtk_label_new("Solution has been\ndisplayed graphically\n"
+                    "on the original image.");
+            break;
+        default:
+            errx(EXIT_FAILURE, "Step impossible to add to history.");
+    }
+    auto_pack_box(GTK_ORIENTATION_VERTICAL,0,info,FALSE,FALSE,0,1,-1,30);
+    gtk_box_pack_start(GTK_BOX(info), title, FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(info), desc, FALSE, FALSE, 0);
 
     //Add to history
     gtk_box_pack_start(GTK_BOX(get_history(NULL)), tile_o, FALSE, FALSE, 0);
