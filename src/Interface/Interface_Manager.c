@@ -76,11 +76,11 @@ GtkWidget* auto_pack_box(
 */
 GdkPixbuf* resize(
         GdkPixbuf* pixbuf,
-        int origin_w,
-        int origin_h,
         int max_w,
         int max_h) {
     //Figuring out the size
+    int origin_w = gdk_pixbuf_get_width(pixbuf);
+    int origin_h = gdk_pixbuf_get_height(pixbuf);
     float w_ratio = (float)max_w/origin_w;
     float h_ratio = (float)max_h/origin_h;
     float scale = w_ratio < h_ratio ? w_ratio : h_ratio;
@@ -98,13 +98,11 @@ GdkPixbuf* resize(
 */
 GdkPixbuf* resize_from_container(
         GdkPixbuf* pixbuf,
-        int origin_w,
-        int origin_h,
         GtkWidget* container) {
     //Grab the size of container for max size
     GtkAllocation alloc;
     gtk_widget_get_allocation(container, &alloc);
-    return resize(pixbuf, origin_w, origin_h, alloc.width, alloc.height);
+    return resize(pixbuf, alloc.width, alloc.height);
 }
 
 
@@ -144,6 +142,38 @@ void center_widget(GtkWidget* widget) {
 }
 
 
+/* get_resized_step():
+    Returns the content of the step pointed to, resized, taking into
+    account the type of content (Pixbuf, text, etc).
+*/
+GtkWidget *get_resized_step(STEP step, int width, int height) {
+    GtkWidget *widget = step_widget(step+1, NULL);
+    if (GTK_IS_IMAGE(widget)) {
+        GdkPixbuf *old_pixbuf = g_object_get_data(G_OBJECT(widget), "pixbuf");
+        GdkPixbuf *pixbuf = resize(old_pixbuf, width, height);
+        widget = gtk_image_new_from_pixbuf(pixbuf);
+    } else if (GTK_IS_TEXT_VIEW(widget)) {
+        GtkWidget *new_textview = gtk_text_view_new();
+        //Transpose text or wtv
+        GtkTextBuffer *obuffer = gtk_text_view_get_buffer(
+                GTK_TEXT_VIEW(widget));
+        GtkTextBuffer *nbuffer = gtk_text_buffer_new(NULL);
+        GtkTextIter start, end;
+        gtk_text_buffer_get_start_iter(obuffer, &start);
+        gtk_text_buffer_get_end_iter(obuffer, &end);
+        gchar *text = gtk_text_buffer_get_text(obuffer, &start, &end, FALSE);
+        gtk_text_buffer_set_text(nbuffer, text, -1);
+        g_free(text);
+        gtk_text_view_set_buffer(GTK_TEXT_VIEW(new_textview), nbuffer);
+        
+        //Size
+        gtk_widget_set_size_request(new_textview, width, height);
+        widget = new_textview;
+    }
+    return widget;
+}
+
+
 /* get_history():
     Returns the history scroll container.
 */
@@ -158,26 +188,34 @@ GtkWidget* get_history(GtkWidget *widget) {
 /* add_history_step():
     Add a tile to the history scroll container, representing a step done.
 */
-void add_history_step() {
+void add_history_step(STEP step) {
     //Creating the tile
     GtkWidget *tile_o = gtk_overlay_new();
     //Add image
     //gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), image);
     gtk_widget_set_size_request(tile_o,(float)(global_width * 3) / 8,
-            global_height / 12);
+            global_height / 6);
     center_widget(tile_o);
 
     //Content
     GtkWidget *container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), container);
+    change_widget_color(container, "#000000");
 
     ///Preview
     //Spacing
     auto_pack_box(GTK_ORIENTATION_HORIZONTAL, 0, container, FALSE, FALSE, 0,
             1, (float)(global_width * 3) / 160, -1);
+    //Converting
+    GtkWidget* preview = get_resized_step(step,
+            (float)(global_width*7656)/100000,
+            (float)(global_height * 9)/ 60);
+    center_widget(preview);
+    gtk_box_pack_start(GTK_BOX(container), preview, FALSE, FALSE, 0);
 
     //Add to history
     gtk_box_pack_start(GTK_BOX(get_history(NULL)), tile_o, FALSE, FALSE, 0);
+    gtk_widget_show_all(tile_o);
 }
 
 
@@ -308,11 +346,6 @@ void Build_Interface(
     get_history(history_b);
     gtk_container_add(GTK_CONTAINER(fill_scroll), history_b);
 
-    //Fake Tiles for example
-    for (int i = 0; i < 20; i++) {
-        add_history_step();
-    }
-
     ////Show all the created widgets
     gtk_widget_show_all(window);
 }
@@ -347,9 +380,7 @@ int file_selector() {
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
         if (pixbuf != NULL) {
             //Resizing the image to fit the display section
-            int width = gdk_pixbuf_get_width(pixbuf);
-            int height = gdk_pixbuf_get_height(pixbuf);
-            pixbuf = resize_from_container(pixbuf,width, height, display_b);
+            pixbuf = resize_from_container(pixbuf, display_b);
             //Creating the image
             GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
             //Storing the pixbuf inside the image widget

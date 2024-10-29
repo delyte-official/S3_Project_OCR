@@ -259,8 +259,6 @@ void ShowNext() {
     Returns true if operation succeeded.
 */
 int NextStep(GtkWidget*, gpointer) {
-    GtkWidget* display = get_display(NULL);
-
     STEP* curr_step = get_step();
     if (step_widget(*curr_step + 1, NULL) != NULL) {
         ShowNext();
@@ -273,6 +271,8 @@ int NextStep(GtkWidget*, gpointer) {
         case STEP_LOAD:
             if (!file_selector(NULL, NULL))
                 return !EXIT_FAILURE;
+            //Add to history
+            add_history_step(STEP_LOAD);
             ShowNext();
             break;
         case STEP_FILTER:
