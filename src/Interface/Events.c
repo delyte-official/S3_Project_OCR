@@ -81,6 +81,10 @@ void _on_select_image_btn(GtkWidget*, gpointer) {
             ShowNext();
             STEP* curr_step = get_step();
             (*curr_step)++;
+            //Reset history
+            clear_history();
+            //Add the first step again
+            add_history_step(STEP_LOAD);
         }
     }
 }

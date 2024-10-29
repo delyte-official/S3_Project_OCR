@@ -185,6 +185,23 @@ GtkWidget* get_history(GtkWidget *widget) {
 }
 
 
+/* clear_history():
+    Clears every step of the history.
+*/
+void clear_history() {
+    GList *child = gtk_container_get_children(
+            GTK_CONTAINER(get_history(NULL)));
+    //Skipping header of history
+    //child = child->next;
+    //Deleting steps
+    while (child != NULL) {
+        GtkWidget *step = GTK_WIDGET(child->data);
+        gtk_widget_destroy(step);
+        child = child->next;
+    }
+}
+
+
 /* add_history_step():
     Add a tile to the history scroll container, representing a step done.
 */
