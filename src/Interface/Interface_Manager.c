@@ -167,8 +167,11 @@ GtkWidget *get_resized_step(STEP step, int width, int height) {
         gtk_text_view_set_buffer(GTK_TEXT_VIEW(new_textview), nbuffer);
         
         //Size
+        GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+        gtk_widget_set_size_request(scroll, width, height);
         gtk_widget_set_size_request(new_textview, width, height);
-        widget = new_textview;
+        gtk_container_add(GTK_CONTAINER(scroll), new_textview);
+        widget = scroll;
     }
     return widget;
 }
@@ -209,7 +212,10 @@ void add_history_step(STEP step) {
     //Creating the tile
     GtkWidget *tile_o = gtk_overlay_new();
     //Add image
-    //gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), image);
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(
+            "src/assets/history_tile.png", NULL);
+    GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
+    gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), image);
     gtk_widget_set_size_request(tile_o,(float)(global_width * 3) / 8,
             global_height / 6);
     center_widget(tile_o);
@@ -217,7 +223,6 @@ void add_history_step(STEP step) {
     //Content
     GtkWidget *container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), container);
-    change_widget_color(container, "#000000");
 
     ///Preview
     //Spacing
@@ -225,8 +230,8 @@ void add_history_step(STEP step) {
             1, (float)(global_width * 3) / 160, -1);
     //Converting
     GtkWidget* preview = get_resized_step(step,
-            (float)(global_width*7656) / 100000,
-            (float)(global_height * 9)/ 60);
+            (float)(global_width*593) / 10000,
+            (float)(global_height * 7)/ 60);
     center_widget(preview);
     gtk_box_pack_start(GTK_BOX(container), preview, FALSE, FALSE, 0);
     ///Description
@@ -343,7 +348,7 @@ void Build_Interface(
     ///Box for TITLE
     GtkWidget *title_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, left_b, TRUE, TRUE, 0, FALSE, -1, -1);
-    change_widget_color(title_b, "#1b4a45");
+    //change_widget_color(title_b, "#1b4a45");
     //<Title
     GtkWidget *title_lbl = gtk_label_new("Dashboard");
     gtk_box_pack_start(GTK_BOX(title_b), title_lbl, TRUE, TRUE, 0);
@@ -402,8 +407,8 @@ void Build_Interface(
     gtk_widget_set_sensitive(save_btn, FALSE);
     get_controls(3, &save_btn);
 
-    //Helper of vertical section
-    GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
+    //Helper of vertical section //TO ADD AFTER
+    /*GtkWidget *helper_b = */auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, TRUE, -1, height / 8);
     //change_widget_color(helper_b, "#139485");
     
