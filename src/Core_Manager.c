@@ -285,28 +285,53 @@ int NextStep(GtkWidget*, gpointer) {
             g_object_set_data(G_OBJECT(new_image), "pixbuf", new_pixbuf);
             step_widget(2, new_image);
             //TO PLACE IN ZYPAW FUNCTION (whats between comments)
+            add_history_step(STEP_FILTER);
             ShowNext();
             break;
         case STEP_EXTRACT:
             //TO REPLACE WITH NOE's FUNCTION:
             GtkWidget *widget = gtk_scrolled_window_new(NULL, NULL);
-            GtkWidget *text_view = gtk_text_view_new();
-            gtk_container_add(GTK_CONTAINER(widget), text_view);
+            GtkWidget *text_view1 = gtk_text_view_new();
+            GtkWidget *text_view2 = gtk_text_view_new();
+            GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+            gtk_container_add(GTK_CONTAINER(widget), box);
+            gtk_box_pack_start(GTK_BOX(box), text_view1, TRUE, TRUE, 0);
+            gtk_box_pack_start(GTK_BOX(box), text_view2, TRUE, TRUE, 0);
             GtkTextBuffer *buffer = gtk_text_view_get_buffer(
-                    GTK_TEXT_VIEW(text_view));
+                    GTK_TEXT_VIEW(text_view1));
             FILE* file = fopen("src/bin/grid", "r");
             //Assume no erros
             char line[1024];
             while (fgets(line, sizeof(line), file)) {
                 gtk_text_buffer_insert_at_cursor(buffer, line, -1);
             }
-            g_object_set_data(G_OBJECT(widget), "path", "src/bin/grid");
+            fclose(file);
+            GtkTextBuffer *buffer2 = gtk_text_view_get_buffer(
+                    GTK_TEXT_VIEW(text_view2));
+            FILE *file2 = fopen("src/bin/word_list", "r");
+            while (fgets(line, sizeof(line), file))
+                gtk_text_buffer_insert_at_cursor(buffer2, line, -1);
+            fclose(file2);
+            g_object_set_data(G_OBJECT(widget), "path:grid", "src/bin/grid");
+            g_object_set_data(G_OBJECT(widget), "path:wordlist",
+                    "src/bin/word_list");
+            g_object_set_data(G_OBJECT(widget), "grid", buffer);
+            g_object_set_data(G_OBJECT(widget), "wordlist", buffer2);
+            g_object_set_data(G_OBJECT(widget), "size:wordlist",
+                    GINT_TO_POINTER(8));
             step_widget(STEP_SOLVE, widget);
             //END OF REPLACING
             ShowNext();
             break;
         case STEP_SOLVE:
-            Solver_Run("src/bin/grid", "src/bin/word_list", 8);
+            GtkWidget *extracted = step_widget(STEP_EXTRACT+1, NULL);
+            char* grid = g_object_get_data(G_OBJECT(extracted),
+                    "path:grid");
+            char* wordlist = g_object_get_data(G_OBJECT(extracted),
+                    "path:wordlist");
+            int size = GPOINTER_TO_INT(g_object_get_data(
+                        G_OBJECT(extracted), "size:wordlist"));
+            Solver_Run(grid, wordlist, size);
             ShowNext();
             break;
         case STEP_RECONSTRUCT:

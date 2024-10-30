@@ -494,7 +494,21 @@ int file_save(void* data, EXTENSION type) {
             if (!gdk_pixbuf_save(pixbuf, filename, "png", NULL, NULL))
                 response = 0;
         } else if (type == EXT_TXT) {
-
+            //Data is a buffer
+            GtkTextBuffer *buffer = *(GtkTextBuffer**)data;
+            //Grab content
+            GtkTextIter start, end;
+            gtk_text_buffer_get_start_iter(buffer, &start);
+            gtk_text_buffer_get_end_iter(buffer, &end);
+            char* text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+            //Save to File
+            FILE *file =fopen(filename, "w");
+            if (file == NULL) {
+                response = 0;
+            } else {
+                fprintf(file, "%s",text);
+                fclose(file);
+            }
         }
         g_free(filename);
     }
@@ -502,4 +516,30 @@ int file_save(void* data, EXTENSION type) {
     //Closing dialog wether cancel or accepted
     gtk_widget_destroy(dialog);
     return response;
+}
+
+
+/* save_step():
+    Save the given - finished - step into file(s).
+*/
+void save_step(STEP step) {
+    if (step == STEP_LOAD || step == STEP_FILTER || step == STEP_RECONSTRUCT) {
+        GtkWidget *image = step_widget(step+1, NULL);
+        GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
+        file_save(&pixbuf, EXT_PNG);
+    } else if (step == STEP_EXTRACT) {
+        GtkWidget *extract = step_widget(step+1, NULL);
+        //Grab content of text view or smth
+        GtkTextBuffer *b_grid = g_object_get_data(G_OBJECT(extract), "grid");
+        file_save(&b_grid, EXT_TXT);
+        GtkTextBuffer *b_wordlist = g_object_get_data(G_OBJECT(extract),
+                "wordlist");
+        file_save(&b_wordlist, EXT_TXT);
+    } else if (step == STEP_SOLVE) {
+        GtkWidget *textview = step_widget(step+1, NULL);
+        //Grab content of text view
+        GtkTextBuffer *buffer = g_object_get_data(G_OBJECT(textview),
+                "buffer");
+        file_save(&buffer, EXT_TXT);
+    }
 }

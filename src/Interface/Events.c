@@ -109,24 +109,5 @@ void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
 */
 void _on_save_btn(GtkWidget*, gpointer) {
     STEP* curr_step = get_step();
-    switch (*curr_step) {
-        case STEP_FILTER:
-            GtkWidget *image1 = step_widget(1, NULL);
-            GdkPixbuf *pixbuf1 = g_object_get_data(G_OBJECT(image1), "pixbuf");
-            file_save(&pixbuf1, EXT_PNG);
-            break;
-        case STEP_EXTRACT:
-            GtkWidget *image2= step_widget(2, NULL);
-            GdkPixbuf *pixbuf2 = g_object_get_data(G_OBJECT(image2), "pixbuf");
-            file_save(&pixbuf2, EXT_PNG);
-            break;
-        case STEP_SOLVE:
-            break;
-        case STEP_RECONSTRUCT:
-            break;
-        case STEP_END:
-            break;
-        default: //Nothing to save
-            return;
-    }
+    save_step(*curr_step-1);
 }
