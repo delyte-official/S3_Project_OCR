@@ -71,6 +71,35 @@ GtkWidget* auto_pack_box(
 }
 
 
+/* change_label_color():
+    Modifies the font color of a gtk label.
+*/
+void change_label_color(GtkWidget *label, int r, int g, int b) {
+    PangoAttrList *attr_list = gtk_label_get_attributes(GTK_LABEL(label));
+    if (attr_list == NULL)
+        attr_list = pango_attr_list_new();
+    //Color
+    PangoAttribute *attr_color = pango_attr_foreground_new(
+            r * 257, g * 257, b * 257); //*257 bc its 16bits, not 8
+    pango_attr_list_insert(attr_list, attr_color);
+    gtk_label_set_attributes(GTK_LABEL(label), attr_list);
+}
+
+
+/* change_label_size():
+    Modifies the font size of a gtk label.
+*/
+void change_label_size(GtkWidget *label, int size) {
+    PangoAttrList *attr_list = gtk_label_get_attributes(GTK_LABEL(label));
+    if (attr_list == NULL)
+        attr_list = pango_attr_list_new();
+    //Size
+    PangoAttribute *attr_size = pango_attr_size_new(size * 1024);
+    pango_attr_list_insert(attr_list, attr_size);
+    gtk_label_set_attributes(GTK_LABEL(label), attr_list);
+}
+
+
 /* resize():
     Resize a pixbuf to the maximum ratio possible while keeping
     the proportions of the given pixbuf.
@@ -272,6 +301,8 @@ void add_history_step(STEP step) {
     auto_pack_box(GTK_ORIENTATION_VERTICAL,0,info,FALSE,FALSE,0,1,-1,30);
     gtk_box_pack_start(GTK_BOX(info), title, FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(info), desc, FALSE, FALSE, 0);
+    change_label_color(title, 255, 255, 255);
+    change_label_color(desc, 255, 255, 255);
 
     ///Buttons
     GtkWidget *buttons = auto_pack_box(GTK_ORIENTATION_VERTICAL,5,container,
@@ -353,6 +384,8 @@ void Build_Interface(
     GtkWidget *title_lbl = gtk_label_new("Dashboard");
     gtk_box_pack_start(GTK_BOX(title_b), title_lbl, TRUE, TRUE, 0);
     gtk_widget_set_halign(title_lbl, GTK_ALIGN_CENTER);
+    change_label_color(title_lbl, 255, 255, 255);
+    change_label_size(title_lbl, 28);
 
     ////Right side containing the interface
     ///Vertical box for the right side

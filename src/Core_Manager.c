@@ -242,6 +242,10 @@ void ShowNext() {
             set_display(widget);
             break;
         case STEP_RECONSTRUCT:
+            //Grab the image to display
+            GtkWidget *reconstruct = step_widget(STEP_RECONSTRUCT+1, NULL);
+            set_display(reconstruct);
+
             GtkWidget* control12_btn;
             get_controls(1, &control12_btn);
             gtk_widget_set_sensitive(control12_btn, FALSE);
@@ -337,6 +341,17 @@ int NextStep(GtkWidget*, gpointer) {
             ShowNext();
             break;
         case STEP_RECONSTRUCT:
+            //CHANGE THIS WITH RECONSTRUCTION
+            GtkWidget *imageN = step_widget(1, NULL);
+            GdkPixbuf *pixbufN = g_object_get_data(G_OBJECT(imageN), "pixbuf");
+            //FOR FUTURE: RECONSTRUCT IMAGE
+            GdkPixbuf *new_pixbufN = gdk_pixbuf_copy(pixbufN);
+            GtkWidget *new_imageN = gtk_image_new_from_pixbuf(new_pixbufN);
+            g_object_ref(new_pixbufN);
+            g_object_set_data(G_OBJECT(new_imageN), "pixbuf", new_pixbufN);
+            step_widget(STEP_RECONSTRUCT+1, new_imageN);
+            //TO PLACE IN ZYPAW FUNCTION (whats between comments)
+            add_history_step(STEP_RECONSTRUCT);
             ShowNext();
             break;
         default:
