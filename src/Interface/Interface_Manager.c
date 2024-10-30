@@ -488,6 +488,12 @@ int file_save(void* data, EXTENSION type) {
         char* filename = gtk_file_chooser_get_filename(chooser);
 
         if (type == EXT_PNG) {
+            //Checking extension
+            if (!g_str_has_suffix(filename, ".png") && !strchr(filename,'.')) {
+                char *newfile = g_strconcat(filename, ".png", NULL);
+                g_free(filename);
+                filename = newfile;
+            }
             //Data is a pixbuf
             GdkPixbuf *pixbuf = *(GdkPixbuf**)data;
             //Save to file
