@@ -1,6 +1,6 @@
 #Custom Ignored Files
 main
-src/solver
+src/Solving/solver
 
 # Prerequisites
 *.d

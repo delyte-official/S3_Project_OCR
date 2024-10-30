@@ -42,6 +42,7 @@ void PreviousStep(GtkWidget,int);
 //Constants
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
+int global_width, global_height = 0;
 ////END DEFINING
 
 
@@ -63,7 +64,7 @@ GtkWidget* get_display(GtkWidget** widget) {
     static GtkWidget* display;
     if (display==NULL)
         display = *widget;
-    if (widget != NULL) {
+    if (widget != NULL && 1 == 0) {
         GList *children = gtk_container_get_children(GTK_CONTAINER(display));
         if (children)
             *widget = GTK_WIDGET(children->data);
@@ -83,8 +84,8 @@ void set_display(GtkWidget* widget) {
         gtk_container_remove(GTK_CONTAINER(display), children->data);
     }
     if (widget != NULL) {
-       gtk_box_pack_start(GTK_BOX(display), widget, TRUE, TRUE, 0);
-       gtk_widget_show_all(widget);
+        gtk_overlay_add_overlay(GTK_OVERLAY(display), widget);
+        gtk_widget_show_all(widget);
     }
 }
 
@@ -192,18 +193,16 @@ void StartUp( //Parameters:
     char* title = "OCR Word Search Solver";
     GdkRectangle geometry;
     get_screen_size(&geometry);
-    int width = geometry.width;
-    int height = geometry.height;
+    global_width = geometry.width;
+    global_height = geometry.height;
     int type = GTK_WINDOW_TOPLEVEL;
 
     //Initialize GTK Main Project Window
-    window = create_window(type,title,width,height);
+    window = create_window(type, title, global_width, global_height);
 
-    //Building the interface and setup the associated signals and events
-    Build_Interface(window, width, height, title);
-    
-    //Link all standard signals and events of the window
+    //Link all standar signals and events of the window
     Standard_Signals(window);
+    gtk_widget_show(window);
 
     //Running the application
     gtk_main();
@@ -233,6 +232,9 @@ void ShowNext() {
             set_display(image2);
             break;
         case STEP_EXTRACT:
+            //Grab the container to display
+            GtkWidget *container3 = step_widget(3, NULL);
+            set_display(container3);
             break;
         case STEP_SOLVE:
             //Grab the widget to display
@@ -240,6 +242,10 @@ void ShowNext() {
             set_display(widget);
             break;
         case STEP_RECONSTRUCT:
+            //Grab the image to display
+            GtkWidget *reconstruct = step_widget(STEP_RECONSTRUCT+1, NULL);
+            set_display(reconstruct);
+
             GtkWidget* control12_btn;
             get_controls(1, &control12_btn);
             gtk_widget_set_sensitive(control12_btn, FALSE);
@@ -269,6 +275,8 @@ int NextStep(GtkWidget*, gpointer) {
         case STEP_LOAD:
             if (!file_selector(NULL, NULL))
                 return !EXIT_FAILURE;
+            //Add to history
+            add_history_step(STEP_LOAD);
             ShowNext();
             break;
         case STEP_FILTER:
@@ -281,15 +289,69 @@ int NextStep(GtkWidget*, gpointer) {
             g_object_set_data(G_OBJECT(new_image), "pixbuf", new_pixbuf);
             step_widget(2, new_image);
             //TO PLACE IN ZYPAW FUNCTION (whats between comments)
+            add_history_step(STEP_FILTER);
             ShowNext();
             break;
         case STEP_EXTRACT:
+            //TO REPLACE WITH NOE's FUNCTION:
+            GtkWidget *widget = gtk_scrolled_window_new(NULL, NULL);
+            GtkWidget *text_view1 = gtk_text_view_new();
+            GtkWidget *text_view2 = gtk_text_view_new();
+            GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+            gtk_container_add(GTK_CONTAINER(widget), box);
+            gtk_box_pack_start(GTK_BOX(box), text_view1, TRUE, TRUE, 0);
+            gtk_box_pack_start(GTK_BOX(box), text_view2, TRUE, TRUE, 0);
+            GtkTextBuffer *buffer = gtk_text_view_get_buffer(
+                    GTK_TEXT_VIEW(text_view1));
+            FILE* file = fopen("src/bin/grid", "r");
+            //Assume no erros
+            char line[1024];
+            while (fgets(line, sizeof(line), file)) {
+                gtk_text_buffer_insert_at_cursor(buffer, line, -1);
+            }
+            fclose(file);
+            GtkTextBuffer *buffer2 = gtk_text_view_get_buffer(
+                    GTK_TEXT_VIEW(text_view2));
+            FILE *file2 = fopen("src/bin/word_list", "r");
+            while (fgets(line, sizeof(line), file))
+                gtk_text_buffer_insert_at_cursor(buffer2, line, -1);
+            fclose(file2);
+            g_object_set_data(G_OBJECT(widget), "path:grid", "src/bin/grid");
+            g_object_set_data(G_OBJECT(widget), "path:wordlist",
+                    "src/bin/word_list");
+            g_object_set_data(G_OBJECT(widget), "buffer", buffer);
+            g_object_set_data(G_OBJECT(widget), "buffer:words", buffer2);
+            g_object_set_data(G_OBJECT(widget), "size:wordlist",
+                    GINT_TO_POINTER(8));
+            step_widget(STEP_SOLVE, widget);
+            //END OF REPLACING
+            add_history_step(STEP_EXTRACT);
+            ShowNext();
             break;
         case STEP_SOLVE:
-            Solver_Run("src/bin/grid", "src/bin/word_list", 8);
+            GtkWidget *extracted = step_widget(STEP_EXTRACT+1, NULL);
+            char* grid = g_object_get_data(G_OBJECT(extracted),
+                    "path:grid");
+            char* wordlist = g_object_get_data(G_OBJECT(extracted),
+                    "path:wordlist");
+            int size = GPOINTER_TO_INT(g_object_get_data(
+                        G_OBJECT(extracted), "size:wordlist"));
+            Solver_Run(grid, wordlist, size);
+            add_history_step(STEP_SOLVE);
             ShowNext();
             break;
         case STEP_RECONSTRUCT:
+            //CHANGE THIS WITH RECONSTRUCTION
+            GtkWidget *imageN = step_widget(1, NULL);
+            GdkPixbuf *pixbufN = g_object_get_data(G_OBJECT(imageN), "pixbuf");
+            //FOR FUTURE: RECONSTRUCT IMAGE
+            GdkPixbuf *new_pixbufN = gdk_pixbuf_copy(pixbufN);
+            GtkWidget *new_imageN = gtk_image_new_from_pixbuf(new_pixbufN);
+            g_object_ref(new_pixbufN);
+            g_object_set_data(G_OBJECT(new_imageN), "pixbuf", new_pixbufN);
+            step_widget(STEP_RECONSTRUCT+1, new_imageN);
+            //TO PLACE IN ZYPAW FUNCTION (whats between comments)
+            add_history_step(STEP_RECONSTRUCT);
             ShowNext();
             break;
         default:
@@ -323,6 +385,9 @@ void ShowPrevious(GtkWidget*, gpointer) {
             gtk_widget_set_sensitive(control12_btn, TRUE);
             break;
         case STEP_RECONSTRUCT:
+            //Reshow extraction
+            GtkWidget *container2 = step_widget(STEP_EXTRACT+1, NULL);
+            set_display(container2);
             break;
         case STEP_SOLVE:
             //Reshow filtered image

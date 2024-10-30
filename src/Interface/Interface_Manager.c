@@ -26,6 +26,7 @@ int file_save();
 //Integrated C Libraries
 #include <stdlib.h>
 #include <stdio.h>
+#include <err.h>
 //Project Headers
 #include "Events.h"
 #include "../Debug.h"
@@ -35,6 +36,10 @@ int file_save();
 #include <gtk/gtk.h>
 #include <pango/pango.h>
 ////END HEADERS
+////DEFINE
+static int display_height = 0;
+static int display_width = 0;
+////END DEFINE
 
 
 /* auto_pack_box():
@@ -66,29 +71,32 @@ GtkWidget* auto_pack_box(
 }
 
 
-/* center_new():
-    Shortcut function that creates a custom widget centering the pointed
-    child in it. Is an alternative to the deprecated GTK Widget alignment.
+/* change_label_color():
+    Modifies the font color of a gtk label.
 */
-GtkWidget* center_new(GtkWidget* child, int ori) {
-    GtkWidget* parent;
-    if (ori == GTK_ORIENTATION_HORIZONTAL) {
-        //Creating horizontal box
-        parent = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-        gtk_box_pack_start(GTK_BOX(parent), child, FALSE, FALSE, 0);
-        gtk_widget_set_valign(child, GTK_ALIGN_CENTER);
-    } else if (ori == GTK_ORIENTATION_VERTICAL) {
-        //Creating vertical box
-        parent = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-        gtk_box_pack_start(GTK_BOX(parent), child, FALSE, FALSE, 0);
-        gtk_widget_set_halign(child, GTK_ALIGN_CENTER);
-    } else {
-        GtkWidget* interm = center_new(child, GTK_ORIENTATION_VERTICAL);
-        parent = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-        gtk_box_pack_start(GTK_BOX(parent), interm, TRUE, TRUE, 0);
-        gtk_widget_set_valign(interm, GTK_ALIGN_CENTER);
-    }
-    return parent;
+void change_label_color(GtkWidget *label, int r, int g, int b) {
+    PangoAttrList *attr_list = gtk_label_get_attributes(GTK_LABEL(label));
+    if (attr_list == NULL)
+        attr_list = pango_attr_list_new();
+    //Color
+    PangoAttribute *attr_color = pango_attr_foreground_new(
+            r * 257, g * 257, b * 257); //*257 bc its 16bits, not 8
+    pango_attr_list_insert(attr_list, attr_color);
+    gtk_label_set_attributes(GTK_LABEL(label), attr_list);
+}
+
+
+/* change_label_size():
+    Modifies the font size of a gtk label.
+*/
+void change_label_size(GtkWidget *label, int size) {
+    PangoAttrList *attr_list = gtk_label_get_attributes(GTK_LABEL(label));
+    if (attr_list == NULL)
+        attr_list = pango_attr_list_new();
+    //Size
+    PangoAttribute *attr_size = pango_attr_size_new(size * 1024);
+    pango_attr_list_insert(attr_list, attr_size);
+    gtk_label_set_attributes(GTK_LABEL(label), attr_list);
 }
 
 
@@ -98,11 +106,11 @@ GtkWidget* center_new(GtkWidget* child, int ori) {
 */
 GdkPixbuf* resize(
         GdkPixbuf* pixbuf,
-        int origin_w,
-        int origin_h,
         int max_w,
         int max_h) {
     //Figuring out the size
+    int origin_w = gdk_pixbuf_get_width(pixbuf);
+    int origin_h = gdk_pixbuf_get_height(pixbuf);
     float w_ratio = (float)max_w/origin_w;
     float h_ratio = (float)max_h/origin_h;
     float scale = w_ratio < h_ratio ? w_ratio : h_ratio;
@@ -120,13 +128,11 @@ GdkPixbuf* resize(
 */
 GdkPixbuf* resize_from_container(
         GdkPixbuf* pixbuf,
-        int origin_w,
-        int origin_h,
         GtkWidget* container) {
     //Grab the size of container for max size
     GtkAllocation alloc;
     gtk_widget_get_allocation(container, &alloc);
-    return resize(pixbuf, origin_w, origin_h, alloc.width, alloc.height);
+    return resize(pixbuf, alloc.width, alloc.height);
 }
 
 
@@ -145,6 +151,178 @@ void get_controls(
         *widget = controls[place];
 }
 
+/* image_load_from_pixbuf():
+    Loads an image from a file and return its image widget.
+*/
+GtkWidget* image_load_from_pixbuf(
+        char* filename) {
+    GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
+    GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
+    g_object_unref(pixbuf);
+    return image;
+}
+
+
+/* center_widget();
+    Center the given widget in its parent.
+*/
+void center_widget(GtkWidget* widget) {
+    gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
+}
+
+
+/* get_resized_step():
+    Returns the content of the step pointed to, resized, taking into
+    account the type of content (Pixbuf, text, etc).
+*/
+GtkWidget *get_resized_step(STEP step, int width, int height) {
+    GtkWidget *widget = step_widget(step+1, NULL);
+    if (GTK_IS_IMAGE(widget)) {
+        GdkPixbuf *old_pixbuf = g_object_get_data(G_OBJECT(widget), "pixbuf");
+        GdkPixbuf *pixbuf = resize(old_pixbuf, width, height);
+        widget = gtk_image_new_from_pixbuf(pixbuf);
+    } else if (step == STEP_SOLVE || step == STEP_EXTRACT) {
+        GtkWidget *new_textview = gtk_text_view_new();
+        //Transpose text or wtv
+        GtkTextBuffer *obuffer = g_object_get_data(G_OBJECT(widget), "buffer");
+        GtkTextBuffer *nbuffer = gtk_text_buffer_new(NULL);
+        GtkTextIter start, end;
+        gtk_text_buffer_get_start_iter(obuffer, &start);
+        gtk_text_buffer_get_end_iter(obuffer, &end);
+        gchar *text = gtk_text_buffer_get_text(obuffer, &start, &end, FALSE);
+        gtk_text_buffer_set_text(nbuffer, text, -1);
+        g_free(text);
+        gtk_text_view_set_buffer(GTK_TEXT_VIEW(new_textview), nbuffer);
+        
+        //Size
+        GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+        gtk_widget_set_size_request(scroll, width, height);
+        gtk_widget_set_size_request(new_textview, width, height);
+        gtk_container_add(GTK_CONTAINER(scroll), new_textview);
+        widget = scroll;
+    }
+    return widget;
+}
+
+
+/* get_history():
+    Returns the history scroll container.
+*/
+GtkWidget* get_history(GtkWidget *widget) {
+    static GtkWidget* history = NULL;
+    if (history == NULL)
+        history = widget;
+    return history;
+}
+
+
+/* clear_history():
+    Clears every step of the history.
+*/
+void clear_history() {
+    GList *child = gtk_container_get_children(
+            GTK_CONTAINER(get_history(NULL)));
+    //Skipping header of history
+    //child = child->next;
+    //Deleting steps
+    while (child != NULL) {
+        GtkWidget *step = GTK_WIDGET(child->data);
+        gtk_widget_destroy(step);
+        child = child->next;
+    }
+}
+
+
+/* add_history_step():
+    Add a tile to the history scroll container, representing a step done.
+*/
+void add_history_step(STEP step) {
+    //Creating the tile
+    GtkWidget *tile_o = gtk_overlay_new();
+    //Add image
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(
+            "src/assets/history_tile.png", NULL);
+    GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
+    gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), image);
+    gtk_widget_set_size_request(tile_o,(float)(global_width * 3) / 8,
+            global_height / 6);
+    center_widget(tile_o);
+
+    //Content
+    GtkWidget *container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_overlay_add_overlay(GTK_OVERLAY(tile_o), container);
+
+    ///Preview
+    //Spacing
+    auto_pack_box(GTK_ORIENTATION_HORIZONTAL, 0, container, FALSE, FALSE, 0,
+            1, (float)(global_width * 3) / 160, -1);
+    //Converting
+    GtkWidget* preview = get_resized_step(step,
+            (float)(global_width*593) / 10000,
+            (float)(global_height * 7)/ 60);
+    center_widget(preview);
+    gtk_box_pack_start(GTK_BOX(container), preview, FALSE, FALSE, 0);
+    ///Description
+    GtkWidget *info = auto_pack_box(GTK_ORIENTATION_VERTICAL, 10, container,
+            FALSE, FALSE, 10, 1, (float)(global_width * 3) / 40, -1);
+    //Label AND desc
+    GtkWidget *title = NULL;
+    GtkWidget *desc = NULL;
+    switch (step) {
+        case STEP_LOAD:
+            title = gtk_label_new("Loaded Image");
+            desc = gtk_label_new("The selected image\nhas been loaded into\n"
+                    "memory and displayed.");
+            break;
+        case STEP_FILTER:
+            title = gtk_label_new("Filtered Image");
+            desc = gtk_label_new("The image has been\nfiltered to help the\n"
+                    "next operations of extraction.");
+            break;
+        case STEP_EXTRACT:
+            title = gtk_label_new("Extracted Data");
+            desc = gtk_label_new("The grid details and\nthe word list has "
+                    "been\nextracted and saved in\ncache files.");
+            break;
+        case STEP_SOLVE:
+            title = gtk_label_new("Solved Word Search");
+            desc = gtk_label_new("The word search, given\nby the grid and word"
+                    "\nlist, has been solved.");
+            break;
+        case STEP_RECONSTRUCT:
+            title = gtk_label_new("Reconstructed Image");
+            desc = gtk_label_new("Solution has been\ndisplayed graphically\n"
+                    "on the original image.");
+            break;
+        default:
+            errx(EXIT_FAILURE, "Step impossible to add to history.");
+    }
+    auto_pack_box(GTK_ORIENTATION_VERTICAL,0,info,FALSE,FALSE,0,1,-1,30);
+    gtk_box_pack_start(GTK_BOX(info), title, FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(info), desc, FALSE, FALSE, 0);
+    change_label_color(title, 255, 255, 255);
+    change_label_color(desc, 255, 255, 255);
+
+    ///Buttons
+    GtkWidget *buttons = auto_pack_box(GTK_ORIENTATION_VERTICAL,5,container,
+            FALSE,FALSE,30,0,(float)(global_width * 3) / 40,-1);
+    auto_pack_box(GTK_ORIENTATION_VERTICAL,0,buttons,FALSE,FALSE,0,1,-1,50);
+    //Save
+    GtkWidget *save_btn = gtk_button_new_with_label("Save step");
+    gtk_box_pack_start(GTK_BOX(buttons), save_btn, FALSE, FALSE, 0);
+    g_signal_connect(save_btn, "clicked", G_CALLBACK(_on_step_save_history),
+            GINT_TO_POINTER((int)step));
+    GtkWidget *jumpto_btn = gtk_button_new_with_label("Jump to step");
+    gtk_box_pack_start(GTK_BOX(buttons), jumpto_btn, FALSE, FALSE, 0);
+    g_signal_connect(jumpto_btn, "clicked", G_CALLBACK(_on_jumpto_step),
+            GINT_TO_POINTER((int)step));
+
+    //Add to history
+    gtk_box_pack_start(GTK_BOX(get_history(NULL)), tile_o, FALSE, FALSE, 0);
+    gtk_widget_show_all(tile_o);
+}
+
 
 /* Build_Interface():
     Creates every widget and the structure of the starting project menu.
@@ -153,50 +331,72 @@ void get_controls(
 void Build_Interface(
         GtkWidget *window,
         int width,
-        int height,
-        char* title) {
+        int height) {
+    //Setting static variables
+    display_width = (float)(width * 17) / 40;
+    display_height = (float)(height * 7) / 10;
+    ////MAIN CONTAINER
+    GtkWidget *main_o = gtk_overlay_new();
+    gtk_container_add(GTK_CONTAINER(window), main_o);
+    gtk_overlay_add_overlay(GTK_OVERLAY(main_o),
+            image_load_from_pixbuf("src/assets/app_bg.png"));
+
     ////Dividing interface into two spaces
-    GtkWidget *main_b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_container_add(GTK_CONTAINER(window), main_b);
+    GtkWidget *divide_b = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_overlay_add_overlay(GTK_OVERLAY(main_o), divide_b);
 
     ////Building left side of interface
     GtkWidget *left_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, main_b, FALSE, FALSE, 0, TRUE, width / 2, -1);
+            0, divide_b, FALSE, FALSE, 0, TRUE, width / 2, -1);
+    //Holder of display
+    GtkWidget *holder_o = gtk_overlay_new();
+    gtk_widget_set_size_request(holder_o, -1, (float)(height * 9) / 10);
+    gtk_box_pack_end(GTK_BOX(left_b), holder_o, FALSE, FALSE, 0);
+    gtk_overlay_add_overlay(GTK_OVERLAY(holder_o),
+        image_load_from_pixbuf("src/assets/display_section.png"));
+    ///Display screen
+    GtkWidget* display_o = gtk_overlay_new();
+    gtk_widget_set_size_request(display_o, display_width, display_height);
+    gtk_overlay_add_overlay(GTK_OVERLAY(holder_o), display_o);
+    center_widget(display_o);
+    gtk_widget_set_hexpand(display_o, FALSE);
+    gtk_widget_set_vexpand(display_o, FALSE);
+    ///Initializing the static getter of the Application's display section
+    get_display(&display_o);
+    ///Button for image selector
+    GtkWidget *select_btn = gtk_button_new();
+    gtk_button_set_image(GTK_BUTTON(select_btn),
+            image_load_from_pixbuf("src/assets/button_import.png"));
+    gtk_button_set_relief(GTK_BUTTON(select_btn), GTK_RELIEF_NONE);
+    gtk_widget_set_size_request(select_btn, display_width, display_height);
+    g_signal_connect(select_btn, "button-press-event",
+            G_CALLBACK(_on_select_image_btn), NULL);
+    g_signal_connect(select_btn, "enter-notify-event",
+            G_CALLBACK(_null_event), NULL);
+    center_widget(select_btn);
+    step_widget(0, select_btn);
+    set_display(select_btn);
     ///Box for TITLE
     GtkWidget *title_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, left_b, FALSE, FALSE, 0, TRUE, -1, height /6);
-    change_widget_color(title_b, "#1b4a45");
+            0, left_b, TRUE, TRUE, 0, FALSE, -1, -1);
+    //change_widget_color(title_b, "#1b4a45");
     //<Title
-    GtkWidget *title_lbl = gtk_label_new(title);
+    GtkWidget *title_lbl = gtk_label_new("Dashboard");
     gtk_box_pack_start(GTK_BOX(title_b), title_lbl, TRUE, TRUE, 0);
     gtk_widget_set_halign(title_lbl, GTK_ALIGN_CENTER);
-    PangoFontDescription *font_desc = pango_font_description_new();
-    pango_font_description_set_size(font_desc, 24 * PANGO_SCALE);
-    gtk_widget_override_font(title_lbl, font_desc);
-    ///Display screen
-    GtkWidget *display_b = auto_pack_box(GTK_ORIENTATION_HORIZONTAL,
-            0, left_b, TRUE, TRUE, 0, TRUE, -1, -1);
-    change_widget_color(display_b, "#42f593");
-    ///Initializing the static getter of the Application's display section
-    get_display(&display_b);
-    ///Button for image selector
-    GtkWidget *select_btn = gtk_button_new_with_label("Select Image");
-    g_signal_connect(select_btn, "clicked",
-            G_CALLBACK(_on_select_image_btn), NULL);
-    GtkWidget *center_b = center_new(select_btn, 2);
-    step_widget(0, center_b);
-    set_display(center_b);
+    change_label_color(title_lbl, 255, 255, 255);
+    change_label_size(title_lbl, 28);
 
     ////Right side containing the interface
     ///Vertical box for the right side
     GtkWidget *right_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
-            0, main_b, TRUE, TRUE, 0, TRUE, -1, -1);
-    change_widget_color(right_b, "#32a852");
+            0, divide_b, TRUE, TRUE, 0, TRUE, -1, -1);
+    //change_widget_color(right_b, "#32a852");
 
     ///Header of the vertical section
     GtkWidget *header_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, TRUE, -1, height / 4);
-    change_widget_color(header_b, "#f542ce");
+    //change_widget_color(header_b, "#f542ce");
     //Spacing header_b
     auto_pack_box(GTK_ORIENTATION_HORIZONTAL, 0, header_b,
             FALSE, FALSE, 0, FALSE, -1, height / 32);
@@ -233,17 +433,25 @@ void Build_Interface(
 
     //Button Control: Save
     GtkWidget* save_btn = gtk_button_new_with_label("Save Step");
-    GtkWidget* save_h = center_new(save_btn, 2);
-    gtk_box_pack_end(GTK_BOX(header_b), save_h, FALSE, FALSE, 0);
-    gtk_widget_set_size_request(GTK_WIDGET(save_h), -1, height / 24);
+    center_widget(save_btn);
+    gtk_box_pack_end(GTK_BOX(header_b), save_btn, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(GTK_WIDGET(save_btn), -1, height / 24);
     g_signal_connect(save_btn, "clicked", G_CALLBACK(_on_save_btn), NULL);
     gtk_widget_set_sensitive(save_btn, FALSE);
     get_controls(3, &save_btn);
 
-    //Helper of vertical section
-    GtkWidget *helper_b = auto_pack_box(GTK_ORIENTATION_VERTICAL,
+    //Helper of vertical section //TO ADD AFTER
+    /*GtkWidget *helper_b = */auto_pack_box(GTK_ORIENTATION_VERTICAL,
             0, right_b, FALSE, FALSE, 0, TRUE, -1, height / 8);
-    change_widget_color(helper_b, "#139485");
+    //change_widget_color(helper_b, "#139485");
+    
+    ////History Scrollable Container
+    GtkWidget *fill_scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_size_request(fill_scroll, -1, (float)(height*5) / 8);
+    gtk_box_pack_end(GTK_BOX(right_b), fill_scroll, TRUE, TRUE, 0);
+    GtkWidget *history_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    get_history(history_b);
+    gtk_container_add(GTK_CONTAINER(fill_scroll), history_b);
 
     ////Show all the created widgets
     gtk_widget_show_all(window);
@@ -279,9 +487,7 @@ int file_selector() {
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
         if (pixbuf != NULL) {
             //Resizing the image to fit the display section
-            int width = gdk_pixbuf_get_width(pixbuf);
-            int height = gdk_pixbuf_get_height(pixbuf);
-            pixbuf = resize_from_container(pixbuf,width, height, display_b);
+            pixbuf = resize_from_container(pixbuf, display_b);
             //Creating the image
             GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
             //Storing the pixbuf inside the image widget
@@ -333,13 +539,33 @@ int file_save(void* data, EXTENSION type) {
         char* filename = gtk_file_chooser_get_filename(chooser);
 
         if (type == EXT_PNG) {
+            //Checking extension
+            if (!g_str_has_suffix(filename, ".png") && !strchr(filename,'.')) {
+                char *newfile = g_strconcat(filename, ".png", NULL);
+                g_free(filename);
+                filename = newfile;
+            }
             //Data is a pixbuf
             GdkPixbuf *pixbuf = *(GdkPixbuf**)data;
             //Save to file
             if (!gdk_pixbuf_save(pixbuf, filename, "png", NULL, NULL))
                 response = 0;
         } else if (type == EXT_TXT) {
-
+            //Data is a buffer
+            GtkTextBuffer *buffer = *(GtkTextBuffer**)data;
+            //Grab content
+            GtkTextIter start, end;
+            gtk_text_buffer_get_start_iter(buffer, &start);
+            gtk_text_buffer_get_end_iter(buffer, &end);
+            char* text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+            //Save to File
+            FILE *file =fopen(filename, "w");
+            if (file == NULL) {
+                response = 0;
+            } else {
+                fprintf(file, "%s",text);
+                fclose(file);
+            }
         }
         g_free(filename);
     }
@@ -347,4 +573,30 @@ int file_save(void* data, EXTENSION type) {
     //Closing dialog wether cancel or accepted
     gtk_widget_destroy(dialog);
     return response;
+}
+
+
+/* save_step():
+    Save the given - finished - step into file(s).
+*/
+void save_step(STEP step) {
+    if (step == STEP_LOAD || step == STEP_FILTER || step == STEP_RECONSTRUCT) {
+        GtkWidget *image = step_widget(step+1, NULL);
+        GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
+        file_save(&pixbuf, EXT_PNG);
+    } else if (step == STEP_EXTRACT) {
+        GtkWidget *extract = step_widget(step+1, NULL);
+        //Grab content of text view or smth
+        GtkTextBuffer *b_grid = g_object_get_data(G_OBJECT(extract), "buffer");
+        file_save(&b_grid, EXT_TXT);
+        GtkTextBuffer *b_wordlist = g_object_get_data(G_OBJECT(extract),
+                "buffer:words");
+        file_save(&b_wordlist, EXT_TXT);
+    } else if (step == STEP_SOLVE) {
+        GtkWidget *textview = step_widget(step+1, NULL);
+        //Grab content of text view
+        GtkTextBuffer *buffer = g_object_get_data(G_OBJECT(textview),
+                "buffer");
+        file_save(&buffer, EXT_TXT);
+    }
 }

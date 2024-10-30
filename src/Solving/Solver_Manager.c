@@ -172,12 +172,11 @@ void set_result(solution** p, int count) {
             snprintf(buffering, sizeof(buffering), "NULL\n");
 
         gtk_text_buffer_insert(buffer, &end, buffering, -1);
-    }/*
-    GtkWidget *widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    change_widget_color(widget, "#000000");*/
+    }
 
     //Store result
     g_object_set_data(G_OBJECT(widget), "data", p);
+    g_object_set_data(G_OBJECT(widget), "buffer", buffer);
     step_widget(STEP_SOLVE+1, widget);
 }
 

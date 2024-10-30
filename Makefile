@@ -9,9 +9,9 @@ LDFLAGS := -lSDL2 -lSDL2_image `pkg-config --libs gtk+-3.0`
 INTERFACE = Events.o GTK_Window.o Interface_Manager.o
 SOLVING = Solver_Manager.o
 SOLVER = src/Solving/solver #Independent compiling, so independant category
-SRC = Core_Manager.o Debug.o \
+SRC = Core_Manager.o \
 	$(addprefix Interface/, $(INTERFACE)) \
-	$(addprefix Solving/, $(SOLVING))
+	$(addprefix Solving/, $(SOLVING)) #Debug.o
 
 #Put all of them together
 OBJS = main.o \
