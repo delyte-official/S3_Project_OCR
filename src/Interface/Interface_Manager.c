@@ -153,11 +153,10 @@ GtkWidget *get_resized_step(STEP step, int width, int height) {
         GdkPixbuf *old_pixbuf = g_object_get_data(G_OBJECT(widget), "pixbuf");
         GdkPixbuf *pixbuf = resize(old_pixbuf, width, height);
         widget = gtk_image_new_from_pixbuf(pixbuf);
-    } else if (GTK_IS_TEXT_VIEW(widget)) {
+    } else if (step == STEP_SOLVE || step == STEP_EXTRACT) {
         GtkWidget *new_textview = gtk_text_view_new();
         //Transpose text or wtv
-        GtkTextBuffer *obuffer = gtk_text_view_get_buffer(
-                GTK_TEXT_VIEW(widget));
+        GtkTextBuffer *obuffer = g_object_get_data(G_OBJECT(widget), "buffer");
         GtkTextBuffer *nbuffer = gtk_text_buffer_new(NULL);
         GtkTextIter start, end;
         gtk_text_buffer_get_start_iter(obuffer, &start);
@@ -268,6 +267,20 @@ void add_history_step(STEP step) {
     auto_pack_box(GTK_ORIENTATION_VERTICAL,0,info,FALSE,FALSE,0,1,-1,30);
     gtk_box_pack_start(GTK_BOX(info), title, FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(info), desc, FALSE, FALSE, 0);
+
+    ///Buttons
+    GtkWidget *buttons = auto_pack_box(GTK_ORIENTATION_VERTICAL,5,container,
+            FALSE,FALSE,30,0,(float)(global_width * 3) / 40,-1);
+    auto_pack_box(GTK_ORIENTATION_VERTICAL,0,buttons,FALSE,FALSE,0,1,-1,50);
+    //Save
+    GtkWidget *save_btn = gtk_button_new_with_label("Save step");
+    gtk_box_pack_start(GTK_BOX(buttons), save_btn, FALSE, FALSE, 0);
+    g_signal_connect(save_btn, "clicked", G_CALLBACK(_on_step_save_history),
+            GINT_TO_POINTER((int)step));
+    GtkWidget *jumpto_btn = gtk_button_new_with_label("Jump to step");
+    gtk_box_pack_start(GTK_BOX(buttons), jumpto_btn, FALSE, FALSE, 0);
+    g_signal_connect(jumpto_btn, "clicked", G_CALLBACK(_on_jumpto_step),
+            GINT_TO_POINTER((int)step));
 
     //Add to history
     gtk_box_pack_start(GTK_BOX(get_history(NULL)), tile_o, FALSE, FALSE, 0);
@@ -536,10 +549,10 @@ void save_step(STEP step) {
     } else if (step == STEP_EXTRACT) {
         GtkWidget *extract = step_widget(step+1, NULL);
         //Grab content of text view or smth
-        GtkTextBuffer *b_grid = g_object_get_data(G_OBJECT(extract), "grid");
+        GtkTextBuffer *b_grid = g_object_get_data(G_OBJECT(extract), "buffer");
         file_save(&b_grid, EXT_TXT);
         GtkTextBuffer *b_wordlist = g_object_get_data(G_OBJECT(extract),
-                "wordlist");
+                "buffer:words");
         file_save(&b_wordlist, EXT_TXT);
     } else if (step == STEP_SOLVE) {
         GtkWidget *textview = step_widget(step+1, NULL);

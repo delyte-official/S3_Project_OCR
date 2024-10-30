@@ -111,3 +111,30 @@ void _on_save_btn(GtkWidget*, gpointer) {
     STEP* curr_step = get_step();
     save_step(*curr_step-1);
 }
+
+/* _on_step_save_history():
+    Saves the step of the clicked history tile.
+*/
+void _on_step_save_history(GtkWidget*, STEP step) {
+    save_step(step);
+}
+
+
+/* _on_jumpto_step():
+    Jump to the specified step.
+*/
+void _on_jumpto_step(GtkWidget*, STEP step) {
+    int dst = (int)step+1;
+    STEP *curr_step = get_step();
+    int src = (int)(*curr_step);
+    if (dst-src > 0) {
+        for (int i = src; i < dst; i++) {
+            //We know the steps have already been computed.
+            NextStep(NULL, NULL);
+        }
+    } else if (dst-src < 0) {
+        for (int i = src; i > dst; i--) {
+            ShowPrevious(NULL, NULL);
+        }
+    }
+}

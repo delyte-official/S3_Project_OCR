@@ -315,12 +315,13 @@ int NextStep(GtkWidget*, gpointer) {
             g_object_set_data(G_OBJECT(widget), "path:grid", "src/bin/grid");
             g_object_set_data(G_OBJECT(widget), "path:wordlist",
                     "src/bin/word_list");
-            g_object_set_data(G_OBJECT(widget), "grid", buffer);
-            g_object_set_data(G_OBJECT(widget), "wordlist", buffer2);
+            g_object_set_data(G_OBJECT(widget), "buffer", buffer);
+            g_object_set_data(G_OBJECT(widget), "buffer:words", buffer2);
             g_object_set_data(G_OBJECT(widget), "size:wordlist",
                     GINT_TO_POINTER(8));
             step_widget(STEP_SOLVE, widget);
             //END OF REPLACING
+            add_history_step(STEP_EXTRACT);
             ShowNext();
             break;
         case STEP_SOLVE:
@@ -332,6 +333,7 @@ int NextStep(GtkWidget*, gpointer) {
             int size = GPOINTER_TO_INT(g_object_get_data(
                         G_OBJECT(extracted), "size:wordlist"));
             Solver_Run(grid, wordlist, size);
+            add_history_step(STEP_SOLVE);
             ShowNext();
             break;
         case STEP_RECONSTRUCT:
