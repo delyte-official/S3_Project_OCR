@@ -16,5 +16,6 @@ void Build_Interface(GtkWidget *window, int width, int height);
 int file_selector();
 int file_save(void* data, EXTENSION type);
 void save_step(STEP step);
+int confirm_dialog(char* text);
 
 #endif

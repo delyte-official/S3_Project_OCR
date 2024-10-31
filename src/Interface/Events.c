@@ -72,7 +72,8 @@ void _on_select_image_btn(GtkWidget*, gpointer) {
     GtkWidget* curr_widget = step_widget(1, NULL);
     if (curr_widget == NULL) {
         NextStep(NULL, NULL);
-    } else if (1) {//Ask dialog to continue
+    } else if (confirm_dialog("This will erase any steps that have not been"
+                " saved.")) {//Ask dialog to continue
         if (file_selector(NULL, NULL)) {
             //Reset work
             for (int i = -2; i > -6; i--) {

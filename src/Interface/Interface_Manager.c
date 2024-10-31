@@ -600,3 +600,31 @@ void save_step(STEP step) {
         file_save(&buffer, EXT_TXT);
     }
 }
+
+
+/* confirm_dialog():
+    Pops up a confirmation dialog on the window.
+*/
+int confirm_dialog(
+        char* text) {
+    GtkWidget *display = get_display(NULL);
+    GtkWidget *dialog = gtk_dialog_new_with_buttons("Confirm?",
+            GTK_WINDOW(gtk_widget_get_toplevel(display)), //Main window
+            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+            "Confirm", GTK_RESPONSE_OK,
+            "Cancel", GTK_RESPONSE_CANCEL,
+            NULL);
+
+    //Add confirmation text
+    GtkWidget *area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    GtkWidget *label = gtk_label_new(text);
+    GtkWidget *label_c = gtk_label_new("Are you sure you want to continue?");
+    gtk_container_add(GTK_CONTAINER(area), label);
+    auto_pack_box(GTK_ORIENTATION_VERTICAL,0,area,FALSE,FALSE, 0, 1, -1, 30);
+    gtk_container_add(GTK_CONTAINER(area), label_c);
+    //Run the dialog
+    gtk_widget_show_all(dialog);
+    gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+    return response == GTK_RESPONSE_OK;
+}
