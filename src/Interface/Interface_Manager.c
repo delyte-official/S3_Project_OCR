@@ -144,7 +144,7 @@ void get_controls(
         GtkWidget** widget) {
     //0: Prev    //2: Auto
     //1: Next    //3: Save
-    static GtkWidget* controls[4] = {NULL};
+    static GtkWidget* controls[5] = {NULL};
     if (controls[place] == NULL)
         controls[place] = *widget;
     if (widget != NULL)
@@ -217,18 +217,22 @@ GtkWidget* get_history(GtkWidget *widget) {
 }
 
 
-/* clear_history():
+/* clear_history_from():
     Clears every step of the history.
 */
-void clear_history() {
+void clear_history_from(STEP step) {
     GList *child = gtk_container_get_children(
             GTK_CONTAINER(get_history(NULL)));
     //Skipping header of history
     //child = child->next;
-    //Deleting steps
+    //Searching for step
+    int i = 0;
+    while (i < (int)step && child != NULL) {
+        child = child->next;
+        i+=1;
+    }
     while (child != NULL) {
-        GtkWidget *step = GTK_WIDGET(child->data);
-        gtk_widget_destroy(step);
+        gtk_widget_destroy(GTK_WIDGET(child->data));
         child = child->next;
     }
 }
@@ -430,7 +434,7 @@ void Build_Interface(
     gtk_widget_set_size_request(GTK_WIDGET(auto_btn), width / 8, -1);
     g_signal_connect(auto_btn, "clicked", G_CALLBACK(_on_auto_btn), NULL);
     get_controls(2, &auto_btn);
-
+    
     //Button Control: Save
     GtkWidget* save_btn = gtk_button_new_with_label("Save Step");
     center_widget(save_btn);
@@ -439,6 +443,13 @@ void Build_Interface(
     g_signal_connect(save_btn, "clicked", G_CALLBACK(_on_save_btn), NULL);
     gtk_widget_set_sensitive(save_btn, FALSE);
     get_controls(3, &save_btn);
+    //Button Control: Modify Image
+    GtkWidget* modify_btn = gtk_button_new_with_label("Modify Image");
+    center_widget(modify_btn);
+    gtk_box_pack_end(GTK_BOX(header_b), modify_btn, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(modify_btn, -1, height / 24);
+    g_signal_connect(modify_btn, "clicked", G_CALLBACK(_on_modify_btn), NULL);
+    get_controls(4, &modify_btn);
 
     //Helper of vertical section //TO ADD AFTER
     /*GtkWidget *helper_b = */auto_pack_box(GTK_ORIENTATION_VERTICAL,
@@ -455,6 +466,9 @@ void Build_Interface(
 
     ////Show all the created widgets
     gtk_widget_show_all(window);
+
+    //Hide some widgets
+    gtk_widget_hide(modify_btn);
 }
 
 
@@ -487,10 +501,11 @@ int file_selector() {
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
         if (pixbuf != NULL) {
             //Resizing the image to fit the display section
-            pixbuf = resize_from_container(pixbuf, display_b);
+            GdkPixbuf *resized = resize_from_container(pixbuf, display_b);
             //Creating the image
-            GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
-            //Storing the pixbuf inside the image widget
+            GtkWidget *image = gtk_image_new_from_pixbuf(resized);
+            //Storing the original pixbuf inside the image widget
+            //to keep as much quality as possible while displaying "resized"
             g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
             g_object_ref(pixbuf);
             //Saving that widget as a STEP WIDGET
@@ -627,4 +642,65 @@ int confirm_dialog(
     gint response = gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
     return response == GTK_RESPONSE_OK;
+}
+
+
+/* modify_image():
+    Modifies the input image from user input such as rotation angle.
+*/
+int modify_image() {
+    GtkWidget *display = get_display(NULL);
+    GtkWidget *dialog = gtk_dialog_new_with_buttons("Modify Image",
+            GTK_WINDOW(gtk_widget_get_toplevel(display)), //Main window ag
+            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+            "Confirm", GTK_RESPONSE_OK,
+            "Cancel", GTK_RESPONSE_CANCEL,
+            NULL); //End of sentinel
+    //Modify image
+    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+    GtkWidget *area = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add(GTK_CONTAINER(content), scroll);
+    gtk_container_add(GTK_CONTAINER(scroll), area);
+    gtk_widget_set_size_request(scroll, 900, 900);
+
+    GObject *curr_step = G_OBJECT(step_widget(STEP_LOAD+1, NULL));
+    GdkPixbuf *original_pixbuf = g_object_get_data(curr_step, "pixbuf");
+    GtkWidget *image = gtk_image_new_from_pixbuf(original_pixbuf);
+    g_object_set_data(G_OBJECT(image), "pixbuf", original_pixbuf);
+    gtk_box_pack_start(GTK_BOX(area), image, TRUE, TRUE, 0);
+
+    GtkWidget *entry = gtk_entry_new();
+    gtk_box_pack_start(GTK_BOX(area), entry, TRUE, TRUE, 0);
+
+    GtkWidget *apply = gtk_button_new_with_label("Apply");
+    gtk_box_pack_start(GTK_BOX(area), apply, TRUE, TRUE, 0);
+    GtkWidget *error_show = gtk_label_new("Invalid float integer input.");
+    gtk_box_pack_start(GTK_BOX(area), error_show, TRUE, TRUE, 0);
+
+    GtkWidget *table[4] = {entry , image, error_show, area};
+    g_signal_connect(apply, "clicked",
+            G_CALLBACK(_on_apply_rotation), table);
+    //Run the dialog
+    gtk_widget_show_all(dialog);
+    gtk_widget_hide(error_show);
+    gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+    if (response == GTK_RESPONSE_OK) { //Save modifications
+        //Grab result
+        GdkPixbuf *result = g_object_get_data(G_OBJECT(image), "pixbuf");
+        //Update display + stockage
+        GtkWidget *displayed = step_widget(STEP_LOAD+1,NULL);
+        //Resized version
+        GdkPixbuf *resized = resize_from_container(result, get_display(NULL));
+        gtk_image_set_from_pixbuf(GTK_IMAGE(displayed), resized);
+        g_object_set_data(G_OBJECT(displayed), "pixbuf", result);
+        g_object_ref(result);
+        gtk_widget_destroy(dialog);
+        //Updating history
+        clear_history_from(STEP_LOAD);
+        add_history_step(STEP_LOAD);
+        return 1;
+    }
+    gtk_widget_destroy(dialog);
+    return 0;
 }

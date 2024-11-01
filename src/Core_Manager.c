@@ -102,7 +102,9 @@ GtkWidget* step_widget(int step, GtkWidget* set) {
             gtk_widget_destroy(step_widgets[new_step]);
             step_widgets[new_step] = NULL;
         }
-    } else if (set != NULL)
+        return NULL;
+    }
+    if (set != NULL)
         step_widgets[step] = set;
     return step_widgets[step];
 }
@@ -225,11 +227,17 @@ void ShowNext() {
             gtk_widget_set_sensitive(control03_btn, TRUE);
             get_controls(3, &control03_btn);
             gtk_widget_set_sensitive(control03_btn, TRUE);
+            get_controls(4, &control03_btn);
+            gtk_widget_show(control03_btn);
             break;
         case STEP_FILTER:
             //Grab the image to display
             GtkWidget *image2 = step_widget(2, NULL);
             set_display(image2);
+
+            GtkWidget* control4_btn;
+            get_controls(4, &control4_btn);
+            gtk_widget_hide(control4_btn);
             break;
         case STEP_EXTRACT:
             //Grab the container to display
@@ -284,9 +292,13 @@ int NextStep(GtkWidget*, gpointer) {
             GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
             //FOR FUTURE: MODIFY PIXBUF WITH FILTERING
             GdkPixbuf *new_pixbuf = gdk_pixbuf_copy(pixbuf);
-            GtkWidget *new_image = gtk_image_new_from_pixbuf(new_pixbuf);
-            g_object_ref(new_pixbuf);
+            //Resizing for display
+            GdkPixbuf *resized = resize_from_container(new_pixbuf,
+                    get_display(NULL));
+            GtkWidget *new_image = gtk_image_new_from_pixbuf(resized);
             g_object_set_data(G_OBJECT(new_image), "pixbuf", new_pixbuf);
+            g_object_ref(new_pixbuf);
+            //Display
             step_widget(2, new_image);
             //TO PLACE IN ZYPAW FUNCTION (whats between comments)
             add_history_step(STEP_FILTER);
@@ -342,14 +354,16 @@ int NextStep(GtkWidget*, gpointer) {
             break;
         case STEP_RECONSTRUCT:
             //CHANGE THIS WITH RECONSTRUCTION
-            GtkWidget *imageN = step_widget(1, NULL);
-            GdkPixbuf *pixbufN = g_object_get_data(G_OBJECT(imageN), "pixbuf");
-            //FOR FUTURE: RECONSTRUCT IMAGE
-            GdkPixbuf *new_pixbufN = gdk_pixbuf_copy(pixbufN);
-            GtkWidget *new_imageN = gtk_image_new_from_pixbuf(new_pixbufN);
-            g_object_ref(new_pixbufN);
-            g_object_set_data(G_OBJECT(new_imageN), "pixbuf", new_pixbufN);
-            step_widget(STEP_RECONSTRUCT+1, new_imageN);
+            GtkWidget *imageR = step_widget(1, NULL);
+            GdkPixbuf *pixbufR = g_object_get_data(G_OBJECT(imageR), "pixbuf");
+            GdkPixbuf *new_pixbufR = gdk_pixbuf_copy(pixbufR);
+            //Resized
+            GdkPixbuf *resizedR = resize_from_container(new_pixbufR,
+                    get_display(NULL));
+            GtkWidget *new_imageR = gtk_image_new_from_pixbuf(resizedR);
+            g_object_set_data(G_OBJECT(new_imageR), "pixbuf", new_pixbufR);
+            g_object_ref(new_pixbufR);
+            step_widget(STEP_RECONSTRUCT+1, new_imageR);
             //TO PLACE IN ZYPAW FUNCTION (whats between comments)
             add_history_step(STEP_RECONSTRUCT);
             ShowNext();
@@ -398,6 +412,10 @@ void ShowPrevious(GtkWidget*, gpointer) {
             //Reshow loaded image not filtered
             GtkWidget* image4 = step_widget(STEP_LOAD+1, NULL);
             set_display(image4);
+
+            GtkWidget *control4_btn;
+            get_controls(4, &control4_btn);
+            gtk_widget_show(control4_btn);
             break;
         case STEP_FILTER:
             //Reshow select file button
@@ -409,6 +427,8 @@ void ShowPrevious(GtkWidget*, gpointer) {
             gtk_widget_set_sensitive(control03_btn, FALSE);
             get_controls(3, &control03_btn);
             gtk_widget_set_sensitive(control03_btn, FALSE);
+            get_controls(4, &control03_btn);
+            gtk_widget_hide(control03_btn);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");
