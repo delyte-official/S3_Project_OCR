@@ -4,35 +4,35 @@ Application in C done as a project of the S3 EPITA semester.
 Inputs a word search game as an image, solves it,
 and returns the solution graphically on a reconstruction.
 
-# How to use the Application
+# Application Guide
 
-### Compile and Run the Application
-Calling "make" (eventually "make all") will compile the entire application.
-Calling "./main" afterwards will launch the application.
+### Launch the Application
+1. Run "make" (or "make all") to compile the application.
+2. Launch with "./main".
 
-Example case:
-> make
+### Key Sections
+1. Display Section (left side):
+    Shows the results of each solving step.
+2. Control Pannel (top left):
+    1. **Auto Complete**: Completes all steps instantly.
+    2. **Next**: Performs next step.
+    3. **Previous**: Shows previous step without resetting any progress.
+    4. **Save Step**: Save current step ouput (eg. image, text files..).
+    5. **Modify Image**: Allows image modifications before processing.
+3. History (bottom left):
+    Lists every processed step.
+    You can jump back to or save any step.
 
-> ./main
-
-### Use the Application
-The most important parts of the Application are:
-
-1. The display section (on the left):
-    It will display the results of every steps of the solving process.
-    You can start by clicking on the Import Button to import an image.
-2. The control pannel (on the top left):
-    1. "Auto Complete" button:
-        Will perform every steps instantly, unless stopped by the user.
-    2. "Next" button:
-        Performs the next step, if there is one.
-    3. "Previous" button:
-        Show the previous step without erasing the progress.
-    4. "Save Step" button:
-        Save the elements of the current step (eg. image, text files..).
-    5. "Modify Image" button:
-        Only appears after importing an image.
-        Allows the user to modify the input image before processing.
-3. The history (on the bottom left):
-    Shows and records every processed step.
-    Allows the user to jump back to a previous step or save it.
+### How to use
+1. Import an image:
+    - Click the import button or **Next**.
+    - Click **Auto Complete** (note: input image will not be modifiable).
+2. Advance steps:
+    - Click **Next**.
+    - Click **Auto Complete** for all steps.
+3. Save output (eg. final result):
+    - Click **Save Step**.
+    - Click **Save** in the history tile.
+4. Review previous steps:
+    1. Click **Previous**.
+    2. Modify from a previous step to re-run the process on new input.
