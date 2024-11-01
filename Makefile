@@ -2,7 +2,7 @@ CC := gcc
 
 ###FLAGS
 CFLAGS := -Wall -Wextra `pkg-config --cflags gtk+-3.0`
-LDFLAGS := -lSDL2 -lSDL2_image `pkg-config --libs gtk+-3.0` -lm
+LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 
 
 #All object files needed, categorized in directives:
