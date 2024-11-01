@@ -16,7 +16,7 @@ Example case:
 > ./main
 
 ### Use the Application
-The two most important part of the Application are:
+The most important parts of the Application are:
 
 1. The display section (on the left):
     It will display the results of every steps of the solving process.
