@@ -313,7 +313,7 @@ void add_history_step(STEP step) {
             FALSE,FALSE,30,0,(float)(global_width * 3) / 40,-1);
     auto_pack_box(GTK_ORIENTATION_VERTICAL,0,buttons,FALSE,FALSE,0,1,-1,50);
     //Save
-    GtkWidget *save_btn = gtk_button_new_with_label("Save step");
+    GtkWidget *save_btn = gtk_button_new_with_label("Save output");
     gtk_box_pack_start(GTK_BOX(buttons), save_btn, FALSE, FALSE, 0);
     g_signal_connect(save_btn, "clicked", G_CALLBACK(_on_step_save_history),
             GINT_TO_POINTER((int)step));
