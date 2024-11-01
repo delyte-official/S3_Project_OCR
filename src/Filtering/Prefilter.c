@@ -11,25 +11,21 @@ GdkPixbuf *rotate_pixbuf(GdkPixbuf *original, double angle) {
     int new_w = fabs(width * cos(rads)) + fabs(height * sin(rads));
     int new_h = fabs(width * sin(rads)) + fabs(height * cos(rads));
 
-    //Big enough pixbuf to hold the original image without forgetting pixels
-    GdkPixbuf *canva = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE,
-            8, new_w, new_h);
-    //Put white everywhere for to help the filtering
-    guint32 whitepix = 0xFFFFFFFF;
-    gdk_pixbuf_fill(canva, whitepix);
-
     //cairo is a tool to modify images fast
     cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
             new_w, new_h);
     cairo_t *cr = cairo_create(surface);
-    //go to mid
+    //Fill background with white
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_paint(cr);
+    //go to mid and rotate, then move back
     cairo_translate(cr, new_w/ 2, new_h /2);
     cairo_rotate(cr, rads);
     cairo_translate(cr, -width/ 2, -height/ 2);
-
     //update && render
     gdk_cairo_set_source_pixbuf(cr, original, 0, 0);
     cairo_paint(cr);
+
     //Grab result
     GdkPixbuf *res = gdk_pixbuf_get_from_surface(surface,0,0,new_w,new_h);
     //clr
