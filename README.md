@@ -9,5 +9,5 @@ Calling "make" (eventually "make all") will compile the entire application.
 Calling "./main" afterwards will launch the application.
 
 Example case:
-    $ make
-    $ ./main
+> make
+> ./main
