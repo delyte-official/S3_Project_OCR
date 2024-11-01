@@ -32,7 +32,7 @@ and returns the solution graphically on a reconstruction.
     - Click **Auto Complete** for all steps.
 3. Save output (eg. final result):
     - Click **Save Step**.
-    - Click **Save** in the history tile.
+    - Click **Save Output** in the history tile.
 4. Review previous steps:
     1. Click **Previous**.
     2. Modify from a previous step to re-run the process on new input.
