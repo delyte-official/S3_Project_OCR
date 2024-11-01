@@ -10,7 +10,9 @@ void _null_event(GtkWidget*, gpointer);
 void _on_select_image_btn(GtkWidget*, gpointer);
 void _on_auto_btn(GtkWidget* auto_btn, gpointer);
 void _on_save_btn(GtkWidget*, gpointer);
+void _on_modify_btn(GtkWidget*, gpointer);
 void _on_step_save_history(GtkWidget*, STEP step);
 void _on_jumpto_step(GtkWidget*, STEP step);
+void _on_apply_rotation(GtkWidget*, GtkWidget *table[4]);
 
 #endif

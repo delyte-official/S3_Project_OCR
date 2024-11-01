@@ -21,11 +21,13 @@ void _on_save_btn(GtkWidget*, gpointer);
 //Integrated C Libraries
 #include <err.h>
 #include <stdio.h>
+#include <string.h>
 //GTK Libraries
 #include <gtk/gtk.h>
 //Project Headers
 #include "Interface_Manager.h"
 #include "../Core_Manager.h"
+#include "../Filtering/Prefilter.h"
 #include "Events.h"
 ////END HEADERS
 
@@ -72,7 +74,8 @@ void _on_select_image_btn(GtkWidget*, gpointer) {
     GtkWidget* curr_widget = step_widget(1, NULL);
     if (curr_widget == NULL) {
         NextStep(NULL, NULL);
-    } else if (1) {//Ask dialog to continue
+    } else if (confirm_dialog("This will erase any steps that have not been"
+                " saved.")) {//Ask dialog to continue
         if (file_selector(NULL, NULL)) {
             //Reset work
             for (int i = -2; i > -6; i--) {
@@ -82,7 +85,7 @@ void _on_select_image_btn(GtkWidget*, gpointer) {
             STEP* curr_step = get_step();
             (*curr_step)++;
             //Reset history
-            clear_history();
+            clear_history_from(STEP_LOAD);
             //Add the first step again
             add_history_step(STEP_LOAD);
         }
@@ -112,6 +115,26 @@ void _on_save_btn(GtkWidget*, gpointer) {
     save_step(*curr_step-1);
 }
 
+
+/* _on_modify_btn():
+    Modifies the input image by user input such as rotation.
+*/
+void _on_modify_btn(GtkWidget*, gpointer) {
+    GtkWidget* next = step_widget(STEP_FILTER+1, NULL);
+    if (next != NULL) { //Already have steps
+        if (confirm_dialog("This will delete any further steps not saved.")) {
+            if (modify_image()) {
+                //Deleting everything behind this
+                for (int i = -1-STEP_FILTER; i > -6; i--) {
+                    step_widget(i, NULL);
+                }
+            }
+        }
+        return;
+    }
+    modify_image();
+}
+
 /* _on_step_save_history():
     Saves the step of the clicked history tile.
 */
@@ -137,4 +160,34 @@ void _on_jumpto_step(GtkWidget*, STEP step) {
             ShowPrevious(NULL, NULL);
         }
     }
+}
+
+
+/* _on_apply_rotation():
+    Apply the rotation from the user input.
+*/
+void _on_apply_rotation(GtkWidget*, GtkWidget *table[4]) {
+    GtkEntry *entry = GTK_ENTRY(table[0]);
+    const char *angle_txt = gtk_entry_get_text(entry);
+    //Convert to double
+    char* end;
+    errno = 0;
+    double angle = strtod(angle_txt, &end);
+    if (end == angle_txt || errno == ERANGE || *end != '\0') {
+        //Error in string
+        gtk_widget_show(table[2]);
+        return;
+    }
+    //Clamping angle
+    while (angle < -360.0)
+        angle += 360.0;
+    while (angle > 360.0)
+        angle -= 360.0;
+    //Rotate
+    GtkImage *dis_image = GTK_IMAGE(table[1]);
+    GObject *curr_image = G_OBJECT(step_widget(STEP_LOAD+1, NULL));
+    GdkPixbuf *pixbuf = g_object_get_data(curr_image, "pixbuf");
+    GdkPixbuf *rotated = rotate_pixbuf(pixbuf, angle);
+    gtk_image_set_from_pixbuf(dis_image, rotated);
+    g_object_set_data(G_OBJECT(dis_image), "pixbuf", rotated);
 }
