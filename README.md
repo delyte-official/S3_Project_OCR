@@ -5,10 +5,9 @@ Inputs a word search game as an image, solves it and returns the solution graphi
 
 ## How to use the Application
 ### Compile and Run the Application
-A simple call to the basic "make" command will handle all the compilation alone.
-Simply run "./main" afterwards to launch the application.
-> Example:
-```C
-make
-./main
-```
+Calling "make" (eventually "make all") will compile the entire application.
+Calling "./main" afterwards will launch the application.
+
+Example case:
+> make
+> ./main
