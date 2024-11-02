@@ -55,6 +55,8 @@ void _application_init(
     gtk_window_get_size(GTK_WINDOW(window), &width, &height);
     if (width > global_width || height >= global_height)
         return;
+    width = 1920; //Find a way for measure width without the terminal
+                  //restraining it
     Build_Interface(window, width, height);
     g_signal_handlers_disconnect_matched(window, G_SIGNAL_MATCH_FUNC, 0, 0,
             NULL, G_CALLBACK(_application_init), NULL);
