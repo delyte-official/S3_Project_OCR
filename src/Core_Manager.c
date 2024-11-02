@@ -29,6 +29,7 @@ void NextStep(GtkWidget,void*);
 #include "Interface/Window_Manager.h"
 #include "Interface/Interface_Manager.h"
 #include "Interface/Events_Manager.h"
+#include "Extraction/extraction.h"
 #include "Debug.h"
 #include "Core_Manager.h"
 //Tools
@@ -52,7 +53,7 @@ STEP* get_step() {
 
 
 /* get_display():
-    Returns the the display section of the Application.
+    Returns the display section of the Application.
     If first time called:
         - initialize the display box through the pointer "widget"
     else, widget is considered to be pointing towards the child of display:
