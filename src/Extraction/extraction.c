@@ -408,6 +408,30 @@ Line** search_for_grid(GdkPixbuf *pixbuf, int *nb_h_lines, int *nb_v_lines)
 
 
 /*
+    cut_from_pixbuf()
+  Creates and returns a new subpixbuf from the original pixbuf and a BoundingBox
+  representing the positions of the element to cut.
+  Params:
+   - original : the original pixbuf.
+   - bounds : the bounds of the element to cut.
+  Return Value: a new subpixbuf of the element we had to cut.
+*/
+GdkPixbuf* cut_from_pixbuf(GdkPixbuf *original, BoundingBox bounds)
+{
+    int sub_w = bounds.bottom_right.x - bounds.top_left.x;
+    int sub_h = bounds.bottom_right.y - bounds.top_left.y;
+    GdkPixbuf *subpix = gdk_pixbuf_new_subpixbuf(original, //Source
+            bounds.top_left.x, bounds.top_left.y,//Top_left pos
+            sub_w, sub_h); //Top_right pos relative to top_left pos
+
+    //Create copy bc "subpix" shares data with "original"
+    GdkPixbuf *res = gdk_pixbuf_copy(subpix);
+    return res;
+}
+
+
+
+/*
     save_boundingBox_as_pixbuf()
   Saves a BoundingBox as a pixbuf from the original pixbuf into a determined
   folder with a determined name. File format is "png".
@@ -422,21 +446,26 @@ Line** search_for_grid(GdkPixbuf *pixbuf, int *nb_h_lines, int *nb_v_lines)
 void save_boundingBox_as_pixbuf(GdkPixbuf *pixbuf, BoundingBox box,
                                 char* path_flag, char* filename)
 {
-    char* path;
-
     if (strcmp(path_flag, "GRID") == 0) //"GRID"
     {
-        path = strcat("./src/Extraction/extracted_images/grid/", filename);
-        path = strcat(path, ".png");
+        char path[44 + strlen(filename)];  //44 = len(path) + len(.png) + \0
+        strcpy(path, "./src/Extraction/extracted_images/grid/");
+        strcat(path, filename);
+        strcat(path, ".png");
+
+        GdkPixbuf* box_pixbuf = cut_from_pixbuf(pixbuf, box);
+        gdk_pixbuf_save(box_pixbuf, path, "png", NULL, NULL);
     }
     else //"WORDLIST"
     {
-        path = strcat("./src/Extraction/extracted_images/wordlist/", filename);
-        path = strcat(path, ".png");
-    }
+        char path[48 + strlen(filename)];  //48 = len(path) + len(.png) + \0
+        strcpy(path, "./src/Extraction/extracted_images/wordlist/");
+        strcat(path, filename);
+        strcat(path, ".png");
 
-    GdkPixbuf* box_pixbuf = cut_from_pixbuf(pixbuf, box);
-    gdk_pixbuf_save(box_pixbuf, path, "png", NULL, NULL);
+        GdkPixbuf* box_pixbuf = cut_from_pixbuf(pixbuf, box);
+        gdk_pixbuf_save(box_pixbuf, path, "png", NULL, NULL);
+    }
 }
 
 
@@ -478,7 +507,7 @@ void save_grid_pixbuf(GdkPixbuf *pixbuf, Line **lines)
 /*
     save_grid_letters_pixbuf()
   Saves the BoundingBox of each letter as a pixbuf from the original pixbuf into
-  a determined folder with a determined name. File will be saved as a .png.
+  a determined folder as 'letter_X_Y'. File will be saved as a .png.
   Params:
    - pixbuf: the original pixbuf.
    - lines : the lines of the word search grid
@@ -495,16 +524,43 @@ void save_grid_letters_pixbuf(GdkPixbuf *pixbuf, Line **lines,
         for (int col = 0; col < n_v_lines-1; col++)
         {
             //finding position
-            BoundingBox letter = {{lines[0][col].begin.x, 
-                                   lines[1][row].begin.y},
-                                  {lines[0][col+1].end.x,
-                                   lines[1][row+1].end.y}};
+            BoundingBox letter = {{lines[1][col].begin.x, 
+                                   lines[0][row].begin.y},
+                                  {lines[1][col+1].end.x,
+                                   lines[0][row+1].end.y}};
             
-            
+            /*
+            printf("box = (%d, %d) to (%d, %d)\n", letter.top_left.x, 
+                                                   letter.top_left.y,
+                                                   letter.bottom_right.x,
+                                                   letter.bottom_right.y);
+            */
+
+            int size_x;
+            int size_y;
+
+            if (col/10 > 0)
+                size_x = 3;
+            else
+                size_x = 2;
+
+            if (row/10 > 0)
+                size_y = 3;
+            else
+                size_y = 2;
+
             //saving position as an image
-            char pos[3];
-            snprintf(pos, sizeof(pos), "%d%d", col, row);
-            char *filename = strcat("letter_", pos);
+            char posx[size_x];
+            snprintf(posx, sizeof(posx), "%d", col);
+            char posy[size_y];
+            snprintf(posy, sizeof(posy), "%d", row);
+            
+            char filename[9+(size_x-1)+(size_y-1)]; //9 = len(letter_)+len(_)+\0
+            strcpy(filename, "letter_");
+            strcat(filename, posx);
+            strcat(filename, "_");
+            strcat(filename, posy);
+
             save_boundingBox_as_pixbuf(pixbuf, letter, "GRID", filename);
         }
     }
@@ -562,7 +618,8 @@ void extraction(GdkPixbuf *pixbuf)
 
 int main()
 {
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("./examples/level_1_image_1.png", NULL);
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(
+                        "./examples/level_1_image_1.png", NULL);
     extraction(pixbuf);
     return 0;
 }
@@ -585,7 +642,8 @@ int main()
      - **letter_struct : a 2D-array of letters representing the grid or list.
 */
 /*
-void display_letter_pos(int width, int height, BoundingBox letter_struct[height][width])
+void display_letter_pos(int width, int height, 
+                        BoundingBox letter_struct[height][width])
 {
     for (int x = 0; x < height-1; x++)
     {
@@ -613,7 +671,8 @@ void display_lines(GdkPixbuf *src, GdkPixbuf *dst, Line *lines, int max_lines)
 
     for (int i = 0; i < max_lines; i++)
     {
-        guchar *pixel1 = pixels + lines[i].y1 * rowstride + lines[i].x1 * n_channels;
+        guchar *pixel1 = pixels + lines[i].y1 * rowstride
+                       + lines[i].x1 * n_channels;
         
         pixel1[0] = 255;
         pixel1[1] = 0;
@@ -623,7 +682,8 @@ void display_lines(GdkPixbuf *src, GdkPixbuf *dst, Line *lines, int max_lines)
             pixel1[3] = 255;
         }
 
-        guchar *pixel2 = pixels + lines[i].y2 * rowstride + lines[i].x2 * n_channels;
+        guchar *pixel2 = pixels + lines[i].y2 * rowstride
+                       + lines[i].x2 * n_channels;
         
         pixel2[0] = 0;
         pixel2[1] = 0;
@@ -805,10 +865,14 @@ void hough_transform(GdkPixbuf *pixbuf, Line *lines, int *max_lines)
                     int adjusted_rho = rho - max_rho; //To original rho value
 
                     // Calculate boundaries of detected line
-                    int x1 = (int)(adjusted_rho * cos(theta_rad) - sin(theta_rad) * height);
-                    int y1 = (int)(adjusted_rho * sin(theta_rad) + cos(theta_rad) * height);
-                    int x2 = (int)(adjusted_rho * cos(theta_rad) + sin(theta_rad) * width);
-                    int y2 = (int)(adjusted_rho * sin(theta_rad) - cos(theta_rad) * width);
+                    int x1 = (int)(adjusted_rho * cos(theta_rad)
+                           - sin(theta_rad) * height);
+                    int y1 = (int)(adjusted_rho * sin(theta_rad)
+                           + cos(theta_rad) * height);
+                    int x2 = (int)(adjusted_rho * cos(theta_rad)
+                           + sin(theta_rad) * width);
+                    int y2 = (int)(adjusted_rho * sin(theta_rad)
+                           - cos(theta_rad) * width);
 
                     // Store the line endpoints
                     lines[line_count].x1 = x1;
@@ -839,7 +903,8 @@ int main()   //FORMER MAIN
 {
     
     //SOBEL IS DONE !!!
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("./examples/filtered1.png", NULL);
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("./examples/filtered1.png",
+                                                 NULL);
     GdkPixbuf *h_t_pixbuf = extraction(pixbuf);
     //gdk_pixbuf_save(h_t_pixbuf, "./examples/hough1.png", "png", NULL, NULL);
 
