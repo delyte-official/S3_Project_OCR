@@ -338,7 +338,7 @@ void Build_Interface(
         int height) {
     //Setting static variables
     display_width = (float)(width * 17) / 40;
-    display_height = (float)(height * 7) / 10;
+    display_height = (float)(height * 66) / 100;
     ////MAIN CONTAINER
     GtkWidget *main_o = gtk_overlay_new();
     gtk_container_add(GTK_CONTAINER(window), main_o);

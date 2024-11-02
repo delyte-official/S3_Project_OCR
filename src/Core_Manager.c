@@ -325,7 +325,7 @@ int NextStep(GtkWidget*, gpointer) {
             GtkTextBuffer *buffer2 = gtk_text_view_get_buffer(
                     GTK_TEXT_VIEW(text_view2));
             FILE *file2 = fopen("src/bin/word_list", "r");
-            while (fgets(line, sizeof(line), file))
+            while (fgets(line, sizeof(line), file2))
                 gtk_text_buffer_insert_at_cursor(buffer2, line, -1);
             fclose(file2);
             g_object_set_data(G_OBJECT(widget), "path:grid", "src/bin/grid");
