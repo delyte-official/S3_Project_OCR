@@ -77,6 +77,9 @@ Line* horizontal_search(GdkPixbuf *pixbuf, int *nb_h_lines)
 
     int n_h_lines = 0; //count horizontal lines
 
+    //msg to manage thick lines
+    int msg = 0;
+
     //Horizontal search
     for (int y = 0; y < height; y++)
     {
@@ -84,7 +87,7 @@ Line* horizontal_search(GdkPixbuf *pixbuf, int *nb_h_lines)
         guchar *p;
         Line line = {{0, y}, {0, y}}; //init at y coords
 
-        while (x < width && line.end.x == 0)
+        while (x < width)
         {
             //Look into each pixel
             p = pixels + y * rowstride + x * n_channels;
@@ -111,30 +114,39 @@ Line* horizontal_search(GdkPixbuf *pixbuf, int *nb_h_lines)
                     x++;
                 }
 
-                //Line is finished : verify if the line is making at least 50%
+                //Line is finished : verify if the line is making at least 33%
                 //of the pixbuf's width (arbitrary)
-                if (line.end.x - line.begin.x >= width/2)
+                if (line.end.x - line.begin.x >= width/3)
                 {
-                    //Then we can add the line to the array  containing 
-                    //the final lines
-                    if (n_h_lines < height/8)
+                    if (msg == 0)
                     {
-                        h_lines[n_h_lines] = line;
-                        n_h_lines++;
+                        //Then we can add the line to the array containing 
+                        //the final lines
+                        if (n_h_lines < height/8)
+                        {
+                            h_lines[n_h_lines] = line;
+                            n_h_lines++;
+                            msg = 1;
+                        }
+                        else
+                        {
+                            printf("Horizontal line array full !\n");
+                        }
                     }
-                    else
+                    else //msg = 1
                     {
-                        printf("Horizontal line array full !\n");
+                        //Replace the last line of h_lines with line
+                        h_lines[n_h_lines-1] = line;
                     }
-                }
-                else //if line not long enough, reset x coords
-                {
-                    line.begin.x = 0;
-                    line.end.x = 0;
+                    break;
                 }
             }
 
             x++;
+        }
+        if (x == width)
+        {
+            msg = 0;
         }
     }
 
@@ -184,6 +196,9 @@ Line* vertical_search(GdkPixbuf *pixbuf, int *nb_v_lines)
 
     int n_v_lines = 0; //count vertical lines
 
+    //msg to manage thick lines
+    int msg = 0;
+
     //Vertical search
     for (int x = 0; x < width; x++)
     {
@@ -192,7 +207,7 @@ Line* vertical_search(GdkPixbuf *pixbuf, int *nb_v_lines)
         Line line = {{x, 0}, {x, 0}}; //init at x coords
 
         //While traversing the column and we did not foung a long-enough line
-        while (y < height && line.end.y == 0)
+        while (y < height)
         {
             //Look into each pixel
             p = pixels + y * rowstride + x * n_channels;
@@ -219,30 +234,39 @@ Line* vertical_search(GdkPixbuf *pixbuf, int *nb_v_lines)
                     y++;
                 }
 
-                //Line is finished : verify if the line is making at least 50%
+                //Line is finished : verify if the line is making at least 33%
                 //of the pixbuf's height (arbitrary)
-                if (line.end.y - line.begin.y >= height/2)
+                if (line.end.y - line.begin.y >= height/3)
                 {
-                    //Then we can add the line to the array containing 
-                    //the final lines
-                    if (n_v_lines < width/8)
+                    if (msg == 0)
                     {
-                        v_lines[n_v_lines] = line;
-                        n_v_lines++;
+                        //Then we can add the line to the array containing 
+                        //the final lines
+                        if (n_v_lines < width/8)
+                        {
+                            v_lines[n_v_lines] = line;
+                            n_v_lines++;
+                            msg = 1;
+                        }
+                        else
+                        {
+                            printf("Vertical line array full !\n");
+                        }
                     }
-                    else
+                    else //msg = 1
                     {
-                        printf("Vertical line array full !\n");
+                        //Replace the last line of h_lines with line
+                        v_lines[n_v_lines-1] = line;
                     }
-                }
-                else //if line not long enough, reset y coords
-                {
-                    line.begin.y = 0;
-                    line.end.y = 0;
+                    break;
                 }
             }
 
             y++;
+        }
+        if (y == height)
+        {
+            msg = 0;
         }
     }
 
@@ -383,6 +407,7 @@ Line** search_for_grid(GdkPixbuf *pixbuf, int *nb_h_lines, int *nb_v_lines)
     //if no horizontal lines, we stop here : no grid.
     if (h_lines == NULL) 
     {
+        free(lines);
         return NULL;
     }
     //Else, the grid exists. But we still have to know the position of each
@@ -605,13 +630,13 @@ void extraction(GdkPixbuf *pixbuf)
         //5 - Locate the top left and bottom right of the word list
         //6 - Locate Locate the top left and bottom right of each letter of
         //    the word list
-    }
 
-    //Do not forget to free the 'lines' array and the 'lines[0]' and 'lines[1]'
-    //array
-    free(lines[0]);
-    free(lines[1]);
-    free(lines);
+        //Do not forget to free the 'lines' array and the 'lines[0]' and
+        //'lines[1]' array
+        free(lines[0]);
+        free(lines[1]);
+        free(lines);
+    }
 }
 
 
@@ -619,7 +644,7 @@ void extraction(GdkPixbuf *pixbuf)
 int main()
 {
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(
-                        "./examples/level_1_image_1.png", NULL);
+                        "./examples/level_4_image_1.png", NULL);
     extraction(pixbuf);
     return 0;
 }
