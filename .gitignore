@@ -1,6 +1,10 @@
 #Custom Ignored Files
 main
 src/Solving/solver
+src/OCR/neural_network
+
+# VS-Code
+.vscode/
 
 # Prerequisites
 *.d
