@@ -11,6 +11,8 @@ typedef enum {
     STEP_RECONSTRUCT = 4,
     STEP_END = 5
 } STEP;
+extern int global_width;
+extern int global_height;
 
 STEP* get_step();
 GtkWidget* get_display(GtkWidget** widget);

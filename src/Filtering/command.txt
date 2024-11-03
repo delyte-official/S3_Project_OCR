@@ -1,1 +1,0 @@
-./filter ../../examples/level_1_image_1.png output_image.png 180 3
