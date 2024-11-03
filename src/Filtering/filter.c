@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-void grayscale_image(const char *input_filename, const char *output_filename, int threshold, int method) {
+void grayscale_image(const char *input_filename, const char *output_filename, 
+int threshold, int method) {
     // Load the image from a file
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(input_filename, NULL);
     if (!pixbuf) {
@@ -46,7 +47,6 @@ void grayscale_image(const char *input_filename, const char *output_filename, in
 
 int main(int argc, char *argv[]) {
     if (argc != 5) {
-        fprintf(stderr, "Usage: %s <input_image> <output_image> <threshold> <method>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
 
     grayscale_image(input_filename, output_filename, threshold, method);
 
-    printf("Image preprocessing complete. Output saved to '%s'.\n", output_filename);
+    printf("Image preprocessing complete. Output saved to '%s'.\n", 
+    output_filename);
     return EXIT_SUCCESS;
 }
