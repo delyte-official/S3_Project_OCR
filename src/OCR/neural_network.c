@@ -91,14 +91,14 @@ void forward_propagate(NeuralNetwork *network, double *inputs)
         Layer *prev_layer = &network->layers[i - 1];
 
         for (int j = 0; j < layer->num_neurons; j++) 
-	{
+        {
             Neuron *neuron = &layer->neurons[j];
             double activation = neuron->bias;
 
             for (int k = 0; k < prev_layer->num_neurons; k++) 
-	    {
+            {
                 activation += prev_layer->neurons[k].output 
-			* neuron->weights[k];
+                    * neuron->weights[k];
             }
             neuron->output = sigmoid(activation);
         }
@@ -112,23 +112,22 @@ void backward_propagate(NeuralNetwork *network, double *expected)
         Layer *layer = &network->layers[i];
 
         for (int j = 0; j < layer->num_neurons; j++) 
-	{
+        {
             Neuron *neuron = &layer->neurons[j];
 
             if (i == network->num_layers - 1) 
-	    {
+            {
                 neuron->delta = (expected[j] - neuron->output) 
-			* sigmoid_derivative(neuron->output);
-            } 
-	    else 
-	    {
+                    * sigmoid_derivative(neuron->output);
+            } else 
+            {
                 Layer *next_layer = &network->layers[i + 1];
                 double error = 0.0;
 
                 for (int k = 0; k < next_layer->num_neurons; k++) 
-		{
+                {
                     error += next_layer->neurons[k].weights[j] 
-			    * next_layer->neurons[k].delta;
+                        * next_layer->neurons[k].delta;
                 }
                 neuron->delta = error * sigmoid_derivative(neuron->output);
             }
@@ -146,7 +145,7 @@ void update_weights(NeuralNetwork *network) {
             Neuron *neuron = &layer->neurons[j];
             for (int k = 0; k < prev_layer->num_neurons; k++) {
                 neuron->weights[k] += LEARNING_RATE * neuron->delta 
-			* prev_layer->neurons[k].output;
+                    * prev_layer->neurons[k].output;
             }
             neuron->bias += LEARNING_RATE * neuron->delta;
         }
@@ -155,7 +154,7 @@ void update_weights(NeuralNetwork *network) {
 
 //Training of the network
 void train(NeuralNetwork *network, double inputs[][2], 
-		double outputs[][1], int num_samples) 
+        double outputs[][1], int num_samples) 
 {
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
         for (int i = 0; i < num_samples; i++) {
@@ -168,29 +167,29 @@ void train(NeuralNetwork *network, double inputs[][2],
 
 //Test of the network
 float test(NeuralNetwork *network, double inputs[][2], 
-		double outputs[][1], int num_samples) 
+        double outputs[][1], int num_samples) 
 {
-	float cvalid = 0;
+    float cvalid = 0;
     printf("Testing Results:\n");
     for (int i = 0; i < num_samples; i++) 
     {
         forward_propagate(network, inputs[i]);
         double result = network
-		->layers[network->num_layers - 1].neurons[0].output;
+            ->layers[network->num_layers - 1].neurons[0].output;
         printf("Input: %.0f, %.0f, Expected: %.0f, Network Output: %.5f\n", 
-			inputs[i][0], inputs[i][1], outputs[i][0], result);
-	if(fabs(outputs[i][0]-result)<0.1)
-		cvalid++;
+            inputs[i][0], inputs[i][1], outputs[i][0], result);
+    if(fabs(outputs[i][0]-result)<0.1)
+        cvalid++;
     }
     printf("Number of valid tests %f\n", cvalid); 
     return (cvalid/num_samples)*100;
 }
 
 // Global test to check accuracy
-float global_test(NeuralNetwork *network, double inputs[][2],
+double global_test(NeuralNetwork *network, double inputs[][2],
                 double outputs[][1], int num_samples)
 {
-        float cvalid = 0;
+    double res = 0;
     for (int i = 0; i < num_samples; i++)
     {
         forward_propagate(network, inputs[i]);
@@ -202,10 +201,15 @@ float global_test(NeuralNetwork *network, double inputs[][2],
                 outputs[i][0]);
         if(round == (int)outputs[i][0])
                 cvalid++;*/
-        if(fabs(outputs[i][0]-result)<0.01)
-                cvalid++;
+        if (outputs[i][0] > 0.5f) {
+            //printf("Test: %f\n", result);
+            res += result;
+        } else {
+            //printf("Test-: %f (%f)\n", 1 - result, result);
+            res += 1-result;
+        }
     }
-    return cvalid;
+    return res;
 }
 
 int main(int argc, char*argv[]) 
@@ -228,24 +232,21 @@ int main(int argc, char*argv[])
     int nb_tests = atoi(argv[1]);
     if (nb_tests>1)
     {
-	    float valid = 0;
-	for(int i =0; i<nb_tests; i++)
-	{
-    		train(&network, inputs, outputs, 4);
-    		valid += global_test(&network, inputs, outputs, 4);
-	}
-	printf("Number of valid tests = %f\n",valid);
-	printf("Accuracy is : %f pourcent\n",(valid/(nb_tests*4))*100);
-    }
-    else if(nb_tests==1)
+        double sum_accuracy = 0;
+        for(int i =0; i<nb_tests; i++)
+        {
+            train(&network, inputs, outputs, 4);
+            sum_accuracy += global_test(&network, inputs, outputs, 4);
+            //printf("Sum: %f\n", sum_accuracy);
+        }
+        printf("Accuracy is : %f pourcent\n",
+                (sum_accuracy*100)/(4*nb_tests));
+    } else if(nb_tests==1)
     {
-	train(&network, inputs, outputs, 4);
-	float percent = test(&network, inputs, outputs, 4); 
-	printf("Accuracy is : %f pourcent\n",percent);
-    }
-    else
-    {
-	    printf("Invalid nb of tests\n");
-    }
+        train(&network, inputs, outputs, 4);
+        float percent = test(&network, inputs, outputs, 4); 
+        printf("Accuracy is : %f pourcent\n",percent);
+    }else
+        printf("Invalid nb of tests\n");
     return 0;
 }
