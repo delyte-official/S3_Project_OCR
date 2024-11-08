@@ -1,6 +1,12 @@
-#Custom Ignored Files
+### Custom Ignored Files (executables)
+# MAIN
 main
-src/solver
+src/Solving/solver
+# EXTRACTION
+src/Extraction/extraction
+src/Extraction/Detection
+
+# VSCode
 .vscode/
 
 # Prerequisites
