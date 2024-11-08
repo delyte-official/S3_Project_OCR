@@ -1,6 +1,8 @@
-#Custom Ignored Files
+### Custom Ignored Files (executables)
+# MAIN
 main
-src/solver
+src/Solving/solver
+# FILTERING
 
 # Prerequisites
 *.d
