@@ -26,7 +26,6 @@ int Solver_Run(char*,char*);
 //Project Headers
 #include "../Core_Manager.h"
 #include "Solver_Manager.h"
-#include "../Debug.h"
 ////END HEADERS
 
 

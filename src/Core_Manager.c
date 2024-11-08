@@ -33,8 +33,9 @@ void PreviousStep(GtkWidget,int);
 #include "Interface/Interface_Manager.h"
 #include "Interface/Events.h"
 #include "Solving/Solver_Manager.h"
-#include "Debug.h"
+//#include "Debug.h"
 #include "Core_Manager.h"
+#include "Filtering/filter.h" 
 //Tools
 #include <gtk/gtk.h>
 ////END HEADERS
@@ -290,8 +291,9 @@ int NextStep(GtkWidget*, gpointer) {
         case STEP_FILTER:
             GtkWidget *image = step_widget(1, NULL);
             GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
-            //FOR FUTURE: MODIFY PIXBUF WITH FILTERING
-            GdkPixbuf *new_pixbuf = gdk_pixbuf_copy(pixbuf);
+            //Defining the constant variables for the filtering
+            int threshold = 180;
+            GdkPixbuf *new_pixbuf = grayscale_pixbuf(pixbuf, threshold);
             //Resizing for display
             GdkPixbuf *resized = resize_from_container(new_pixbuf,
                     get_display(NULL));
@@ -300,7 +302,6 @@ int NextStep(GtkWidget*, gpointer) {
             g_object_ref(new_pixbuf);
             //Display
             step_widget(2, new_image);
-            //TO PLACE IN ZYPAW FUNCTION (whats between comments)
             add_history_step(STEP_FILTER);
             ShowNext();
             break;

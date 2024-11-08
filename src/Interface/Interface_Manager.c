@@ -29,7 +29,6 @@ int file_save();
 #include <err.h>
 //Project Headers
 #include "Events.h"
-#include "../Debug.h"
 #include "../Core_Manager.h"
 #include "Interface_Manager.h"
 //Tools
