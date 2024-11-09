@@ -15,9 +15,24 @@ typedef struct {
     Draw a line from specific data properties.
 */
 void draw_line_from_data(GdkPixbuf* pixbuf,
-        Position start, Position end, //Positions
-        int thickness,
-        int r, int g, int b, int a) {
+        Position start_tl, Position start_br,
+        Position end_tl, Position end_br, //Positions
+        float thickness_ratio,
+        double r, double g, double b, double a) {
+    //Calculating data
+    //Calculating data
+    Position start_c = (Position) {
+        .x = (start_tl.x + start_br.x) /2,
+        .y = (start_tl.y + start_br.y) /2,
+    };
+    Position end_c = (Position) {
+        .x = (end_tl.x + end_br.x)/2,
+        .y = (end_tl.y + end_br.y)/2
+    };
+    int thickness = thickness_ratio * MAX(MAX(start_br.x-start_tl.x,
+                start_br.y-start_tl.y), MAX(end_br.x-end_tl.x,
+                    end_br.y-end_tl.y));
+
     int width = gdk_pixbuf_get_width(pixbuf);
     int height = gdk_pixbuf_get_height(pixbuf);
     int rowstride = gdk_pixbuf_get_rowstride(pixbuf);
@@ -33,8 +48,8 @@ void draw_line_from_data(GdkPixbuf* pixbuf,
     cairo_set_line_width(cr, thickness);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 
-    cairo_move_to(cr, start.x, start.y);
-    cairo_line_to(cr, end.x, end.y);
+    cairo_move_to(cr, start_c.x, start_c.y);
+    cairo_line_to(cr, end_c.x, end_c.y);
     cairo_stroke(cr);
 
     //Freeing
@@ -42,30 +57,6 @@ void draw_line_from_data(GdkPixbuf* pixbuf,
     cairo_surface_destroy(surface);
 }
 
-
-/* draw_highlight():
-    Draw a highlighted line on top of the letters.
-    //TODO: make the letters appear on top
-*/
-void draw_highlight(GdkPixbuf* pixbuf,
-        Position start_tl, //Top left of start letter
-        Position start_br, //Bottom right of start letter..
-        Position end_tl,
-        Position end_br) {
-    //Calculating data
-    Position start_c = (Position) {
-        .x = (start_tl.x + start_br.x) /2,
-        .y = (start_tl.y + start_br.y) /2,
-    };
-    Position end_c = (Position) {
-        .x = (end_tl.x + end_br.x)/2,
-        .y = (end_tl.y + end_br.y)/2
-    };
-    int thick = 1.5f * MAX(MAX(start_br.x-start_tl.x, start_br.y-start_tl.y),
-            MAX(end_br.x-end_tl.x, end_br.y-end_tl.y));
-    //Draw the line
-    draw_line_from_data(pixbuf, start_c, end_c, thick, 1, 0, 0, 0.5);
-}
 
 /*GdkPixbuf* reconstruct_from_data(GdkPixbuf* pixbuf,) {
     GdkPixbuf* res = gdk_pixbuf_copy(pixbuf);
@@ -97,7 +88,7 @@ int main(int argc, char* argv[]) {
     e2 = (Position) {.x=614,.y=669};
 
     //Call
-    draw_highlight(pixbuf, s1, s2, e1, e2);
+    draw_line_from_data(pixbuf, s1, s2, e1, e2, 0.4f, 1, 0, 0, 1);
 
     //Save
     gdk_pixbuf_save(pixbuf, "save.png", "png", NULL, NULL);
