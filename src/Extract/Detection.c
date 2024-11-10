@@ -140,7 +140,8 @@ void testing(Cluster *first, int size, GdkPixbuf *pixbuf) {
     //Iterating over the clusters
     while (first!=NULL) {
         //Coloring into red the whole cluster
-        printf("(Cluster) {.minX=%d,.maxX=%d,.minY=%d,.maxY=%d},\n",first->minX,first->maxX,first->minY,first->maxY);
+        if (first->maxX < 630)
+            printf("(Cluster) {.minX=%d,.maxX=%d,.minY=%d,.maxY=%d},\n",first->minX,first->maxX,first->minY,first->maxY);
         for (int x = first->minX; x <= first->maxX; x++) {
             p = pixels + first->minY*rowstride + x*N;
             p[0] = 255;p[1]=0;p[2]=0;
