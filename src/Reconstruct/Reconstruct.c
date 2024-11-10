@@ -112,10 +112,10 @@ int main(int argc, char* argv[]) {
     //Creating test data
     int XSIZE = 12;
     int YSIZE = 14;
-    int gminX[YSIZE] = {};
-    int gminY[YSIZE] = {};
-    int gmaxX[YSIZE] = {};
-    int gmaxY[YSIZE] = {};
+    int gminX[YSIZE] = {0};
+    int gminY[YSIZE] = {0};
+    int gmaxX[YSIZE] = {0};
+    int gmaxY[YSIZE] = {0};
 
     int WSIZE = 13;
     int wminX[WSIZE] = {};
