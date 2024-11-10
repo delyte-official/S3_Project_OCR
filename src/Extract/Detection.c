@@ -56,23 +56,24 @@ void dfs(Cluster *end, int x, int y, gboolean** visit,
 /* initCluster():
     Initialize a new cluster at the given pointer.
 */
-void initCluster(Cluster **last, int x, int y, gboolean** visit,
+void initCluster(Cluster **chain, int x, int y, gboolean** visit,
         GdkPixbuf *pixbuf) {
-    Cluster end = (Cluster) {
+    Cluster *end = malloc(sizeof(Cluster));
+    *end = (Cluster) {
         .size = 0,
         .centerX = 0, .centerY = 0,
         .maxX = x, .minX = x,
         .maxY = y, .minY = y,
         .next = NULL
     };
-    if (*last == NULL)
-        *last = &end;
-    else
-        (*last)->next = &end;
-    *last = &end;
-    dfs(&end, x, y, visit, pixbuf);
-    end.centerX = (end.minX + end.maxX)/2;
-    end.centerY = (end.minY + end.maxY)/2;
+    if (*chain != NULL) {
+        (*chain)->next = end;
+        *chain = (*chain)->next;
+    } else
+        *chain = end;
+    dfs(end, x, y, visit, pixbuf);
+    end->centerX = (end->minX + end->maxX)/2;
+    end->centerY = (end->minY + end->maxY)/2;
 }
 
 
@@ -104,17 +105,23 @@ int retrieve_clusters(GdkPixbuf *input, Cluster **last, int *median) {
     int clusterCount = 0;
 
     //Finding all clusters
+    Cluster *start = NULL;
+    Cluster *chain = NULL;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             //new cluster?
             guchar *pixel = pixels + y * rowstride + x * N;
             if (is_black(pixel) && !visited[x][y]) {//0 means a black pixel
-                initCluster(last, x, y, visited, input);
-                *median+=(*last)->size;
+                initCluster(&chain, x, y, visited, input);
+                if (start == NULL)
+                    start = chain;
+                *median+=chain->size;
                 clusterCount++;
             }
         }
     }
+    *last = start;
+    Cluster *test = start;
     //Updating median
     *median/=clusterCount;
     return clusterCount;
@@ -133,8 +140,9 @@ void testing(Cluster *first, int size, GdkPixbuf *pixbuf) {
     //Iterating over the clusters
     while (first!=NULL) {
         //Coloring into red the whole cluster
+        printf("(Cluster) {.minX=%d,.maxX=%d,.minY=%d,.maxY=%d},\n",first->minX,first->maxX,first->minY,first->maxY);
         for (int x = first->minX; x <= first->maxX; x++) {
-            p = pixels + first->minY*rowstride +x*N;
+            p = pixels + first->minY*rowstride + x*N;
             p[0] = 255;p[1]=0;p[2]=0;
             p = pixels + first->maxY*rowstride +x*N;
             p[0] = 255;p[1]=0;p[2]=0;
@@ -145,9 +153,7 @@ void testing(Cluster *first, int size, GdkPixbuf *pixbuf) {
             p = pixels + y*rowstride +first->maxX*N;
             p[0] = 255;p[1]=0;p[2]=0;
         }
-        printf("there\n");
         first=first->next;
-        printf("or there\n");
     }
     gdk_pixbuf_save(res, "save.png", "png", NULL, NULL);
 }
@@ -157,7 +163,6 @@ void testing(Cluster *first, int size, GdkPixbuf *pixbuf) {
     Filter all clusters according to a threshold.
 */
 int threshold_filter(Cluster *clusters, int count, int median) {
-    
     return count;
 }
 
@@ -168,7 +173,7 @@ int threshold_filter(Cluster *clusters, int count, int median) {
 void extract_information(GdkPixbuf *input) {
     //Linked list of clusters
     Cluster *start = NULL;
-    
+
     //STEP 1: retrieving EVERY clusters
     int median_size = 0;
     int count = retrieve_clusters(input, &start, &median_size);
