@@ -11,6 +11,13 @@ typedef struct {
     int x, y;
 } Position;
 
+typedef struct {
+    int ini_row;
+    int ini_col;
+    int end_row;
+    int end_col;
+} Solution;
+
 /* draw_line_from_data():
     Draw a line from specific data properties.
 */
@@ -19,7 +26,6 @@ void draw_line_from_data(GdkPixbuf* pixbuf,
         Position end_tl, Position end_br, //Positions
         float thickness_ratio,
         double r, double g, double b, double a) {
-    //Calculating data
     //Calculating data
     Position start_c = (Position) {
         .x = (start_tl.x + start_br.x) /2,
@@ -42,7 +48,6 @@ void draw_line_from_data(GdkPixbuf* pixbuf,
     cairo_surface_t *surface = cairo_image_surface_create_for_data(
         pixels, CAIRO_FORMAT_RGB24, width, height, rowstride);
     cairo_t *cr = cairo_create(surface);
-
     //Draw line
     cairo_set_source_rgba(cr, b, g, r, a);
     cairo_set_line_width(cr, thickness);
@@ -57,17 +62,44 @@ void draw_line_from_data(GdkPixbuf* pixbuf,
     cairo_surface_destroy(surface);
 }
 
+void get_position_from_cluster(Cluster input, Position *p1, Position *p2) {
+    *p1 = (Position) {.x=input.minX,.y=input.minY};
+    *p2 = (Position) {.x=input.maxX,.y=input.maxY};
+}
 
-/*GdkPixbuf* reconstruct_from_data(GdkPixbuf* pixbuf,) {
+GdkPixbuf* reconstruct_from_data(GdkPixbuf* pixbuf, //Image to modify
+        Cluster** grid, int size_x, int size_y,//Grid of letters (clusters)
+        Cluster*** word_list, //List of words of letters (&clusters) with '\0'
+        Solution** solutions, int len) { //To reconstruct graphically
     GdkPixbuf* res = gdk_pixbuf_copy(pixbuf);
 
-    //Highlight every word found
-    while (cluster != NULL) {
-        //draw_highlight(res, cluster);
-        cluster = cluster->next;
+    Position s1,s2,e1,e2;
+    for (int i = 0; i < len; i++) {
+        if (solutions[i]!=NULL) { //Word has been found
+            //HIGHLIGHTING THE WORD IN GRID
+            int sx = solutions[i]->ini_row;
+            int sy = solutions[i]->ini_col;
+            int ex = solutions[i]->end_row;
+            int ey = solutions[i]->end_col;
+            get_position_from_cluster(grid[sx][sy], &s1, &s2);
+            get_position_from_cluster(grid[ex][ey], &e1, &e2);
+            //Draw
+            draw_line_from_data(pixbuf,s1,s2,e1,e2, 1.5f, //Thickness
+                    1, 0, 0, 0.5f); //RGBA values
+
+            //Crossing out the word in word list
+            get_position_from_cluster(*word_list[i][0], &s1, &s2);
+            int j = 0;
+            while (word_list[i][j+1] != NULL)
+                j++;
+            get_position_from_cluster(*word_list[i][j], &e1, &e2);
+            //Draw
+            draw_line_from_data(pixbuf,s1,s2,e1,e2, 0.5f, //Thickness
+                    1, 0, 0, 0.5f); //RGBA values
+        }
     }
     return res;
-}*/
+}
 
 
 int main(int argc, char* argv[]) {
@@ -77,19 +109,23 @@ int main(int argc, char* argv[]) {
     //Load pixbuf
     GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file("input.png", NULL);
 
-    //Cluster tables for test
+    //Creating test data
+    int XSIZE = 12;
+    int YSIZE = 14;
+    int gminX[YSIZE] = {};
+    int gminY[YSIZE] = {};
+    int gmaxX[YSIZE] = {};
+    int gmaxY[YSIZE] = {};
+
+    int WSIZE = 13;
+    int wminX[WSIZE] = {};
+    int wminY[WSIZE] = {};
+    int wmaxX[WSIZE] = {};
+    int wmaxY[WSIZE] = {};
 
     //Call reconstruct
-    //GdkPixbuf* final = reconstruct_from_data(pixbuf, start);
-    Position s1,s2,e1,e2;
-    s1 = (Position) {.x=338,.y=409};
-    s2 = (Position) {.x=355,.y=429};
-    e1 = (Position) {.x=600,.y=649};
-    e2 = (Position) {.x=614,.y=669};
-
-    //Call
-    draw_line_from_data(pixbuf, s1, s2, e1, e2, 0.4f, 1, 0, 0, 1);
+    GdkPixbuf* final = reconstruct_from_data(pixbuf, start);
 
     //Save
-    gdk_pixbuf_save(pixbuf, "save.png", "png", NULL, NULL);
+    gdk_pixbuf_save(final, "save.png", "png", NULL, NULL);
 }
