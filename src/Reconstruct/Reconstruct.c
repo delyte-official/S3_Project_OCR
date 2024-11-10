@@ -68,8 +68,8 @@ void get_position_from_cluster(Cluster input, Position *p1, Position *p2) {
 }
 
 GdkPixbuf* reconstruct_from_data(GdkPixbuf* pixbuf, //Image to modify
-        Cluster** grid, int size_x, int size_y,//Grid of letters (clusters)
-        Cluster*** word_list, //List of words of letters (&clusters) with '\0'
+        Cluster grid[14][12], int size_x, int size_y,//Grid of letters (clusters)
+        Cluster* word_list[13][11], //List of words of letters (&clusters) with '\0'
         Solution** solutions, int len) { //To reconstruct graphically
     GdkPixbuf* res = gdk_pixbuf_copy(pixbuf);
 
@@ -84,18 +84,18 @@ GdkPixbuf* reconstruct_from_data(GdkPixbuf* pixbuf, //Image to modify
             get_position_from_cluster(grid[sx][sy], &s1, &s2);
             get_position_from_cluster(grid[ex][ey], &e1, &e2);
             //Draw
-            draw_line_from_data(pixbuf,s1,s2,e1,e2, 1.5f, //Thickness
+            draw_line_from_data(res,s1,s2,e1,e2, 1.5f, //Thickness
                     1, 0, 0, 0.5f); //RGBA values
 
             //Crossing out the word in word list
-            get_position_from_cluster(*word_list[i][0], &s1, &s2);
+            get_position_from_cluster(*(word_list[i][0]), &s1, &s2);
             int j = 0;
             while (word_list[i][j+1] != NULL)
                 j++;
             get_position_from_cluster(*word_list[i][j], &e1, &e2);
             //Draw
-            draw_line_from_data(pixbuf,s1,s2,e1,e2, 0.5f, //Thickness
-                    1, 0, 0, 0.5f); //RGBA values
+            draw_line_from_data(res,s1,s2,e1,e2, 0.5f, //Thickness
+                    1, 0, 0, 1); //RGBA values
         }
     }
     return res;
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file("input.png", NULL);
 
     //Creating test data
-    Cluster grid[12][14] = {
+    Cluster grid[14][12] = {
         {(Cluster) {.minX=25,.maxX=43,.minY=25,.maxY=45},
 (Cluster) {.minX=78,.maxX=93,.minY=25,.maxY=45},
 (Cluster) {.minX=128,.maxX=148,.minY=25,.maxY=45},
@@ -278,14 +278,118 @@ int main(int argc, char* argv[]) {
 (Cluster) {.minX=443,.maxX=458,.minY=649,.maxY=669},
 (Cluster) {.minX=494,.maxX=511,.minY=649,.maxY=669},
 (Cluster) {.minX=547,.maxX=562,.minY=649,.maxY=669},
-(Cluster) {.minX=600,.maxX=614,.minY=649,.maxY=669}}
+(Cluster) {.minX=600,.maxX=614,.minY=649,.maxY=669}}};
 
-    Cluster* word_list[13] = {
-    
+    Cluster* word_list[13][11] = {
+        {&(Cluster) {.minX=653,.maxX=663,.minY=33,.maxY=44},
+&(Cluster) {.minX=666,.maxX=674,.minY=33,.maxY=44},
+&(Cluster) {.minX=676,.maxX=684,.minY=33,.maxY=44},
+&(Cluster) {.minX=687,.maxX=694,.minY=33,.maxY=44},
+&(Cluster) {.minX=697,.maxX=704,.minY=33,.maxY=44}, NULL},
+        {&(Cluster) {.minX=654,.maxX=661,.minY=60,.maxY=71},
+&(Cluster) {.minX=664,.maxX=671,.minY=60,.maxY=71},
+&(Cluster) {.minX=674,.maxX=684,.minY=60,.maxY=71},
+&(Cluster) {.minX=687,.maxX=696,.minY=60,.maxY=71},
+&(Cluster) {.minX=699,.maxX=707,.minY=60,.maxY=71}, NULL},
+        {&(Cluster) {.minX=654,.maxX=662,.minY=87,.maxY=98},
+&(Cluster) {.minX=665,.maxX=674,.minY=87,.maxY=98},
+&(Cluster) {.minX=677,.maxX=685,.minY=87,.maxY=98},
+&(Cluster) {.minX=687,.maxX=697,.minY=87,.maxY=98},
+&(Cluster) {.minX=700,.maxX=708,.minY=87,.maxY=98},
+&(Cluster) {.minX=710,.maxX=720,.minY=87,.maxY=98}, NULL},
+        {&(Cluster) {.minX=654,.maxX=661,.minY=114,.maxY=125},
+&(Cluster) {.minX=664,.maxX=665,.minY=114,.maxY=125},
+&(Cluster) {.minX=669,.maxX=678,.minY=114,.maxY=125},
+&(Cluster) {.minX=682,.maxX=689,.minY=114,.maxY=125}, NULL},
+        {&(Cluster) {.minX=654,.maxX=663,.minY=141,.maxY=152},
+&(Cluster) {.minX=666,.maxX=674,.minY=141,.maxY=152},
+&(Cluster) {.minX=676,.maxX=686,.minY=141,.maxY=152},
+&(Cluster) {.minX=688,.maxX=696,.minY=141,.maxY=152},
+&(Cluster) {.minX=699,.maxX=708,.minY=141,.maxY=152},
+&(Cluster) {.minX=711,.maxX=718,.minY=141,.maxY=152}, NULL},
+        {&(Cluster) {.minX=654,.maxX=665,.minY=168,.maxY=179},
+&(Cluster) {.minX=666,.maxX=676,.minY=168,.maxY=179},
+&(Cluster) {.minX=676,.maxX=685,.minY=168,.maxY=179},
+&(Cluster) {.minX=687,.maxX=694,.minY=168,.maxY=179},
+&(Cluster) {.minX=697,.maxX=705,.minY=168,.maxY=179},
+&(Cluster) {.minX=708,.maxX=718,.minY=168,.maxY=179},
+&(Cluster) {.minX=722,.maxX=729,.minY=168,.maxY=179},
+&(Cluster) {.minX=732,.maxX=739,.minY=168,.maxY=179},
+&(Cluster) {.minX=741,.maxX=750,.minY=168,.maxY=179},
+&(Cluster) {.minX=753,.maxX=761,.minY=168,.maxY=179}, NULL},
+        {&(Cluster) {.minX=654,.maxX=663,.minY=195,.maxY=206},
+&(Cluster) {.minX=666,.maxX=674,.minY=195,.maxY=206},
+&(Cluster) {.minX=676,.maxX=686,.minY=195,.maxY=206},
+&(Cluster) {.minX=688,.maxX=696,.minY=195,.maxY=206},
+&(Cluster) {.minX=699,.maxX=706,.minY=195,.maxY=206}, NULL},
+        {&(Cluster) {.minX=654,.maxX=662,.minY=222,.maxY=233},
+&(Cluster) {.minX=664,.maxX=665,.minY=222,.maxY=233},
+&(Cluster) {.minX=669,.maxX=680,.minY=222,.maxY=233},
+&(Cluster) {.minX=683,.maxX=684,.minY=222,.maxY=233}, NULL},
+        {&(Cluster) {.minX=654,.maxX=662,.minY=249,.maxY=260},
+&(Cluster) {.minX=664,.maxX=672,.minY=249,.maxY=260},
+&(Cluster) {.minX=674,.maxX=682,.minY=249,.maxY=260},
+&(Cluster) {.minX=685,.maxX=694,.minY=249,.maxY=260},
+&(Cluster) {.minX=696,.maxX=707,.minY=249,.maxY=260},
+&(Cluster) {.minX=710,.maxX=718,.minY=249,.maxY=260},
+&(Cluster) {.minX=721,.maxX=728,.minY=249,.maxY=260},
+&(Cluster) {.minX=731,.maxX=739,.minY=249,.maxY=260},
+&(Cluster) {.minX=742,.maxX=750,.minY=249,.maxY=260},
+&(Cluster) {.minX=752,.maxX=761,.minY=249,.maxY=260}, NULL},
+        {&(Cluster) {.minX=654,.maxX=662,.minY=276,.maxY=287},
+&(Cluster) {.minX=664,.maxX=673,.minY=276,.maxY=287},
+&(Cluster) {.minX=676,.maxX=684,.minY=276,.maxY=287},
+&(Cluster) {.minX=685,.maxX=695,.minY=276,.maxY=287},
+&(Cluster) {.minX=695,.maxX=704,.minY=276,.maxY=287},
+&(Cluster) {.minX=705,.maxX=715,.minY=276,.maxY=287}, NULL},
+    {&(Cluster) {.minX=654,.maxX=662,.minY=303,.maxY=314},
+&(Cluster) {.minX=666,.maxX=673,.minY=303,.maxY=314},
+&(Cluster) {.minX=675,.maxX=683,.minY=303,.maxY=314},
+&(Cluster) {.minX=687,.maxX=694,.minY=303,.maxY=314},
+&(Cluster) {.minX=697,.maxX=705,.minY=303,.maxY=314},
+&(Cluster) {.minX=708,.maxX=715,.minY=303,.maxY=314},
+&(Cluster) {.minX=718,.maxX=726,.minY=303,.maxY=314},
+&(Cluster) {.minX=729,.maxX=737,.minY=303,.maxY=314},
+&(Cluster) {.minX=739,.maxX=748,.minY=303,.maxY=314}, NULL},
+    {&(Cluster) {.minX=654,.maxX=662,.minY=330,.maxY=341},
+&(Cluster) {.minX=666,.maxX=672,.minY=330,.maxY=341},
+&(Cluster) {.minX=674,.maxX=684,.minY=330,.maxY=341},
+&(Cluster) {.minX=686,.maxX=694,.minY=330,.maxY=341},
+&(Cluster) {.minX=697,.maxX=705,.minY=330,.maxY=341},
+&(Cluster) {.minX=708,.maxX=716,.minY=330,.maxY=341},
+&(Cluster) {.minX=719,.maxX=726,.minY=330,.maxY=341},
+&(Cluster) {.minX=729,.maxX=737,.minY=330,.maxY=341},
+&(Cluster) {.minX=740,.maxX=748,.minY=330,.maxY=341},
+&(Cluster) {.minX=750,.maxX=759,.minY=330,.maxY=341}, NULL},
+    {&(Cluster) {.minX=654,.maxX=662,.minY=357,.maxY=368},
+&(Cluster) {.minX=664,.maxX=674,.minY=357,.maxY=368},
+&(Cluster) {.minX=676,.maxX=684,.minY=357,.maxY=368},
+&(Cluster) {.minX=687,.maxX=695,.minY=357,.maxY=368},
+&(Cluster) {.minX=698,.maxX=706,.minY=357,.maxY=368},
+&(Cluster) {.minX=709,.maxX=716,.minY=357,.maxY=368},
+&(Cluster) {.minX=719,.maxX=727,.minY=357,.maxY=368},
+&(Cluster) {.minX=730,.maxX=738,.minY=357,.maxY=368},
+&(Cluster) {.minX=740,.maxX=749,.minY=357,.maxY=368}, NULL}};
+
+    Solution* solutions[13] = {
+        &(Solution) {.ini_row=8,.ini_col=3,.end_row=4,.end_col=3},
+        &(Solution) {.ini_row=3,.ini_col=3,.end_row=3,.end_col=7},
+        &(Solution) {.ini_row=5,.ini_col=5,.end_row=10,.end_col=5},
+        &(Solution) {.ini_row=4,.ini_col=2,.end_row=7,.end_col=2},
+        &(Solution) {.ini_row=8,.ini_col=6,.end_row=13,.end_col=11},
+        &(Solution) {.ini_row=0,.ini_col=2,.end_row=0,.end_col=11},
+        &(Solution) {.ini_row=7,.ini_col=10,.end_row=3,.end_col=10},
+        &(Solution) {.ini_row=9,.ini_col=8,.end_row=9,.end_col=11},
+        &(Solution) {.ini_row=0,.ini_col=1,.end_row=9,.end_col=1},
+        &(Solution) {.ini_row=2,.ini_col=4,.end_row=2,.end_col=9},
+        &(Solution) {.ini_row=12,.ini_col=8,.end_row=12,.end_col=0},
+        &(Solution) {.ini_row=10,.ini_col=0,.end_row=1,.end_col=0},
+        &(Solution) {.ini_row=11,.ini_col=8,.end_row=11,.end_col=0}
     };
 
     //Call reconstruct
-    GdkPixbuf* final = reconstruct_from_data(pixbuf, start);
+    GdkPixbuf* final = reconstruct_from_data(pixbuf, grid, 12, 14, word_list,
+            solutions, 13);
 
     //Save
     gdk_pixbuf_save(final, "save.png", "png", NULL, NULL);
