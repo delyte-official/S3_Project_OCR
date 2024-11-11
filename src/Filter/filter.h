@@ -3,6 +3,6 @@
 
 #include <gtk/gtk.h>
 
-GdkPixbuf *grayscale_pixbuf(GdkPixbuf *origin, int threshold);
+void Filter_Run(GdkPixbuf *input, int steps);
 
 #endif
