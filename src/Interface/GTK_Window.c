@@ -39,8 +39,8 @@ GtkWidget *create_window(
     window = gtk_window_new(type);
     gtk_window_set_title(GTK_WINDOW(window), title);
     gtk_window_set_default_size(GTK_WINDOW(window), width, height);
-    //gtk_widget_set_size_request(window, width, height);
-    gtk_window_maximize(GTK_WINDOW(window));
+    gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
+    //gtk_window_maximize(GTK_WINDOW(window));
 
     return window;
 }
