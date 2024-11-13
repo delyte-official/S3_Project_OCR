@@ -11,11 +11,15 @@ typedef enum {
     STEP_RECONSTRUCT = 4,
     STEP_END = 5
 } STEP;
-extern int global_width;
-extern int global_height;
 
-STEP* get_step();
-GtkWidget* get_display(GtkWidget** widget);
+typedef struct {
+    GtkBuilder* builder;
+    STEP step;
+    int width, height;
+    GtkWidget* steps_tracker[6];
+} AppState;
+
+AppState *get_app_state();
 void set_display(GtkWidget* widget);
 GtkWidget* step_widget(int step, GtkWidget* set);
 void Filter_Params(char** all_params, int len, char* *init_params,

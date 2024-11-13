@@ -27,7 +27,7 @@ void _on_save_btn(GtkWidget*, gpointer);
 //Project Headers
 #include "Interface_Manager.h"
 #include "../Core_Manager.h"
-#include "../Filtering/Prefilter.h"
+#include "../Filter/Prefilter.h"
 #include "Events.h"
 ////END HEADERS
 
@@ -38,41 +38,19 @@ void _on_save_btn(GtkWidget*, gpointer);
 void Standard_Signals(GtkWidget *window) {
     //Closing window closes the program
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(window, "size-allocate",
-            G_CALLBACK(_application_init), NULL);
-}
-
-
-/* _application_init():
-    Initialize all the content of the window of the application as soon
-    as the windowh as been realized.
-*/
-void _application_init(
-        GtkWidget *window,
-        GtkAllocation*,
-        gpointer) {
-    int width, height;
-    gtk_window_get_size(GTK_WINDOW(window), &width, &height);
-    if (width > global_width || height >= global_height)
-        return;
-    width = 1920; //Find a way for measure width without the terminal
-                  //restraining it
-    Build_Interface(window, width, height);
-    g_signal_handlers_disconnect_matched(window, G_SIGNAL_MATCH_FUNC, 0, 0,
-            NULL, G_CALLBACK(_application_init), NULL);
 }
 
 
 /* _null_event():
     Deactivates any events connected to it.
 */
-void _null_event(GtkWidget*, gpointer) {}
+//void _null_event(GtkWidget*, gpointer) {}
 
 
 /* _on_select_image_btn():
     Handles the event of "clicked" from the select image button.
 */
-void _on_select_image_btn(GtkWidget*, gpointer) {
+/*void _on_select_image_btn(GtkWidget*, gpointer) {
     GtkWidget* curr_widget = step_widget(1, NULL);
     if (curr_widget == NULL) {
         NextStep(NULL, NULL);
@@ -84,7 +62,7 @@ void _on_select_image_btn(GtkWidget*, gpointer) {
                 step_widget(i, NULL);
             }
             ShowNext();
-            STEP* curr_step = get_step();
+            STEP* curr_step = &(get_app_state()->step);
             (*curr_step)++;
             //Reset history
             clear_history_from(STEP_LOAD);
@@ -92,36 +70,35 @@ void _on_select_image_btn(GtkWidget*, gpointer) {
             add_history_step(STEP_LOAD);
         }
     }
-}
+}*/
 
 
 /* _on_auto_btn():
     Handles the event of "clicked" from the auto complete button.
 */
-void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
-    STEP* curr_step = get_step();
+/*void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
+    STEP curr_step = get_app_state()->step;
     //Perform every step
-    for (int i = *curr_step; i < 5; i++) {
+    for (int i = curr_step; i < 5; i++) {
         if (!NextStep(NULL, NULL))
             return; //Error, stop
     }
     gtk_widget_set_sensitive(auto_btn, FALSE);
-}
+}*/
 
 
 /* _on_save_btn():
     Handles the event of "clicked" from the save step button.
 */
-void _on_save_btn(GtkWidget*, gpointer) {
-    STEP* curr_step = get_step();
-    save_step(*curr_step-1);
-}
+/*void _on_save_btn(GtkWidget*, gpointer) {
+    save_step(get_app_state()->step-1);
+}*/
 
 
 /* _on_modify_btn():
     Modifies the input image by user input such as rotation.
 */
-void _on_modify_btn(GtkWidget*, gpointer) {
+/*void _on_modify_btn(GtkWidget*, gpointer) {
     GtkWidget* next = step_widget(STEP_FILTER+1, NULL);
     if (next != NULL) { //Already have steps
         if (confirm_dialog("This will delete any further steps not saved.")) {
@@ -135,23 +112,23 @@ void _on_modify_btn(GtkWidget*, gpointer) {
         return;
     }
     modify_image();
-}
+}*/
+
 
 /* _on_step_save_history():
     Saves the step of the clicked history tile.
 */
-void _on_step_save_history(GtkWidget*, STEP step) {
+/*void _on_step_save_history(GtkWidget*, STEP step) {
     save_step(step);
-}
+}*/
 
 
 /* _on_jumpto_step():
     Jump to the specified step.
 */
-void _on_jumpto_step(GtkWidget*, STEP step) {
+/*void _on_jumpto_step(GtkWidget*, STEP step) {
     int dst = (int)step+1;
-    STEP *curr_step = get_step();
-    int src = (int)(*curr_step);
+    int src = (int)(get_app_state()->step);
     if (dst-src > 0) {
         for (int i = src; i < dst; i++) {
             //We know the steps have already been computed.
@@ -162,13 +139,13 @@ void _on_jumpto_step(GtkWidget*, STEP step) {
             ShowPrevious(NULL, NULL);
         }
     }
-}
+}*/
 
 
 /* _on_apply_rotation():
     Apply the rotation from the user input.
 */
-void _on_apply_rotation(GtkWidget*, GtkWidget *table[4]) {
+/*void _on_apply_rotation(GtkWidget*, GtkWidget *table[4]) {
     GtkEntry *entry = GTK_ENTRY(table[0]);
     const char *angle_txt = gtk_entry_get_text(entry);
     //Convert to double
@@ -192,4 +169,4 @@ void _on_apply_rotation(GtkWidget*, GtkWidget *table[4]) {
     GdkPixbuf *rotated = rotate_pixbuf(pixbuf, angle);
     gtk_image_set_from_pixbuf(dis_image, rotated);
     g_object_set_data(G_OBJECT(dis_image), "pixbuf", rotated);
-}
+}*/
