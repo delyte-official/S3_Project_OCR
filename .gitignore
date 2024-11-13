@@ -2,6 +2,7 @@
 main
 src/Solving/solver
 src/OCR/neural_network
+*.glade~
 
 # VS-Code
 .vscode/

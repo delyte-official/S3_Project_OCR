@@ -69,10 +69,10 @@ GtkWidget *get_controls(char* id) {
     return GTK_WIDGET(gtk_builder_get_object(state->builder, id));
 }
 
-/* image_load_from_pixbuf():
+/* image_load_from_file():
     Loads an image from a file and return its image widget.
 */
-GtkWidget* image_load_from_pixbuf(
+GtkWidget* image_load_from_file(
         char* filename) {
     GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
     GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
@@ -254,12 +254,19 @@ void Build_Interface(GtkWidget *window, AppState *state) {
     //Construct the interface from an XML file with GTKBuilder
     state->builder = gtk_builder_new_from_file("src/assets/main.glade");
     //The "MAIN.glade" only builds the toplevel widget, not window, thus:
-    GtkWidget *toplvl = GTK_WIDGET(gtk_builder_get_object(state->builder,
-                "toplvl_id"));
+    GtkWidget *toplvl = GETWIDGET("toplvl_id");
     gtk_container_add(GTK_CONTAINER(window), toplvl);
 
     //Automatically link all the signals from the builder
     gtk_builder_connect_signals(state->builder, NULL);
+
+    //////Manual adjustements not possible with Glade
+    //Image Background - Reordering
+    GtkWidget *app_bg = image_load_from_file("src/assets/app_bg.png");
+    GtkWidget *box = GETWIDGET("divide_box_id");
+    gtk_container_remove(GTK_CONTAINER(toplvl), box);
+    gtk_overlay_add_overlay(GTK_OVERLAY(toplvl),app_bg);
+    gtk_overlay_add_overlay(GTK_OVERLAY(toplvl),box);
 }
 
 

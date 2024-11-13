@@ -3,6 +3,10 @@
 
 #include <gtk/gtk.h>
 
+#define GETWIDGET(id) GTK_WIDGET(gtk_builder_get_object(\
+            get_app_state()->builder, id))
+#define DISPLAY GETWIDGET("display_section_id")
+
 typedef enum {
     STEP_LOAD = 0,
     STEP_FILTER = 1,

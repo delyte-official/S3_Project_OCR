@@ -30,10 +30,6 @@
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
 int global_width, global_height = 0;
-//Macros
-#define GETWIDGET(id) GTK_WIDGET(gtk_builder_get_object(\
-            get_app_state()->builder, id))
-#define DISPLAY GETWIDGET("display_section_id")
 ////END DEFINING
 
 
