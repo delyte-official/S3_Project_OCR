@@ -246,6 +246,15 @@ GtkWidget* get_history(GtkWidget *widget) {
 }*/
 
 
+/**/
+GtkBuilder *custom_gtk_builder(char* filename, int width, int height) {
+    FILE *file = fopen(filename, "r");
+    if (!file)
+        errx(EXIT_FAILURE, "fopen()");
+
+}
+
+
 /* Build_Interface():
     Creates every widget and the structure of the starting project menu.
     Creates every needed signals for the application to run properly.
