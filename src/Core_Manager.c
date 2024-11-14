@@ -154,7 +154,7 @@ void StartUp(char** gtk_params, int gtk_len,
     window = create_window(type, title, state->width, state->height);
 
     //Build the interface
-    Build_Interface(window, state);
+    //Build_Interface(window, state);
     //Link signals
     Standard_Signals(window);
 

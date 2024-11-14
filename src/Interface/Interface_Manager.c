@@ -1,4 +1,4 @@
-/*
+ /*
       ##############################################################
       #                                                            #
       #                  GTK_Interface_Manager.c                   #
@@ -246,12 +246,78 @@ GtkWidget* get_history(GtkWidget *widget) {
 }*/
 
 
-/**/
-GtkBuilder *custom_gtk_builder(char* filename, int width, int height) {
-    FILE *file = fopen(filename, "r");
+/* gtk_builder_new_custom():
+    Creates a gtk builder from an XML file with PERCENTAGE format for
+    the sizes of the "width-request" and "height-request" properties.
+*/
+GtkBuilder *gtk_builder_new_custom(char* filename, int width, int height) {
+    FILE *file = fopen(filename,"r");
     if (!file)
-        errx(EXIT_FAILURE, "fopen()");
+        errx(EXIT_FAILURE,"fopen()"); //ERROR - should NOT happen.
+    //Finding size to allocate
+    fseek(file,0, SEEK_END);
+    size_t file_size = ftell(file);
+    fseek(file,0,SEEK_SET);
+    char* xml_content = malloc(file_size+1); //include \0
+    if (!xml_content)
+        errx(EXIT_FAILURE,"malloc()"); //error malloc
+    fread(xml_content, 1, file_size, file);
+    xml_content[file_size] = '\0'; //End string
+    fclose(file);
 
+    //Modifying the content
+    size_t new_size = file_size+1;
+    char* xml_modified = malloc(new_size);
+    if (!xml_modified)
+        errx(EXIT_FAILURE,"malloc()"); //error malloc ag-in
+    //Pointer to where we are reading/writing
+    char* toread = xml_content;
+    char* towrite = xml_modified;
+    //Modify every properties "width-request" and "height-request":
+    while (*toread) {
+        char* width_prop = strstr(toread, "width-request");
+        char *height_prop = strstr(toread, "height-request");
+        //Dealing with only one of them
+        char *prop = NULL;
+        int isWIDTH = 0;
+        if (width_prop && (!height_prop || width_prop<height_prop)) {
+            prop = width_prop;
+            isWIDTH=1;
+        } else if (height_prop)
+            prop = height_prop;
+        if (!prop) { //no more props to modify
+            //Copying any other character
+            strcpy(towrite, toread);
+            break;
+        }
+        //Dealing with the property- assume NO errors (= XML error)
+        char *value = strchr(prop,'>')+1;
+        size_t prefix_l = value-toread;
+        strncpy(towrite, toread, prefix_l);
+        towrite+=prefix_l;
+        char *end_value = strchr(value,'<');
+        *end_value = '\0';
+        int percentage=atoi(value);
+        *end_value = '<';
+        //Calculating and writing the new value
+        int new_value = (int)((percentage/100.0f)*(isWIDTH?width:height));
+        int expand = snprintf(NULL,0,"%d",new_value) - (end_value-value);
+        //Changing size
+        new_size+=expand;
+        size_t curr_len = towrite-xml_modified;
+        char* tmp = realloc(xml_modified,new_size);
+        if (!tmp)
+            errx(EXIT_FAILURE,"realloc()");
+        xml_modified = tmp;
+        towrite = xml_modified + curr_len;
+        towrite += sprintf(towrite, "%d", new_value);
+        toread=end_value; //To not read the same item twice
+    }
+    xml_modified[new_size-1]='\0';
+    GtkBuilder *builder = gtk_builder_new_from_string(xml_modified,-1);
+    free(xml_content);
+    free(xml_modified);
+    return builder;
 }
 
 
@@ -261,7 +327,7 @@ GtkBuilder *custom_gtk_builder(char* filename, int width, int height) {
 */
 void Build_Interface(GtkWidget *window, AppState *state) {
     //Construct the interface from an XML file with GTKBuilder
-    state->builder = gtk_builder_new_from_file("src/assets/main.glade");
+    state->builder = gtk_builder_new_custom("src/assets/main.glade",1920,1041);
     //The "MAIN.glade" only builds the toplevel widget, not window, thus:
     GtkWidget *toplvl = GETWIDGET("toplvl_id");
     gtk_container_add(GTK_CONTAINER(window), toplvl);

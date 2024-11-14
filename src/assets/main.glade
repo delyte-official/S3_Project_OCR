@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 -->
+<!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkOverlay" id="toplvl_id">
@@ -13,47 +13,10 @@
         <property name="can-focus">False</property>
         <property name="homogeneous">True</property>
         <child>
-          <object class="GtkBox" id="left_side_box_id">
-            <property name="name">Left Side of the Interface</property>
+          <object class="GtkTextView" id="test_id">
             <property name="width-request">50</property>
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="orientation">vertical</property>
-            <child>
-              <object class="GtkBox" id="title_box_id">
-                <property name="name">Box encapsulating the Title</property>
-                <property name="height-request">10</property>
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkOverlay" id="foundation_box_id">
-                <property name="name">Foundation of Display Section</property>
-                <property name="height-request">90</property>
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="hexpand">False</property>
-                <property name="vexpand">False</property>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
+            <property name="can-focus">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -62,7 +25,17 @@
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkButton">
+            <property name="label" translatable="yes">button</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
         </child>
       </object>
       <packing>
