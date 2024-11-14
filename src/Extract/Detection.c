@@ -205,7 +205,9 @@ void extract_information(GdkPixbuf *input) {
     testing(start,count,input,"thresholdfilter.png");
 }
 
-int main() {
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("input.png", NULL);
+int main(int argc, char* argv[]) {
+    if (argc!=2)
+        return 1;
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[1], NULL);
     extract_information(pixbuf);
 }
