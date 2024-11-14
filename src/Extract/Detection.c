@@ -129,7 +129,7 @@ int retrieve_clusters(GdkPixbuf *input, Cluster **last, int *median) {
 
 
 //JUST TO TEST - TO REMOVE
-void testing(Cluster *first, int size, GdkPixbuf *pixbuf) {
+void testing(Cluster *first, int size, GdkPixbuf *pixbuf, char* filename) {
     GdkPixbuf *res = gdk_pixbuf_copy(pixbuf);
     
     guchar* pixels = gdk_pixbuf_get_pixels(res);
@@ -140,8 +140,6 @@ void testing(Cluster *first, int size, GdkPixbuf *pixbuf) {
     //Iterating over the clusters
     while (first!=NULL) {
         //Coloring into red the whole cluster
-        if (first->maxX < 630)
-            printf("(Cluster) {.minX=%d,.maxX=%d,.minY=%d,.maxY=%d},\n",first->minX,first->maxX,first->minY,first->maxY);
         for (int x = first->minX; x <= first->maxX; x++) {
             p = pixels + first->minY*rowstride + x*N;
             p[0] = 255;p[1]=0;p[2]=0;
@@ -156,14 +154,36 @@ void testing(Cluster *first, int size, GdkPixbuf *pixbuf) {
         }
         first=first->next;
     }
-    gdk_pixbuf_save(res, "save.png", "png", NULL, NULL);
+    gdk_pixbuf_save(res, filename, "png", NULL, NULL);
 }
 
 
 /* threshold_filer():
     Filter all clusters according to a threshold.
 */
-int threshold_filter(Cluster *clusters, int count, int median) {
+int threshold_filter(Cluster **clusters, int count, int median) {
+    const int threshold = 0.85f * median;
+    printf("Threshold: %d-%d\n",median-threshold,median+threshold);
+    //Iterating
+    Cluster *prev = NULL;
+    Cluster *curr = *clusters;
+    while (curr != NULL) {
+        if (curr->size > threshold+median || curr->size < median-threshold) {
+            printf("Size was: %d\n",curr->size);
+            //Delete cluster
+            if (prev == NULL)
+                *clusters = curr->next;
+            else
+                prev->next = curr->next;
+            Cluster *next = curr->next;
+            free(curr);
+            curr = next;
+            count--;
+        } else {
+            prev = curr;
+            curr = curr->next;
+        }
+    }
     return count;
 }
 
@@ -179,11 +199,10 @@ void extract_information(GdkPixbuf *input) {
     int median_size = 0;
     int count = retrieve_clusters(input, &start, &median_size);
     printf("Median is: %d\n", median_size);
+    testing(start,count,input,"iterate.png");
     //STEP 2: Filter clusters
-    //count = threshold_filter(start, count, median_size);
-
-    //TESTING
-    testing(start,count, input);
+    count = threshold_filter(&start, count, median_size);
+    testing(start,count,input,"thresholdfilter.png");
 }
 
 int main() {
