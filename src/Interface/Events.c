@@ -38,6 +38,31 @@ void _on_save_btn(GtkWidget*, gpointer);
 void Standard_Signals(GtkWidget *window) {
     //Closing window closes the program
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "size-allocate", G_CALLBACK(_application_init),
+            NULL);
+}
+
+
+/* _application_init():
+    Initialize all the content of the window of the application as soon
+    as the windowh as been realized. (Grab the allocated height)
+*/
+void _application_init(GtkWidget* window, GtkAllocation*, gpointer) {
+    int width, height;
+    gtk_window_get_size(GTK_WINDOW(window), &width, &height);
+    AppState *state = get_app_state();
+    if (height >=state->height)
+        return;
+    //Since opening from terminal in linux display it only on half the screen,
+    //we bypass the width as we know it takes the width of the screen.
+    width = 1920;
+    //TODO: Find a way to grab width dynamically by launching app in fullscreen
+    state->alloc_width = width;
+    state->alloc_height = height;
+    Build_Interface(window, state);
+    //Prevent this function from running twice
+    g_signal_handlers_disconnect_matched(window, G_SIGNAL_MATCH_FUNC, 0, 0,
+            NULL, G_CALLBACK(_application_init), NULL);
 }
 
 

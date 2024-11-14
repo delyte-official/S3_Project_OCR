@@ -17,10 +17,11 @@ typedef enum {
 } STEP;
 
 typedef struct {
-    GtkBuilder* builder;
-    STEP step;
-    int width, height;
-    GtkWidget* steps_tracker[6];
+    GtkBuilder* builder; //App builder
+    STEP step; //Current step
+    int width, height; //Window SIZE
+    int alloc_width, alloc_height; //Content area SIZE
+    GtkWidget* steps_tracker[6]; //Steps Storage
 } AppState;
 
 AppState *get_app_state();

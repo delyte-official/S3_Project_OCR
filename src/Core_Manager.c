@@ -38,12 +38,7 @@ int global_width, global_height = 0;
     state of the Application. GENERIC DATA
 */
 AppState *get_app_state() {
-    static AppState state = (AppState) {
-        .step = STEP_LOAD,
-        .width = 0,
-        .height = 0,
-        .builder = NULL
-    };
+    static AppState state = (AppState) {};
     return &state;
 }
 
@@ -153,8 +148,6 @@ void StartUp(char** gtk_params, int gtk_len,
 
     window = create_window(type, title, state->width, state->height);
 
-    //Build the interface
-    //Build_Interface(window, state);
     //Link signals
     Standard_Signals(window);
 

@@ -327,7 +327,8 @@ GtkBuilder *gtk_builder_new_custom(char* filename, int width, int height) {
 */
 void Build_Interface(GtkWidget *window, AppState *state) {
     //Construct the interface from an XML file with GTKBuilder
-    state->builder = gtk_builder_new_custom("src/assets/main.glade",1920,1041);
+    state->builder = gtk_builder_new_custom("src/assets/main.glade",
+            state->alloc_width, state->alloc_height);
     //The "MAIN.glade" only builds the toplevel widget, not window, thus:
     GtkWidget *toplvl = GETWIDGET("toplvl_id");
     gtk_container_add(GTK_CONTAINER(window), toplvl);
@@ -338,10 +339,12 @@ void Build_Interface(GtkWidget *window, AppState *state) {
     //////Manual adjustements not possible with Glade
     //Image Background - Reordering
     GtkWidget *app_bg = image_load_from_file("src/assets/app_bg.png");
-    GtkWidget *box = GETWIDGET("divide_box_id");
+    GtkWidget *box = GTK_WIDGET(gtk_builder_get_object(state->builder,"divide_box_id"));
+    //GETWIDGET("divide_box_id");
     gtk_container_remove(GTK_CONTAINER(toplvl), box);
     gtk_overlay_add_overlay(GTK_OVERLAY(toplvl),app_bg);
     gtk_overlay_add_overlay(GTK_OVERLAY(toplvl),box);
+    gtk_widget_show(app_bg);
 }
 
 
