@@ -189,17 +189,46 @@ int threshold_filter(Cluster **clusters, int count, int median) {
 }
 
 
-/* getMedianY():
-    Returns the median value of the vertical size of the clusters of the row
+/* expand_vertical():
+    Expand the table vertically by 1
 */
-int getMedianY(Cluster** *table, int row, int x_size) {
-    int total = 0;
-    int count = 0;
-    for (int x = 0; x < x_size; x++) {
-        total+=table[row][x]->maxY-table[row][x]->minY;
-        count++;
+void expand_vertical(Cluster** **table, int* *row_avgP, int* *row_avgS,
+        int *r_size, int c_size) {
+    Cluster** *tmp = realloc(*table, sizeof(Cluster**)*(*r_size+1));
+    int* tmp2 = realloc(*row_avgP, sizeof(int)*(*r_size+1));
+    int* tmp3 = realloc(*row_avgS, sizeof(int)*(*r_size+1));
+    if (!tmp || !tmp2 || !tmp3)
+        errx(EXIT_FAILURE, "realloc()");
+    Cluster* *tmp4 = calloc(sizeof(Cluster*),c_size);
+    if (!tmp4)
+        errx(EXIT_FAILURE, "calloc()");
+    tmp[*r_size] = tmp4;tmp2[*r_size]=0;tmp3[*r_size]=0;
+    *table = tmp;
+    *row_avgP = tmp2;
+    *row_avgS = tmp3;
+    *r_size++;
+}
+
+
+/* expand_horizontal():
+    Expand the table horizontally by 1
+*/
+void expand_horizontal(Cluster** *table, int* *col_avgP, int* *col_avgS,
+        int r_size, int *c_size) {
+    for (int i = 0; i < r_size; i++) {
+        Cluster* *tmp = realloc(table[i],sizeof(Cluster*)*(*c_size+1));
+        if (!tmp)
+            errx(EXIT_FAILURE, "realloc()");
+        table[i] = tmp;
+        table[i][*c_size] = NULL;
     }
-    return (int)(total/count);
+    int* tmp2 = realloc(*col_avgP, sizeof(int)*(*c_size+1));
+    int* tmp3 = realloc(*col_avgS, sizeof(int)*(*c_size+1));
+    if (!tmp2 || !tmp3)
+        errx(EXIT_FAILURE, "realloc()");
+    *col_avgP = tmp2;
+    *col_avgS = tmp3;
+    *c_size++;
 }
 
 
@@ -207,10 +236,11 @@ int getMedianY(Cluster** *table, int row, int x_size) {
     Categorize clusters in two categories: grid or word list.
     If a cluster is not appart of them two, it is deleted.
 */
-void classify_clusters(Cluster **clusters) {
+Cluster** *classify_clusters(Cluster **clusters, int *rs, int *cs) {
     //STEP 1: INITIALIZATION
     //Create the SPACIAL CLUSTERING TABLE
-    int x_size, y_size = 1;
+    int r_size = 1, c_size = 1;
+    printf("Size:%d;%d\n",r_size,c_size);
     Cluster ***table = malloc(sizeof(Cluster**));
     if (!table)
         errx(EXIT_FAILURE,"malloc()");
@@ -219,31 +249,105 @@ void classify_clusters(Cluster **clusters) {
         errx(EXIT_FAILURE,"malloc()");
     //Put the first cluser - assume non-empty
     table[0][0] = *clusters;
-    table[0][1] = NULL;
     //Creating the rows and cols average positions
-    int* row_avg = malloc(sizeof(int));
-    int* col_avg = malloc(sizeof(int));
-    if (!row_avg || !col_avg)
+    int* row_avgP = malloc(sizeof(int));
+    int* row_avgS = malloc(sizeof(int));
+    int* col_avgP = malloc(sizeof(int));
+    int* col_avgS = malloc(sizeof(int));
+    if (!row_avgP || !col_avgP || !row_avgS || !col_avgS)
         errx(EXIT_FAILURE,"malloc()");
-    row_avg[0] = *clusters->centerX;
-    col_avg[0] = *clusters->centerY;
+    row_avgP[0] = (*clusters)->centerX;
+    row_avgS[0] = (*clusters)->maxY-(*clusters)->minY;
+    col_avgP[0] = (*clusters)->centerY;
+    col_avgS[0] = (*clusters)->maxX-(*clusters)->minX;
 
     //STEP 2: Iteration of clusters
+    printf("Iteration\n");
     Cluster *curr = (*clusters)->next;
-    while (!curr) {
+    while (curr) {
+        printf("New Cluster P(%d;%d)\n",curr->centerX,curr->centerY);
         //Add the cluster to the table
-        int ROW, COL = -1; //index to find
-        ////Find the ROW coordinate
-        for (int y_cmp = 0; y_cmp < y_size; y_cmp++) {
-            int TOLERANCE = getMedianY(table, y_cmp, x_size) * 1.5f;
-            if (abs(curr->centerY - row_avg[y_cmp]) < TOLERANCE) {
+        int ROW = -1, COL = -1; //index to find
+        ////Find the ROW coordinate [HORIZONTAL]
+        for (int r_cmp = 0; r_cmp < r_size; r_cmp++) {
+            int TOLERANCE = row_avgS[r_cmp] /2;
+            printf("Check[%d]: %d(T:%d;AVG:%d)\n",r_cmp,abs(curr->centerY-row_avgP[r_cmp]),TOLERANCE,row_avgP[r_cmp]);
+            if (abs(curr->centerY - row_avgP[r_cmp]) < TOLERANCE) {
                 //Add it to this horizontal line
-                ROW = y_cmp;
+                ROW = r_cmp;
+                break;
             }
         }
-        if (ROW == -1) { //Did not find a line - try to insert it
-            //TODO
+        printf("Row:%d\n",ROW);
+        if (ROW == -1) { //Did not find: create a new line after
+            if (r_size == 1) {
+                ROW = 1; //Just create the second line
+                expand_vertical(&table, &row_avgP, &row_avgS, &r_size,c_size);
+            } else {
+                int median_hspace, counth = 0;
+                for (int i = 1; i < r_size; i++) {
+                    median_hspace+=row_avgP[i]-row_avgP[i-1];
+                    counth++;
+                }
+                median_hspace/=counth;
+                int toexpand=(curr->centerX-row_avgP[r_size-1])/median_hspace;
+                if (toexpand == 0)
+                    toexpand++;
+                for (int i = 0; i < toexpand; i++)
+                    expand_vertical(&table,&row_avgP,&row_avgS,&r_size,c_size);
+                ROW = r_size - 1;
+            }
         }
+        ////Find the COL coordinate [VERTICAL]
+        for (int c_cmp = 0; c_cmp < c_size; c_cmp++) {
+            int TOLERANCE = col_avgS[c_cmp] / 2;
+            if (abs(curr->centerX - col_avgP[c_cmp]) < TOLERANCE) {
+                //Add it to this vertical line
+                COL = c_cmp;
+                break;
+            }
+        }
+        if (COL == -1) {
+            if (c_size == 1) {
+                COL = 1; //Just create the second col
+                expand_horizontal(table,&col_avgP,&col_avgS,r_size,&c_size);
+            } else {
+                if (COL == -1) {
+                    int median_vspace, countv = 0;
+                    for (int i = 1; i < c_size; i++) {
+                        median_vspace+=col_avgP[i]-col_avgP[i-1];
+                        countv++;
+                    }
+                    median_vspace/=countv;
+                    int toexpand=(curr->centerY-col_avgP[c_size-1])/
+                        median_vspace;
+                    if (toexpand==0)
+                        toexpand++;
+                    for (int i = 0; i < toexpand; i++)
+                        expand_horizontal(table,&col_avgP,&col_avgS,r_size,
+                                &c_size);
+                    ROW = c_size - 1;
+                }
+            }
+        }
+        //Insert Cluster into table
+        printf("Insert at: %d;%d\n",ROW,COL);
+        table[ROW][COL] = curr;
+        curr = curr->next;
+    }
+    *rs = r_size;
+    *cs = c_size;
+    return table;
+}
+
+
+//JUST DO TEST - //TODO: to REMOVE
+void print_testing(Cluster ***table, int xs, int ys) {
+    printf("PRINT MATRIX:\n");
+    for (int x = 0; x < xs; x++) {
+        for (int y = 0; y < ys; y++)
+            printf("%c ",table[x][y] == NULL ? '\\':'X');
+        printf("\n");
     }
 }
 
@@ -258,11 +362,17 @@ void extract_information(GdkPixbuf *input) {
     //STEP 1: retrieving EVERY clusters
     int median_size = 0;
     int count = retrieve_clusters(input, &start, &median_size);
-    printf("Median is: %d\n", median_size);
+    printf("Median is: %d Count is : %d\n", median_size, count);
     testing(start,count,input,"iterate.png");
     //STEP 2: Filter clusters
     count = threshold_filter(&start, count, median_size);
     testing(start,count,input,"thresholdfilter.png");
+
+    //STEP 3: Classify clusters
+    int xs,ys;
+    Cluster ***table = classify_clusters(&start,&xs,&ys);
+    printf("With %d;%d\n",xs,ys);
+    print_testing(table,xs,ys);
 }
 
 int main(int argc, char* argv[]) {
