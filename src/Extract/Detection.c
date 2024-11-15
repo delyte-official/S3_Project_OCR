@@ -206,7 +206,7 @@ void expand_vertical(Cluster** **table, int* *row_avgP, int* *row_avgS,
     *table = tmp;
     *row_avgP = tmp2;
     *row_avgS = tmp3;
-    *r_size++;
+    (*r_size)++;
 }
 
 
@@ -228,7 +228,7 @@ void expand_horizontal(Cluster** *table, int* *col_avgP, int* *col_avgS,
         errx(EXIT_FAILURE, "realloc()");
     *col_avgP = tmp2;
     *col_avgS = tmp3;
-    *c_size++;
+    (*c_size)++;
 }
 
 
@@ -256,9 +256,9 @@ Cluster** *classify_clusters(Cluster **clusters, int *rs, int *cs) {
     int* col_avgS = malloc(sizeof(int));
     if (!row_avgP || !col_avgP || !row_avgS || !col_avgS)
         errx(EXIT_FAILURE,"malloc()");
-    row_avgP[0] = (*clusters)->centerX;
+    row_avgP[0] = (*clusters)->centerY;
     row_avgS[0] = (*clusters)->maxY-(*clusters)->minY;
-    col_avgP[0] = (*clusters)->centerY;
+    col_avgP[0] = (*clusters)->centerX;
     col_avgS[0] = (*clusters)->maxX-(*clusters)->minX;
 
     //STEP 2: Iteration of clusters
@@ -284,7 +284,7 @@ Cluster** *classify_clusters(Cluster **clusters, int *rs, int *cs) {
                 ROW = 1; //Just create the second line
                 expand_vertical(&table, &row_avgP, &row_avgS, &r_size,c_size);
             } else {
-                int median_hspace, counth = 0;
+                int median_hspace = 0, counth = 0;
                 for (int i = 1; i < r_size; i++) {
                     median_hspace+=row_avgP[i]-row_avgP[i-1];
                     counth++;
@@ -307,31 +307,34 @@ Cluster** *classify_clusters(Cluster **clusters, int *rs, int *cs) {
                 break;
             }
         }
+        printf("COL: %d\n", COL);
         if (COL == -1) {
             if (c_size == 1) {
                 COL = 1; //Just create the second col
                 expand_horizontal(table,&col_avgP,&col_avgS,r_size,&c_size);
             } else {
                 if (COL == -1) {
-                    int median_vspace, countv = 0;
+                    int median_vspace = 0, countv = 0;
                     for (int i = 1; i < c_size; i++) {
                         median_vspace+=col_avgP[i]-col_avgP[i-1];
                         countv++;
                     }
                     median_vspace/=countv;
+                    printf("Curr: %d, Last: %d\n",curr->centerY,col_avgP[c_size-1]);
                     int toexpand=(curr->centerY-col_avgP[c_size-1])/
                         median_vspace;
                     if (toexpand==0)
                         toexpand++;
+                    printf("toexpand:%d\n",toexpand);
                     for (int i = 0; i < toexpand; i++)
                         expand_horizontal(table,&col_avgP,&col_avgS,r_size,
                                 &c_size);
-                    ROW = c_size - 1;
+                    COL = c_size - 1;
                 }
             }
         }
         //Insert Cluster into table
-        printf("Insert at: %d;%d\n",ROW,COL);
+        printf("Insert at: %d;%d\n\n",ROW,COL);
         table[ROW][COL] = curr;
         curr = curr->next;
     }
