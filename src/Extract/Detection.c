@@ -1,6 +1,7 @@
 #include <err.h>
 #include <gtk/gtk.h>
 #include <stdio.h>
+#include <math.h>
 
 //Cluster struct
 typedef struct cluster {
@@ -185,6 +186,65 @@ int threshold_filter(Cluster **clusters, int count, int median) {
         }
     }
     return count;
+}
+
+
+/* getMedianY():
+    Returns the median value of the vertical size of the clusters of the row
+*/
+int getMedianY(Cluster** *table, int row, int x_size) {
+    int total = 0;
+    int count = 0;
+    for (int x = 0; x < x_size; x++) {
+        total+=table[row][x]->maxY-table[row][x]->minY;
+        count++;
+    }
+    return (int)(total/count);
+}
+
+
+/* classify_clusters():
+    Categorize clusters in two categories: grid or word list.
+    If a cluster is not appart of them two, it is deleted.
+*/
+void classify_clusters(Cluster **clusters) {
+    //STEP 1: INITIALIZATION
+    //Create the SPACIAL CLUSTERING TABLE
+    int x_size, y_size = 1;
+    Cluster ***table = malloc(sizeof(Cluster**));
+    if (!table)
+        errx(EXIT_FAILURE,"malloc()");
+    table[0] = malloc(sizeof(Cluster*));
+    if (!table[0])
+        errx(EXIT_FAILURE,"malloc()");
+    //Put the first cluser - assume non-empty
+    table[0][0] = *clusters;
+    table[0][1] = NULL;
+    //Creating the rows and cols average positions
+    int* row_avg = malloc(sizeof(int));
+    int* col_avg = malloc(sizeof(int));
+    if (!row_avg || !col_avg)
+        errx(EXIT_FAILURE,"malloc()");
+    row_avg[0] = *clusters->centerX;
+    col_avg[0] = *clusters->centerY;
+
+    //STEP 2: Iteration of clusters
+    Cluster *curr = (*clusters)->next;
+    while (!curr) {
+        //Add the cluster to the table
+        int ROW, COL = -1; //index to find
+        ////Find the ROW coordinate
+        for (int y_cmp = 0; y_cmp < y_size; y_cmp++) {
+            int TOLERANCE = getMedianY(table, y_cmp, x_size) * 1.5f;
+            if (abs(curr->centerY - row_avg[y_cmp]) < TOLERANCE) {
+                //Add it to this horizontal line
+                ROW = y_cmp;
+            }
+        }
+        if (ROW == -1) { //Did not find a line - try to insert it
+            //TODO
+        }
+    }
 }
 
 
