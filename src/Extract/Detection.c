@@ -305,7 +305,7 @@ void addToTable(Cluster* curr, int *r_size, int *c_size,
             ROW = 1; //Just create the second line
             expand_vertical(table, row_avg, r_size,*c_size);
         } else {
-            int median_hspace = 0, counth = 0;
+            /*int median_hspace = 0, counth = 0;
             for (int i = 1; i < *r_size; i++) {
                 median_hspace+=(*row_avg)[i].pos-(*row_avg)[i-1].pos;
                 counth++;
@@ -317,8 +317,8 @@ void addToTable(Cluster* curr, int *r_size, int *c_size,
             if (toexpand == 0)
                 toexpand++;
             printf("toexpand:%d\n",toexpand);
-            for (int i = 0; i < toexpand; i++)
-                expand_vertical(table,row_avg,r_size,*c_size);
+            for (int i = 0; i < toexpand; i++)*/
+            expand_vertical(table,row_avg,r_size,*c_size);
             ROW = *r_size - 1;
         }
     }
@@ -353,7 +353,7 @@ void addToTable(Cluster* curr, int *r_size, int *c_size,
             expand_horizontal(*table,col_avg,*r_size,c_size);
         } else {
             if (COL == -1) {
-                int median_vspace = 0, countv = 0;
+                /*int median_vspace = 0, countv = 0;
                 for (int i = 1; i < *c_size; i++) {
                     median_vspace+=(*col_avg)[i].pos-(*col_avg)[i-1].pos;
                     countv++;
@@ -364,8 +364,8 @@ void addToTable(Cluster* curr, int *r_size, int *c_size,
                 if (toexpand==0)
                     toexpand++;
                 printf("toexpand:%d\n",toexpand);
-                for (int i = 0; i < toexpand; i++)
-                    expand_horizontal(*table,col_avg,*r_size, c_size);
+                for (int i = 0; i < toexpand; i++)*/
+                expand_horizontal(*table,col_avg,*r_size, c_size);
                 COL = *c_size - 1;
             }
         }
