@@ -283,9 +283,9 @@ void addToCol(Line *col, Cluster ***table, int pos, int size,
 */
 void addToTable(Cluster* curr, int *r_size, int *c_size,
         Cluster ****table, Line** row_avg, Line** col_avg) {
-    //Data to relaunch
+    /*//Data to relaunch
     Cluster **save = NULL;
-    int save_s = 0;
+    int save_s = 0;*/
     printf("New Cluster P(%d;%d)\n",curr->centerX,curr->centerY);
     //Add the cluster to the table
     int ROW = -1, COL = -1; //index to find
@@ -330,8 +330,9 @@ void addToTable(Cluster* curr, int *r_size, int *c_size,
             //Add it to this vertical line
             COL = c_cmp;
             break;
-        } else if (curr->centerX < (*col_avg)[c_cmp].pos) {
+        }/* else if (curr->centerX < (*col_avg)[c_cmp].pos) {
             //saving them
+            printf("passing\n");
             save = malloc(sizeof(Cluster*)*(*r_size));
             save_s = *r_size;
             if(!save)
@@ -343,7 +344,7 @@ void addToTable(Cluster* curr, int *r_size, int *c_size,
             //update values
             COL = c_cmp;
             break;
-        }
+        }*/
     }
     printf("Col:%d\n",COL);
     if (COL == -1) {
@@ -370,14 +371,19 @@ void addToTable(Cluster* curr, int *r_size, int *c_size,
         }
     }
     //Insert Cluster into table & Update variables
-    printf("Insert at: %d;%d\n\n",ROW,COL);
+    printf("Insert at: %d;%d\n",ROW,COL);
     (*table)[ROW][COL] = curr;
     addToRow(&((*row_avg)[ROW]),*table,curr->centerY,curr->maxY-curr->minY,
             ROW,*c_size);
     addToCol(&((*col_avg)[COL]),*table,curr->centerX,curr->maxX-curr->minX,
             COL,*r_size);
-    for (int i = 0; i < save_s; i++)
-        addToTable(save[i],r_size,c_size,table,row_avg,col_avg);
+    /*for (int i = 0; i < save_s; i++) {
+        if (save[i]!=NULL) {
+            printf("i:%d\n",i);
+            addToTable(save[i],r_size,c_size,table,row_avg,col_avg);
+        }
+    }*/
+    printf("Success\n\n");
 }
 
 
@@ -433,16 +439,18 @@ Cluster** *classify_clusters(Cluster **clusters, int *rs, int *cs,
 //JUST DO TEST - //TODO: to REMOVE
 void print_testing(Cluster ***table, int xs, int ys, Line* rows, Line* cols) {
     printf("PRINT MATRIX:\n");
+    printf("        ");
     for (int y = 0; y < ys; y++)
-        printf("%d ",cols[y].pos);
+        printf("%3d ",cols[y].pos);
     printf("\n");
+    printf("        ");
     for (int y = 0; y < ys; y++)
-        printf("%d ",cols[y].size);
+        printf("%3d ",cols[y].size);
     printf("\n");
     for (int x = 0; x < xs; x++) {
-        printf("%d %d ",rows[x].pos,rows[x].size);
+        printf("%3d %3d ",rows[x].pos,rows[x].size);
         for (int y = 0; y < ys; y++)
-            printf("%c ",table[x][y] == NULL ? '\\':'X');
+            printf("%3c ",table[x][y] == NULL ? '\\':'X');
         printf("\n");
     }
 }
