@@ -19,6 +19,11 @@ typedef struct {
 } Line;
 
 
+//Size struct
+typedef struct {
+    int x, y;
+} Size;
+
 /* is_black():
     Returns if a pixel is black.
 */
@@ -301,11 +306,11 @@ int compareY(const void *a, const void *b) {
 }
 
 
-/* classify_clusters():
-    Categorize clusters in two categories: grid or word list.
-    If a cluster is not appart of them two, it is deleted.
+/* align_clusters():
+    Align clusters in two matrices: horizontally and vertically.
 */
-void classify_clusters(Cluster *clusters) {
+void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
+        Line **rows_p, Line **cols_p, Size *sizeH, Size *sizeV) {
     //STEP 1: INITIALIZATION
     //Create the SPACIAL CLUSTERING TABLE
     int rows_x = 0, rows_y = 0, cols_x = 0, cols_y = 0;
@@ -404,6 +409,64 @@ void classify_clusters(Cluster *clusters) {
 
     //TESTING
     print_testing(rows,cols,rows_x,rows_y,cols_x,cols_y,row_avg,col_avg);
+    *matrixH = rows;
+    *matrixV = cols;
+    *rows_p = row_avg;
+    *cols_p = col_avg;
+    *sizeH = (Size) {.x=rows_x,.y=rows_y};
+    *sizeV = (Size) {.x=cols_x,.y=cols_y};
+}
+
+
+/* classify_clusters():
+    Classify clusters into the grid and word list. If it is in nether, it
+    is deleted.
+*/
+void classify_clusters(Cluster ***matrixH, Cluster ***matrixV,
+        Line *rows, Line *cols, Size sizeH, Size sizeV) {
+    Size sizeG = (Size) {.x=0,.y=0};
+    ////FIND GRID
+    //Search for grid in matrix HORIZONTAL
+    for (int x = 0; x < sizeH.x; x++) {
+        for (int y = 0; y < sizeH.y; y++) {
+            if (matrixH[x][y]==NULL)
+                break; //row empty from now on
+            sizeG.x = 0; sizeG.y = 0;
+            //Begin finding for Cluster at (x;y)
+            printf("Start at (%d;%d) with H(%d;%d)\n",x,y,sizeH.x,sizeH.y);
+            for (int i = y; i < sizeH.y && matrixH[x][i] != NULL; i++)
+                sizeG.x++;
+            if (sizeG.x < 5)
+                break; //Skip row
+            sizeG.y = 1;
+            printf("SizeG.x:%d\n",sizeG.x);
+            for (int j = x+1; j < sizeH.x; j++) {
+                int row_c = 0;
+                for (int i = y; i < sizeG.x+y; i++) {
+                    printf("Test:%d;%d\n",j,i);
+                    if (matrixH[j][i] == NULL) {
+                        printf("NULL at (%d;%d)\n",j,i);
+                        if (row_c < sizeG.x) {
+                            if (row_c < 5)
+                                goto break_grid;//Break(2)
+                            sizeG.x = row_c;
+                        }
+                        break;
+                    }
+                    row_c++;
+                }
+                printf("+%d\n",row_c);
+                sizeG.y++;
+            }
+            if (sizeG.y >= 5)
+                goto found_grid;
+            break_grid:; //LABEL= breaking the grid
+            printf("Reset\nGrid trial: %d;%d\n",sizeG.x,sizeG.y);
+        }
+    }
+    found_grid:;
+    if (sizeG.x >= 5 && sizeG.y >= 5)
+        printf("Found grid\n");
 }
 
 
@@ -423,8 +486,14 @@ void extract_information(GdkPixbuf *input) {
     count = threshold_filter(&start, count, median_size);
     testing(start,count,input,"thresholdfilter.png");
 
-    //STEP 3: Classify clusters
-    classify_clusters(start);
+    //STEP 3: Align clusters
+    Cluster ***matrixH, ***matrixV;
+    Line *rows, *cols;
+    Size sizeH, sizeV;
+    align_clusters(start, &matrixH, &matrixV, &rows, &cols,&sizeH,&sizeV);
+
+    //STEP 4: Classify clusters
+    classify_clusters(matrixH,matrixV,rows,cols,sizeH,sizeV);
 }
 
 int main(int argc, char* argv[]) {
