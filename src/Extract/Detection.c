@@ -442,29 +442,42 @@ void classify_clusters(Cluster ***matrixH, Cluster ***matrixV,
             printf("SizeG.x:%d\n",sizeG.x);
             for (int j = x+1; j < sizeH.x; j++) {
                 int row_c = 0;
-                for (int i = y; i < sizeG.x+y; i++) {
+                int start_row = -1;
+                for (int i = 0; i <= sizeH.y-5; i++) {
+                    //Find the cluster of the row which align with previous
                     printf("Test:%d;%d\n",j,i);
-                    if (matrixH[j][i] == NULL) {
-                        printf("NULL at (%d;%d)\n",j,i);
-                        if (row_c < sizeG.x) {
-                            if (row_c < 5)
-                                goto break_grid;//Break(2)
+                    if (matrixH[j][i] == NULL)
+                        break;
+                    if (/*ALIGNS*/0) {
+                        start_row = i;
+                        break;
+                    }
+                }
+                if (start_row==-1)
+                    break;
+                //Iterate from start_row
+                for (int i = start_row; i-start_row < sizeG.x && i < sizeH.y;
+                        i++) {
+                    if (matrixH[j][i] == NULL || /*DOES NOT ALIGN*/0) {
+                        printf("TEST FAILED at (%d;%d)\n",j,i);
+                        if (row_c < sizeG.x)
                             sizeG.x = row_c;
-                        }
                         break;
                     }
                     row_c++;
                 }
+                if (sizeG.x < 5)
+                    break;
                 printf("+%d\n",row_c);
                 sizeG.y++;
             }
             if (sizeG.y >= 5)
-                goto found_grid;
-            break_grid:; //LABEL= breaking the grid
+                break;
             printf("Reset\nGrid trial: %d;%d\n",sizeG.x,sizeG.y);
         }
+        if (sizeG.y >= 5)
+            break;
     }
-    found_grid:;
     if (sizeG.x >= 5 && sizeG.y >= 5)
         printf("Found grid\n");
 }
