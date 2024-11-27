@@ -292,7 +292,9 @@ void print_testing(Cluster ***rows, Cluster ***cols, int rows_x, int rows_y,
 int compareX(const void *a, const void *b) {
     Cluster *cA = *(Cluster**)a;
     Cluster *cB = *(Cluster**)b;
-    return cA->centerX < cB->centerX ? -1 : cA->centerX > cB->centerX ? 1 : 0;
+    int resA = cA != NULL ? cA->centerX : INT_MAX;
+    int resB = cB != NULL ? cB->centerX : INT_MAX;
+    return resA < resB ? -1 : resA > resB ? 1 : 0;
 }
 
 
@@ -302,7 +304,9 @@ int compareX(const void *a, const void *b) {
 int compareY(const void *a, const void *b) {
     Cluster *cA = *(Cluster**)a;
     Cluster *cB = *(Cluster**)b;
-    return cA->centerY < cB->centerY ? -1 : cA->centerY > cB->centerY ? 1 : 0;
+    int resA = cA != NULL ? cA->centerY : INT_MAX;
+    int resB = cB != NULL ? cB->centerY : INT_MAX;
+    return resA < resB ? -1 : resA > resB ? 1 : 0;
 }
 
 
@@ -338,11 +342,9 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
     qsort(sortVert, count, sizeof(Cluster*),compareY);
 
     //STEP 3: Iteration of clusters
-    printf("Iteration\n");
     //ROWS MATRICE
     for (int i = 0; i < count; i ++) {
         curr = sortVert[i];
-        printf("New Cluster P(%d;%d)\n",curr->centerX,curr->centerY);
         ////Find the ROW coordinate [HORIZONTAL]
         int ROW = -1;
         for (int r_cmp = 0; r_cmp < rows_x; r_cmp++) {
@@ -353,7 +355,6 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
                 break;
             }
         }
-        printf("Row:%d\n",ROW);
         if (ROW == -1) { //Did not find: create a new line after
             expand_x(&rows, &row_avg, &rows_x,rows_y);
             ROW = rows_x - 1;
@@ -367,27 +368,22 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
             add++;
         rows[ROW][add]=curr;
 
-        printf("Insert in Row(%d)\n",ROW);
         addToLine(&(row_avg[ROW]),rows,curr->centerY,curr->maxY-curr->minY,
             ROW,rows_y,0);
-        printf("Success\n\n");
     }
     //COLS MATRICE
     for (int i = 0; i < count; i++) {
         curr = sortHori[i];
-        printf("New Cluster P(%d;%d)\n",curr->centerX,curr->centerY);
         ////Find the COL coordinate [VERTICAL]
         int COL = -1;
         for (int c_cmp = 0; c_cmp < cols_x; c_cmp++) {
             int TOLERANCE = col_avg[c_cmp].size /2;
-            printf("Check[%d]: %d(T:%d;C:%d;AVG:%d)\n",c_cmp,abs(curr->centerX-col_avg[c_cmp].pos),TOLERANCE,curr->centerX,col_avg[c_cmp].pos);
             if (abs(curr->centerX - col_avg[c_cmp].pos) <= TOLERANCE) {
                 //Add it to this horizontal line
                 COL = c_cmp;
                 break;
             }
         }
-        printf("Col:%d\n",COL);
         if (COL == -1) { //Did not find: create a new line after
             expand_x(&cols, &col_avg, &cols_x,cols_y);
             COL = cols_x - 1;
@@ -401,14 +397,18 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
             add++;
         cols[COL][add]=curr;
         
-        printf("Insert in Col(%d)\n",COL);
         addToLine(&(col_avg[COL]),cols,curr->centerX,curr->maxX-curr->minX,
             COL,cols_y, 1);
-        printf("Success\n\n");
     }
+    //Sort the LINES of each matrix to put them in order
+    for (int line = 0; line < rows_x; line++)
+        qsort(rows[line],rows_y,sizeof(Cluster*),compareX);
+    for (int line = 0; line < cols_x; line++)
+        qsort(cols[line],cols_y,sizeof(Cluster*),compareY);
 
     //TESTING
     print_testing(rows,cols,rows_x,rows_y,cols_x,cols_y,row_avg,col_avg);
+    //TO REMOVE
     *matrixH = rows;
     *matrixV = cols;
     *rows_p = row_avg;
@@ -418,68 +418,107 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
 }
 
 
-/* classify_clusters():
-    Classify clusters into the grid and word list. If it is in nether, it
-    is deleted.
+/* check_align():
+    Check if two clusters are align in the SRC matrix.
 */
-void classify_clusters(Cluster ***matrixH, Cluster ***matrixV,
-        Line *rows, Line *cols, Size sizeH, Size sizeV) {
+int check_align(Cluster ***SRC, Cluster *first, Cluster *second,
+        Size size) {
+    //Find the x coordinates of the two
+    int x1 = -1;
+    int x2 = -2; //Different values for the case they're not in the matrix
+    for (int f = 0; f < size.x * size.y; f++) {
+        int x = f / size.y, y = f % size.y;
+        if (SRC[x][y] == NULL) {
+            f += size.y-f % size.y - 1; //skip column
+            continue;
+        }
+        if (SRC[x][y] == first) {
+            x1 = x;
+            if (x2>=0)
+                break; //Found both
+        } if (SRC[x][y] == second) {
+            x2 = x;
+            if (x1>=0)
+                break; //found both
+        }
+    }
+    return x1 == x2;
+}
+
+
+/* find_grid():
+    Tries to find the grid in the SRC matrix with help of CMP matrix.
+*/
+Size find_grid(Cluster ***SRC, Cluster ***CMP,
+        Line *lines, Size sizeSRC, Size sizeCMP) {
     Size sizeG = (Size) {.x=0,.y=0};
     ////FIND GRID
     //Search for grid in matrix HORIZONTAL
-    for (int x = 0; x < sizeH.x; x++) {
-        for (int y = 0; y < sizeH.y; y++) {
-            if (matrixH[x][y]==NULL)
+    for (int x = 0; x < sizeSRC.x; x++) {
+        for (int y = 0; y < sizeSRC.y; y++) {
+            if (SRC[x][y]==NULL)
                 break; //row empty from now on
             sizeG.x = 0; sizeG.y = 0;
             //Begin finding for Cluster at (x;y)
-            printf("Start at (%d;%d) with H(%d;%d)\n",x,y,sizeH.x,sizeH.y);
-            for (int i = y; i < sizeH.y && matrixH[x][i] != NULL; i++)
+            //printf("\nStart at (%d;%d) with H(%d;%d)\n",x,y,sizeH.x,sizeH.y);
+            for (int i = y; i < sizeSRC.y && SRC[x][i] != NULL; i++)
                 sizeG.x++;
             if (sizeG.x < 5)
-                break; //Skip row
+                break; //Skip line
             sizeG.y = 1;
-            printf("SizeG.x:%d\n",sizeG.x);
-            for (int j = x+1; j < sizeH.x; j++) {
-                int row_c = 0;
-                int start_row = -1;
-                for (int i = 0; i <= sizeH.y-5; i++) {
+            for (int j = x+1; j < sizeSRC.x; j++) {
+                int line_c = 0;
+                int start_line = -1;
+                for (int i = 0; i <= sizeSRC.y-5; i++) {
                     //Find the cluster of the row which align with previous
-                    printf("Test:%d;%d\n",j,i);
-                    if (matrixH[j][i] == NULL)
+                    if (SRC[j][i] == NULL)
                         break;
-                    if (/*ALIGNS*/0) {
-                        start_row = i;
+                    if (check_align(CMP,SRC[x][y],SRC[j][i],
+                                sizeCMP)) {
+                        start_line = i;
                         break;
                     }
                 }
-                if (start_row==-1)
+                if (start_line==-1)
                     break;
                 //Iterate from start_row
-                for (int i = start_row; i-start_row < sizeG.x && i < sizeH.y;
+                for (int i = start_line; i-start_line < sizeG.x && i < sizeSRC.y;
                         i++) {
-                    if (matrixH[j][i] == NULL || /*DOES NOT ALIGN*/0) {
-                        printf("TEST FAILED at (%d;%d)\n",j,i);
-                        if (row_c < sizeG.x)
-                            sizeG.x = row_c;
+                    if (SRC[j][i] == NULL || /*DOES NOT ALIGN*/0) {
+                        if (line_c < sizeG.x && line_c>=5)
+                            sizeG.x = line_c;
                         break;
                     }
-                    row_c++;
+                    line_c++;
                 }
-                if (sizeG.x < 5)
+                if (line_c < 5)
                     break;
-                printf("+%d\n",row_c);
                 sizeG.y++;
             }
             if (sizeG.y >= 5)
                 break;
-            printf("Reset\nGrid trial: %d;%d\n",sizeG.x,sizeG.y);
         }
         if (sizeG.y >= 5)
             break;
     }
     if (sizeG.x >= 5 && sizeG.y >= 5)
-        printf("Found grid\n");
+        return sizeG;
+    return (Size) {.x=-1,.y=-1};
+}
+
+
+/* classify_clusters():
+    Classify clusters into the grid or word list. If it does not fit either
+    of them, it gets deleted.
+*/
+void classify_clusters(Cluster ***matrixH, Cluster ***matrixV, Line *rows,
+        Line *cols, Size sizeH, Size sizeV) {
+    Size grid = find_grid(matrixH,matrixV,rows,sizeH,sizeV);
+    if (grid.x==-1) {
+        printf("Not found horizontally\n");
+        grid = find_grid(matrixV,matrixH,cols,sizeV,sizeH);
+    }
+    printf("Grid is: (%d;%d)\n",grid.x,grid.y);
 }
 
 
