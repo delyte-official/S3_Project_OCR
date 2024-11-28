@@ -4,12 +4,17 @@
 #include <math.h>
 
 
+#define FLAG_IS_GRID (1 << 0)
+#define FLAG_IS_WORD (1 << 1)
+#define FLAG_UNUSED 0
+
 //Cluster struct
 typedef struct cluster {
     int size;
     int centerX, centerY;
     int maxX, maxY, minX, minY;
     struct cluster *next;
+    int flags;
 } Cluster;
 
 
@@ -23,6 +28,7 @@ typedef struct {
 typedef struct {
     int x, y;
 } Size;
+
 
 /* is_black():
     Returns if a pixel is black.
@@ -78,7 +84,8 @@ void initCluster(Cluster **chain, int x, int y, gboolean** visit,
         .centerX = 0, .centerY = 0,
         .maxX = x, .minX = x,
         .maxY = y, .minY = y,
-        .next = NULL
+        .next = NULL,
+        .flags = 0
     };
     if (*chain != NULL) {
         (*chain)->next = end;
@@ -135,7 +142,6 @@ int retrieve_clusters(GdkPixbuf *input, Cluster **last, int *median) {
         }
     }
     *last = start;
-    Cluster *test = start;
     //Updating median
     *median/=clusterCount;
     return clusterCount;
@@ -143,7 +149,7 @@ int retrieve_clusters(GdkPixbuf *input, Cluster **last, int *median) {
 
 
 //JUST TO TEST - TO REMOVE
-void testing(Cluster *first, int size, GdkPixbuf *pixbuf, char* filename) {
+void testing(Cluster *first, GdkPixbuf *pixbuf, char* filename) {
     GdkPixbuf *res = gdk_pixbuf_copy(pixbuf);
     
     guchar* pixels = gdk_pixbuf_get_pixels(res);
@@ -205,13 +211,17 @@ int threshold_filter(Cluster **clusters, int count, int median) {
 /* expand_y:
     Expand the table on y by 1
 */
-void expand_y(Cluster** *table, int xs, int *ys) {
-    (*ys)++;
+void expand_y(Cluster** *table, int xs, int *ys, int size) {
+    int difference = size - *ys;
+    *ys=size;
     for (int i = 0; i < xs; i++) {
         Cluster **tmp = realloc(table[i],sizeof(Cluster*)*(*ys));
-        if (!tmp)
+        if (!tmp && size > 0)
             errx(EXIT_FAILURE, "realloc()");
-        tmp[*ys-1] = NULL;
+        if (difference > 0) {
+            for (int j = size-difference; j < size; j++)
+                tmp[j]=NULL;
+        }
         table[i] = tmp;
     }
 }
@@ -220,26 +230,40 @@ void expand_y(Cluster** *table, int xs, int *ys) {
 /* expand_x():
     Expand the table on x by 1.
 */
-void expand_x(Cluster** **table, Line* *line_avg, int *xs, int ys) {
-    (*xs)++;
+void expand_x(Cluster** **table, int *xs, int ys, int size) {
+    int difference = size-*xs;
+    *xs=size;
     Cluster ***tmp= realloc(*table,sizeof(Cluster**)*(*xs));
-    Line *tmp2 = realloc(*line_avg, sizeof(Line)*(*xs));
-    if (!tmp || !tmp2)
+    if (!tmp && size > 0)
         errx(EXIT_FAILURE, "realloc()");
-    Cluster **tmp3 = calloc(sizeof(Cluster*),ys);
-    if (!tmp3)
-        errx(EXIT_FAILURE, "calloc()");
-    tmp[*xs-1]=tmp3;
-    memset(&tmp2[*xs-1],0,sizeof(Line));
-    *table = tmp; *line_avg = tmp2;
+    if (difference > 0) {
+        for (int i = 0; i < difference; i++) {
+            Cluster **tmp2 = calloc(sizeof(Cluster*),ys);
+            if (!tmp2)
+                errx(EXIT_FAILURE, "calloc()");
+            tmp[size-difference+i]=tmp2;
+        }
+    }
+    *table = tmp;
+}
+
+
+/* expand_line():
+    Expand the array of "Line" to "size".
+*/
+void expand_line(Line* *line, int size) {
+    Line *tmp = realloc(*line,sizeof(Line)*size);
+    if (!tmp)
+        errx(EXIT_FAILURE,"realloc()");
+    memset(&tmp[size-1],0,sizeof(Line));
+    *line = tmp;
 }
 
 
 /* addToLine():
     Add an element to the line information.
 */
-void addToLine(Line *line, Cluster ***table, int pos, int size,
-        int index, int ys, int isHori) {
+void addToLine(Line *line, Cluster ***table, int index, int ys, int isHori) {
     int total_p = 0, total_s = 0;
     //Calculate real total values
     for (int i = 0; i < ys; i++) {
@@ -356,20 +380,20 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
             }
         }
         if (ROW == -1) { //Did not find: create a new line after
-            expand_x(&rows, &row_avg, &rows_x,rows_y);
+            expand_x(&rows, &rows_x,rows_y, rows_x+1);
+            expand_line(&row_avg,rows_x);
             ROW = rows_x - 1;
         }
         //Detect if line is full
         if (rows[ROW][rows_y-1] != NULL)
-            expand_y(rows,rows_x,&rows_y);
+            expand_y(rows,rows_x,&rows_y,rows_y+1);
         //Adding to ROW
         int add = 0;
         while (rows[ROW][add]!=NULL)
             add++;
         rows[ROW][add]=curr;
 
-        addToLine(&(row_avg[ROW]),rows,curr->centerY,curr->maxY-curr->minY,
-            ROW,rows_y,0);
+        addToLine(&(row_avg[ROW]),rows,ROW,rows_y,0);
     }
     //COLS MATRICE
     for (int i = 0; i < count; i++) {
@@ -385,20 +409,20 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
             }
         }
         if (COL == -1) { //Did not find: create a new line after
-            expand_x(&cols, &col_avg, &cols_x,cols_y);
+            expand_x(&cols, &cols_x,cols_y,cols_x+1);
+            expand_line(&col_avg,cols_x);
             COL = cols_x - 1;
         }
         //Detect if line is full
         if (cols[COL][cols_y-1] != NULL)
-            expand_y(cols,cols_x,&cols_y);
+            expand_y(cols,cols_x,&cols_y,cols_y+1);
         //Adding to ROW
         int add = 0;
         while (cols[COL][add]!=NULL)
             add++;
         cols[COL][add]=curr;
         
-        addToLine(&(col_avg[COL]),cols,curr->centerX,curr->maxX-curr->minX,
-            COL,cols_y, 1);
+        addToLine(&(col_avg[COL]),cols,COL,cols_y, 1);
     }
     //Sort the LINES of each matrix to put them in order
     for (int line = 0; line < rows_x; line++)
@@ -445,13 +469,25 @@ int check_align(Cluster ***SRC, Cluster *first, Cluster *second,
     return x1 == x2;
 }
 
+//TEST FUNCTION
+void print_matrix(Cluster ***matrix, Size size) {
+    printf("\nPRINT MATRIX(%d;%d):\n",size.x,size.y);
+    for (int y = 0; y < size.y; y++) {
+        for (int x = 0; x < size.x; x++)
+            printf("%c ", matrix[x][y]!=NULL ? 'X' : '\\');
+        printf("\n");
+    }
+    printf("END\n\n");
+}
+
 
 /* find_grid():
     Tries to find the grid in the SRC matrix with help of CMP matrix.
 */
 Size find_grid(Cluster ***SRC, Cluster ***CMP,
-        Line *lines, Size sizeSRC, Size sizeCMP) {
+        Line *lines, Size sizeSRC, Size sizeCMP, Cluster ****DST) {
     Size sizeG = (Size) {.x=0,.y=0};
+    *DST = NULL;
     ////FIND GRID
     //Search for grid in matrix HORIZONTAL
     for (int x = 0; x < sizeSRC.x; x++) {
@@ -460,12 +496,15 @@ Size find_grid(Cluster ***SRC, Cluster ***CMP,
                 break; //row empty from now on
             sizeG.x = 0; sizeG.y = 0;
             //Begin finding for Cluster at (x;y)
-            //printf("\nStart at (%d;%d) with H(%d;%d)\n",x,y,sizeH.x,sizeH.y);
             for (int i = y; i < sizeSRC.y && SRC[x][i] != NULL; i++)
                 sizeG.x++;
             if (sizeG.x < 5)
                 break; //Skip line
-            sizeG.y = 1;
+            int expand = sizeG.x; sizeG.x = 0; sizeG.y = 1;
+            expand_x(DST,&sizeG.x,sizeG.y,expand);
+            //Putting the first line into the grid matrix
+            for (int i = 0; i < sizeG.x; i++)
+                (*DST)[i][0]=SRC[x][y+i];
             for (int j = x+1; j < sizeSRC.x; j++) {
                 int line_c = 0;
                 int start_line = -1;
@@ -482,21 +521,26 @@ Size find_grid(Cluster ***SRC, Cluster ***CMP,
                 if (start_line==-1)
                     break;
                 //Iterate from start_row
-                for (int i = start_line; i-start_line < sizeG.x && i < sizeSRC.y;
+                for (int i = start_line; i-start_line<sizeG.x && i<sizeSRC.y;
                         i++) {
-                    if (SRC[j][i] == NULL || /*DOES NOT ALIGN*/0) {
+                    if (SRC[j][i] == NULL || !check_align(CMP,
+                                SRC[x][y+i-start_line],SRC[j][i],sizeCMP)) {
                         if (line_c < sizeG.x && line_c>=5)
-                            sizeG.x = line_c;
+                            expand_x(DST,&sizeG.x,sizeG.y,line_c);
                         break;
                     }
                     line_c++;
                 }
                 if (line_c < 5)
                     break;
-                sizeG.y++;
+                expand_y(*DST,sizeG.x,&sizeG.y,sizeG.y+1);
+                for (int i = 0; i < sizeG.x; i++)
+                    (*DST)[i][j-x]=SRC[j][start_line+i];
             }
             if (sizeG.y >= 5)
                 break;
+            //Reset TRIAL
+            expand_x(DST,&sizeG.x,sizeG.y,0);
         }
         if (sizeG.y >= 5)
             break;
@@ -507,18 +551,53 @@ Size find_grid(Cluster ***SRC, Cluster ***CMP,
 }
 
 
+void grid_testing(Cluster ***matrix, Size size, GdkPixbuf *pixbuf, char* filename) {
+    GdkPixbuf *res = gdk_pixbuf_copy(pixbuf);
+
+    guchar* pixels = gdk_pixbuf_get_pixels(res);
+    int N = gdk_pixbuf_get_n_channels(res);
+    int rowstride = gdk_pixbuf_get_rowstride(res);
+
+    guchar *p;
+    //Iterating over the clusters
+    for (int x = 0; x < size.x; x++) {
+        for (int y = 0; y < size.y; y++) {
+            Cluster *first = matrix[x][y];
+            //Coloring into red the whole cluster
+            for (int x = first->minX; x <= first->maxX; x++) {
+                p = pixels + first->minY*rowstride + x*N;
+                p[0] = 0;p[1]=255;p[2]=0;
+                p = pixels + first->maxY*rowstride +x*N;
+                p[0] = 0;p[1]=255;p[2]=0;
+            }
+            for (int y = first->minY; y <= first->maxY; y++) {
+                p = pixels + y*rowstride +first->minX*N;
+                p[0] = 0;p[1]=255;p[2]=0;
+                p = pixels + y*rowstride +first->maxX*N;
+                p[0] = 0;p[1]=255;p[2]=0;
+            }
+        }
+    }
+    gdk_pixbuf_save(res, filename, "png", NULL, NULL);
+}
+
+
 /* classify_clusters():
     Classify clusters into the grid or word list. If it does not fit either
     of them, it gets deleted.
 */
 void classify_clusters(Cluster ***matrixH, Cluster ***matrixV, Line *rows,
-        Line *cols, Size sizeH, Size sizeV) {
-    Size grid = find_grid(matrixH,matrixV,rows,sizeH,sizeV);
-    if (grid.x==-1) {
+        Line *cols, Size sizeH, Size sizeV, GdkPixbuf *test) {
+    Cluster ***grid;
+    Size gridS = find_grid(matrixH,matrixV,rows,sizeH,sizeV,&grid);
+    if (gridS.x==-1) {
         printf("Not found horizontally\n");
-        grid = find_grid(matrixV,matrixH,cols,sizeV,sizeH);
+        gridS = find_grid(matrixV,matrixH,cols,sizeV,sizeH,&grid);
     }
-    printf("Grid is: (%d;%d)\n",grid.x,grid.y);
+    printf("Grid is: (%d;%d)\n",gridS.x,gridS.y);
+    print_matrix(grid,gridS);
+    //TEST RESULT
+    grid_testing(grid,gridS,test,"grid_detect.png");
 }
 
 
@@ -533,10 +612,10 @@ void extract_information(GdkPixbuf *input) {
     int median_size = 0;
     int count = retrieve_clusters(input, &start, &median_size);
     printf("Median is: %d Count is : %d\n", median_size, count);
-    testing(start,count,input,"iterate.png");
+    testing(start,input,"iterate.png");
     //STEP 2: Filter clusters
     count = threshold_filter(&start, count, median_size);
-    testing(start,count,input,"thresholdfilter.png");
+    testing(start,input,"thresholdfilter.png");
 
     //STEP 3: Align clusters
     Cluster ***matrixH, ***matrixV;
@@ -545,7 +624,7 @@ void extract_information(GdkPixbuf *input) {
     align_clusters(start, &matrixH, &matrixV, &rows, &cols,&sizeH,&sizeV);
 
     //STEP 4: Classify clusters
-    classify_clusters(matrixH,matrixV,rows,cols,sizeH,sizeV);
+    classify_clusters(matrixH,matrixV,rows,cols,sizeH,sizeV,input);
 }
 
 int main(int argc, char* argv[]) {
