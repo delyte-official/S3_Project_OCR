@@ -669,10 +669,8 @@ Size find_wordlist(Cluster ***matrixH, Cluster***matrixV, Line *rows,
                 break; //Skip column
             if (matrixV[x][y]->flags)
                 continue; //Flagged => skip
-            printf("Testing: %d;%d\n",x,y);
             //Find its position in the horizontal matrix
             Size pos = find_cluster(matrixH,sizeH,matrixV[x][y]);
-            printf("found cluster at: %d;%d\n",pos.x,pos.y);
             //Grab the longest word from there
             int len = 1;
             for (int i = pos.y+1; i < sizeH.y && matrixH[pos.x][i]!=NULL;i++){
@@ -680,16 +678,12 @@ Size find_wordlist(Cluster ***matrixH, Cluster***matrixV, Line *rows,
                     matrixH[pos.x][i-1]->centerX;
                 int avg = matrixH[pos.x][i]->maxX-matrixH[pos.x][i]->minX +
                     matrixH[pos.x][i-1]->maxX-matrixH[pos.x][i-1]->minX;
-                printf("Space: %d, avg:%d\n",space,avg);
                 if (space > avg) //Too much space
                     break;
                 len++;
             }
-            if (len < 3) { //Threshold for length of shortest word
-                printf("Not a word\n");
+            if (len < 3) //Threshold for length of shortest word
                 continue;
-            }
-            printf("Len of word:%d\n",len);
             expand_x(wordList,&sizeW.x,sizeW.y,sizeW.x+1);
             if (len+1>sizeW.y) //+1 for NULL terminator
                 expand_y(*wordList,sizeW.x,&sizeW.y,len+1);
@@ -706,6 +700,33 @@ Size find_wordlist(Cluster ***matrixH, Cluster***matrixV, Line *rows,
 }
 
 
+/* transpose_matrix():
+    Transpose a matrix, X*Y => Y*X.
+*/
+void transpose_matrix(Cluster ****matrix, Size *size) {
+    Cluster ***transposed = malloc(size->y*sizeof(Cluster**));
+    if (!transposed)
+        errx(EXIT_FAILURE, "malloc()");
+    for (int i = 0; i < size->y; i++) {
+        Cluster **tmp = malloc(size->x*sizeof(Cluster*));
+        if (!tmp)
+            errx(EXIT_FAILURE, "malloc()");
+        transposed[i] = tmp;
+    }
+
+    //Transpose data
+    for (int i = 0; i < size->x; i++) {
+        for (int j = 0; j < size->y; j++) {
+            transposed[j][i] = (*matrix)[i][j];
+        }
+        free((*matrix)[i]);
+    }
+    free(*matrix);
+    *matrix = transposed;
+    *size = (Size) {.x=size->y,.y=size->x};
+}
+
+
 /* classify_clusters():
     Classify clusters into the grid or word list. If it does not fit either
     of them, it gets deleted.
@@ -718,6 +739,8 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Line *rows,
     if (gridS.x==-1) {
         printf("Not found horizontally\n");
         gridS = find_grid(matrixV,matrixH,cols,*sizeV,*sizeH,grid);
+        //Transpose grid
+        transpose_matrix(grid,&gridS);
     }
     if (gridS.x==-1)
         printf("Grid not found. Error.\n");
