@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <err.h>
 #include <gtk/gtk.h>
 #include <stdio.h>
@@ -28,6 +29,22 @@ typedef struct {
 typedef struct {
     int x, y;
 } Size;
+
+
+/* cut_from_pixbuf():
+    Cut a pixbuf into a sub-pixbuf given two coordinates of a rectangle.
+*/
+GdkPixbuf* cut_from_pixbuf(GdkPixbuf *original, Size topL, Size botR)
+{
+    int width = botR.x - topL.x+1; //+1 because its a size
+    int height = botR.y - topL.y+1;
+    GdkPixbuf *subpix = gdk_pixbuf_new_subpixbuf(original, topL.x, topL.y,
+            width, height);
+    //Create copy bc "subpix" shares data with "original"
+    GdkPixbuf *res = gdk_pixbuf_copy(subpix);
+    g_object_unref(subpix);
+    return res;
+}
 
 
 /* is_black():
@@ -693,25 +710,82 @@ Size find_wordlist(Cluster ***matrixH, Cluster***matrixV, Line *rows,
     Classify clusters into the grid or word list. If it does not fit either
     of them, it gets deleted.
 */
-void classify_clusters(Cluster ***matrixH, Cluster ***matrixV, Line *rows,
-        Line *cols, Size sizeH, Size sizeV, GdkPixbuf *test) {
-    Cluster ***grid = NULL;
-    Size gridS = find_grid(matrixH,matrixV,rows,sizeH,sizeV,&grid);
+void classify_clusters(Cluster ****grid, Cluster ****wordlist, Line *rows,
+        Line *cols, Size *sizeH, Size *sizeV, GdkPixbuf *test) {
+    Cluster ***matrixH = *grid; Cluster ***matrixV = *wordlist;
+    *grid = NULL;
+    Size gridS = find_grid(matrixH,matrixV,rows,*sizeH,*sizeV,grid);
     if (gridS.x==-1) {
         printf("Not found horizontally\n");
-        gridS = find_grid(matrixV,matrixH,cols,sizeV,sizeH,&grid);
+        gridS = find_grid(matrixV,matrixH,cols,*sizeV,*sizeH,grid);
     }
     if (gridS.x==-1)
         printf("Grid not found. Error.\n");
     printf("Grid is: (%d;%d)\n",gridS.x,gridS.y);
-    print_matrix(grid,gridS);
+    print_matrix(*grid,gridS);
     //TEST RESULT
-    grid_testing(grid,gridS,test,"grid_detect.png");
+    grid_testing(*grid,gridS,test,"grid_detect.png");
 
     //FIND WORD LIST - ASSUME GRID HAS BEEN FOUND
-    Cluster ***wordList = NULL;
-    Size wordS=find_wordlist(matrixH,matrixV,rows,cols,sizeH,sizeV,&wordList);
-    wordList_testing(wordList,wordS,test,"wordlist_detect.png");
+    *wordlist = NULL;
+    Size wordS=find_wordlist(matrixH,matrixV,rows,cols,*sizeH,*sizeV,wordlist);
+    wordList_testing(*wordlist,wordS,test,"wordlist_detect.png");
+
+    *sizeH = gridS; *sizeV = wordS;
+    //Free memory
+    free(matrixH);
+    free(matrixV);
+}
+
+
+/* cut_grid():
+    Cut the grid clusters into sub-images.
+*/
+void cut_grid(Cluster ***grid, Size size, GdkPixbuf* input) {
+    for (int x = 0; x < size.x; x++) {
+        for (int y = 0; y < size.y; y++) {
+            Size topL = (Size) {.x=grid[x][y]->minX,.y=grid[x][y]->minY};
+            Size botR = (Size) {.x=grid[x][y]->maxX,.y=grid[x][y]->maxY};
+            GdkPixbuf *letter_img = cut_from_pixbuf(input,topL,botR);
+            //Calculating the filename
+            char *filename;
+            if (asprintf(&filename,"grid/grid_%d_%d.png",x,y) ==-1)
+                errx(EXIT_FAILURE, "asprintf()");
+            //Save image
+            gdk_pixbuf_save(letter_img,filename,"png",NULL,NULL);
+        }
+    }
+}
+
+
+/* cut_wordlist():
+    Cut the word list into sub-images.
+*/
+void cut_wordlist(Cluster ***wordlist, Size size, GdkPixbuf *input) {
+    for (int x = 0; x < size.x; x++) {
+        //Deducing the size
+        int len = 0;
+        for (int i = 0; i < size.y && wordlist[x][i]!=NULL;i++)
+            len++;
+        Size WtopL = (Size) {.x=wordlist[x][0]->minX,.y=wordlist[x][0]->minY};
+        Size WbotR = (Size) {.x=wordlist[x][len-1]->maxX,
+            .y=wordlist[x][len-1]->maxY};
+        char *word_name;
+        asprintf(&word_name,"wordlist/words_%d.png",x);
+        GdkPixbuf *word_img = cut_from_pixbuf(input,WtopL,WbotR);
+        gdk_pixbuf_save(word_img,word_name,"png",NULL,NULL);
+        //Letters
+        for (int y = 0; y < len; y++) {
+            Size topL = (Size) {.x=wordlist[x][y]->minX,
+                .y=wordlist[x][y]->minY};
+            Size botR = (Size) {.x=wordlist[x][y]->maxX,
+                .y=wordlist[x][y]->maxY};
+            char *letter_name;
+            asprintf(&letter_name,"wordlist/words_%d_ltr_%d.png",x,y);
+            GdkPixbuf *letter_img = cut_from_pixbuf(input,topL,botR);
+            gdk_pixbuf_save(letter_img,letter_name,"png",NULL,NULL);
+        }
+    }
 }
 
 
@@ -738,7 +812,11 @@ void extract_information(GdkPixbuf *input) {
     align_clusters(start, &matrixH, &matrixV, &rows, &cols,&sizeH,&sizeV);
 
     //STEP 4: Classify clusters
-    classify_clusters(matrixH,matrixV,rows,cols,sizeH,sizeV,input);
+    classify_clusters(&matrixH,&matrixV,rows,cols,&sizeH,&sizeV,input);
+
+    //STEP 5: Cut the image into sub-images
+    cut_grid(matrixH,sizeH,input);
+    cut_wordlist(matrixV, sizeV, input);
 }
 
 int main(int argc, char* argv[]) {
