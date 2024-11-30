@@ -1,7 +1,7 @@
 CC := gcc
 
 ###FLAGS
-CFLAGS := -Wall -Wextra `pkg-config --cflags gtk+-3.0` -D_POSIX_C_SOURCE=200809L
+CFLAGS := -Wall -Wextra `pkg-config --cflags gtk+-3.0` -g
 LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 
 main: Detection.o
