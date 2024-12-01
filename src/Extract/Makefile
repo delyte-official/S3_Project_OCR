@@ -4,9 +4,9 @@ CC := gcc
 CFLAGS := -Wall -Wextra `pkg-config --cflags gtk+-3.0` -g
 LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 
-main: Detection.o
+main: Debug.o Extraction.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
-	$(RM) main Detection.o
+	$(RM) main Debug.o Extraction.o
 .PHONY: clean
