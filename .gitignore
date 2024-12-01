@@ -1,10 +1,15 @@
 ### Custom Ignored Files (executables)
 # MAIN
 main
-src/Solving/solver
 # EXTRACTION
-src/Extraction/extraction
-src/Extraction/Detection
+src/extraction
+src/Detection
+src/Extract/grid/*
+src/Extract/wordlist/*
+src/Extract/iterate.png
+src/Extract/threshold_filter.png
+src/Extract/grid_detect.png
+src/Extract/wordlist_detect.png
 
 # VSCode
 .vscode/
