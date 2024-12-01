@@ -30,6 +30,16 @@ typedef struct {
 } Size;
 
 
+/* free_matrix():
+    Free a dynamically allocated matrix but not its content.
+*/
+void free_matrix(Cluster ***matrix, int xs) {
+    for (int x = 0; x < xs; x++)
+        free(matrix[x]);
+    free(matrix);
+}
+
+
 /* cut_from_pixbuf():
     Cut a pixbuf into a sub-pixbuf given two coordinates of a rectangle.
 */
@@ -92,7 +102,7 @@ void dfs(Cluster *end, int x, int y, gboolean** visit,
 /* initCluster():
     Initialize a new cluster at the given pointer.
 */
-void initCluster(Cluster **chain, int x, int y, gboolean** visit,
+Cluster* initCluster(int x, int y, gboolean** visit,
         GdkPixbuf *pixbuf) {
     Cluster *end = malloc(sizeof(Cluster));
     *end = (Cluster) {
@@ -103,14 +113,10 @@ void initCluster(Cluster **chain, int x, int y, gboolean** visit,
         .next = NULL,
         .flags = 0
     };
-    if (*chain != NULL) {
-        (*chain)->next = end;
-        *chain = (*chain)->next;
-    } else
-        *chain = end;
     dfs(end, x, y, visit, pixbuf);
     end->centerX = (end->minX + end->maxX)/2;
     end->centerY = (end->minY + end->maxY)/2;
+    return end;
 }
 
 
@@ -143,22 +149,31 @@ int retrieve_clusters(GdkPixbuf *input, Cluster **last, int *median) {
 
     //Finding all clusters
     Cluster *start = NULL;
-    Cluster *chain = NULL;
+    Cluster *end = NULL;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             //new cluster?
             guchar *pixel = pixels + y * rowstride + x * N;
             if (is_black(pixel) && !visited[x][y]) {//0 means a black pixel
-                initCluster(&chain, x, y, visited, input);
-                if (start == NULL)
-                    start = chain;
-                *median+=chain->size;
+                Cluster *new_C = initCluster(x, y, visited, input);
+                if (start == NULL) {
+                    start = new_C;
+                    end = start;
+                } else {
+                    end->next = new_C;
+                    end = end->next;
+                }
+                *median+=new_C->size;
                 clusterCount++;
             }
         }
     }
+    //Free data
+    for (int i = 0; i < width; i++)
+        free(visited[i]);
+    free(visited);
+    //Set data
     *last = start;
-    //Updating median
     *median/=clusterCount;
     return clusterCount;
 }
@@ -191,6 +206,7 @@ void testing(Cluster *first, GdkPixbuf *pixbuf, char* filename) {
         first=first->next;
     }
     gdk_pixbuf_save(res, filename, "png", NULL, NULL);
+    g_object_unref(res);
 }
 
 
@@ -252,6 +268,11 @@ void expand_x(Cluster** **table, int *xs, int ys, int size) {
     if (ys==0)
         ys++;
     int difference = size-*xs;
+    if (difference < 0) {
+        printf("Freeing %d lines\n", (-1)*difference);
+        for (int i = *xs-1; i > size; i--)
+            free((*table)[i]);
+    }
     *xs=size;
     Cluster ***tmp= realloc(*table,sizeof(Cluster**)*(*xs));
     if (!tmp && size > 0)
@@ -461,6 +482,9 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
     *cols_p = col_avg;
     *sizeH = (Size) {.x=rows_x,.y=rows_y};
     *sizeV = (Size) {.x=cols_x,.y=cols_y};
+    //Freeing
+    free(sortHori);
+    free(sortVert);
 }
 
 
@@ -602,6 +626,7 @@ void grid_testing(Cluster ***matrix, Size size, GdkPixbuf *pixbuf, char* filenam
         }
     }
     gdk_pixbuf_save(res, filename, "png", NULL, NULL);
+    g_object_unref(res);
 }
 
 
@@ -638,6 +663,7 @@ void wordList_testing(Cluster ***matrix, Size size, GdkPixbuf *pixbuf,
         }
     }
     gdk_pixbuf_save(res, filename, "png", NULL, NULL);
+    g_object_unref(res);
 }
 
 
@@ -775,15 +801,6 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
             errx(EXIT_FAILURE, "calloc()");
         matrixHN[i]=tmp;
     }
-    Cluster ***matrixVN = malloc(sizeof(Cluster**)*sizeVN.x);
-    if (!matrixHN)
-        errx(EXIT_FAILURE, "malloc()");
-    for (int i = 0; i < sizeVN.x; i++) {
-        Cluster **tmp = calloc(sizeVN.y,sizeof(Cluster*));
-        if (!tmp)
-            errx(EXIT_FAILURE, "calloc()");
-        matrixVN[i] = tmp;
-    }
 
     //Fill matrices
     for (int i = 0; i < size->x; i++) {
@@ -797,22 +814,11 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
         for (int j = 0; j < sizeHN.y && matrixHN[index.x][j]!=NULL; j++)
             index.y++;
         matrixHN[index.x][index.y] = (*wordlist)[i][0];
-        //Vertical alignment
-        pos = find_cluster(matrixV,sizeV,(*wordlist)[i][0]);
-        index = (Size) {.x=0,.y=0};
-        for (int j = 0; j < pos.x; j++) {
-            if (calcV[j]!=0)
-                index.x++;
-        }
-        for (int j = 0; j < sizeVN.y && matrixVN[index.x][j]!=NULL;j++)
-            index.y++;
-        matrixVN[index.x][index.y] = (*wordlist)[i][0];
     }
     free(calcH);
     free(calcV);
     //testing
     print_matrix(matrixHN, sizeHN);
-    print_matrix(matrixVN, sizeVN);
 
     //NEXT STEP: filter out those too far in both matrices
     int upper_bd = -1, min = INT_MAX;
@@ -858,10 +864,6 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
             sizeWN.y = count;
     }
     int start_index = 0;
-    /*if (count_bullets > sizeWN.x /2) {
-        sizeWN.y--;
-        start_index=1;
-    }*/
     sizeWN.y++; //Taking into account NULL pointer
     printf("New size of wordlist: %d;%d\n",sizeWN.x,sizeWN.y);
     Cluster ***new_wordlist = malloc(sizeof(Cluster**)*sizeWN.x);
@@ -882,8 +884,11 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
             new_wordlist[index][j]=(*wordlist)[i][j+start_index];
         index++;
     }
+    //Freeing old wordlist
+    free_matrix(*wordlist,size->x);
     printf("New wordlist:\n");
     print_matrix(new_wordlist, sizeWN);
+    free_matrix(matrixHN,sizeHN.x);
     *wordlist = new_wordlist;
     *size = sizeWN;
 }
@@ -897,7 +902,7 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Line *rows,
         Line *cols, Size *sizeH, Size *sizeV, GdkPixbuf *test) {
     Cluster ***matrixH = *grid; Cluster ***matrixV = *wordlist;
     *grid = NULL;
-    
+
     //Test in both direction to obtain the biggest result
     Cluster ***gridH, ***gridV;
     Size gridSH = find_grid(matrixH,matrixV,rows,*sizeH,*sizeV,&gridH);
@@ -913,9 +918,11 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Line *rows,
     if (gridSV.x==-1 || gridSH.x*gridSH.y >= gridSV.x*gridSV.y) {
         gridS = gridSH;
         *grid = gridH;
+        free_matrix(gridV,gridSV.x);
     } else {
         gridS = gridSV;
         *grid = gridV;
+        free_matrix(gridH,gridSH.x);
     }
     //Marking all the clusters appart of the GRID
     for (int x = 0; x < gridS.x; x++) {
@@ -935,10 +942,11 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Line *rows,
     printf("after filter\n");
     wordList_testing(*wordlist,wordS,test,"wordlist_detect.png");
 
-    *sizeH = gridS; *sizeV = wordS;
     //Free memory
-    free(matrixH);
-    free(matrixV);
+    free_matrix(matrixH,sizeH->x);
+    free_matrix(matrixV,sizeV->x);
+    //Set data
+    *sizeH = gridS; *sizeV = wordS;
 }
 
 
@@ -957,6 +965,8 @@ void cut_grid(Cluster ***grid, Size size, GdkPixbuf* input) {
                 errx(EXIT_FAILURE, "asprintf()");
             //Save image
             gdk_pixbuf_save(letter_img,filename,"png",NULL,NULL);
+            g_object_unref(letter_img);
+            free(filename);
         }
     }
 }
@@ -978,6 +988,8 @@ void cut_wordlist(Cluster ***wordlist, Size size, GdkPixbuf *input) {
         asprintf(&word_name,"wordlist/words_%d.png",x);
         GdkPixbuf *word_img = cut_from_pixbuf(input,WtopL,WbotR);
         gdk_pixbuf_save(word_img,word_name,"png",NULL,NULL);
+        free(word_name);
+        g_object_unref(word_img);
         //Letters
         for (int y = 0; y < len; y++) {
             Size topL = (Size) {.x=wordlist[x][y]->minX,
@@ -988,6 +1000,8 @@ void cut_wordlist(Cluster ***wordlist, Size size, GdkPixbuf *input) {
             asprintf(&letter_name,"wordlist/words_%d_ltr_%d.png",x,y);
             GdkPixbuf *letter_img = cut_from_pixbuf(input,topL,botR);
             gdk_pixbuf_save(letter_img,letter_name,"png",NULL,NULL);
+            free(letter_name);
+            g_object_unref(letter_img);
         }
     }
 }
@@ -1021,6 +1035,17 @@ void extract_information(GdkPixbuf *input) {
     //STEP 5: Cut the image into sub-images
     cut_grid(matrixH,sizeH,input);
     cut_wordlist(matrixV, sizeV, input);
+
+    //Freeing memory
+    free(rows);
+    free(cols);
+    free_matrix(matrixH,sizeH.x);
+    free_matrix(matrixV, sizeV.x);
+    while (start!=NULL) {
+        Cluster *next = start->next;
+        free(start);
+        start = next;
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -1028,4 +1053,5 @@ int main(int argc, char* argv[]) {
         return 1;
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(argv[1], NULL);
     extract_information(pixbuf);
+    g_object_unref(pixbuf);
 }
