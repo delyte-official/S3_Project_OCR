@@ -204,7 +204,10 @@ int threshold_filter(Cluster **clusters, int count, int median) {
     Cluster *prev = NULL;
     Cluster *curr = *clusters;
     while (curr != NULL) {
-        if (curr->size > threshold+median || curr->size < median-threshold) {
+        float density = curr->size/(float)((curr->maxX-curr->minX)*
+                (curr->maxY-curr->minY));
+        if (curr->size > threshold+median || curr->size < median-threshold
+                || density < 0.2f) {
             //Delete cluster
             if (prev == NULL)
                 *clusters = curr->next;
@@ -229,10 +232,8 @@ int threshold_filter(Cluster **clusters, int count, int median) {
 void expand_y(Cluster** *table, int xs, int *ys, int size) {
     int difference = size - *ys;
     *ys=size;
-    printf("Difference: %d, size:%d\n",difference,size);
     for (int i = 0; i < xs; i++) {
         Cluster **tmp = realloc(table[i],sizeof(Cluster*)*(*ys));
-        printf("After reallocating\n");
         if (!tmp && size > 0)
             errx(EXIT_FAILURE, "realloc()");
         if (difference > 0) {
@@ -540,10 +541,8 @@ Size find_grid(Cluster ***SRC, Cluster ***CMP,
                         break;
                     }
                 }
-                if (start_line==-1) {
-                    printf("Skip(%d;%d) at %d\n",x,y,j);
+                if (start_line==-1)
                     continue;
-                }
                 //Iterate from start_row
                 for (int i = start_line; i-start_line<sizeG.x && i<sizeSRC.y;
                         i++) {
@@ -557,17 +556,13 @@ Size find_grid(Cluster ***SRC, Cluster ***CMP,
                 }
                 if (line_c < 5)
                     break;
-                printf("Just before expanding\n");
                 expand_y(*DST,sizeG.x,&sizeG.y,sizeG.y+1);
-                printf("just after expanding\n");
                 for (int i = 0; i < sizeG.x; i++)
                     (*DST)[i][sizeG.y-1]=SRC[j][start_line+i];
-                printf("after setting\n");
             }
             if (sizeG.y >= 5)
                 break;
             //Reset TRIAL
-            printf("Just before resetting\n");
             expand_x(DST,&sizeG.x,sizeG.y,0);
         }
         if (sizeG.y >= 5)
@@ -845,10 +840,16 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
     printf("Found bounds: %d to %d\n",lower_bd,upper_bd);
     //Rebuild wordlist
     Size sizeWN = (Size) {.x=0,.y=0};
+    int count_bullets = 0;
     for (int i = 0; i < size->x; i++) {
-        Size pos = find_cluster(matrixHN,sizeHN,(*wordlist)[i][0]);
+        Cluster *curr = (*wordlist)[i][0];
+        Size pos = find_cluster(matrixHN,sizeHN,curr);
         if (pos.x > upper_bd || pos.x < lower_bd)
             continue;
+        float density = (float)(curr->size)/
+            ((curr->maxX-curr->minX+1)*(curr->maxY-curr->minY+1));
+        if (density < 0.2f) //threshold between a fake and real letter
+            count_bullets++;
         sizeWN.x++;
         int count = 0;
         for (int j = 0; j < size->y && (*wordlist)[i][j]!=NULL; j++)
@@ -856,6 +857,11 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
         if (count > sizeWN.y)
             sizeWN.y = count;
     }
+    int start_index = 0;
+    /*if (count_bullets > sizeWN.x /2) {
+        sizeWN.y--;
+        start_index=1;
+    }*/
     sizeWN.y++; //Taking into account NULL pointer
     printf("New size of wordlist: %d;%d\n",sizeWN.x,sizeWN.y);
     Cluster ***new_wordlist = malloc(sizeof(Cluster**)*sizeWN.x);
@@ -872,15 +878,14 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
         Size pos = find_cluster(matrixHN,sizeHN,(*wordlist)[i][0]);
         if (pos.x < lower_bd || pos.x > upper_bd)
             continue;
-        for (int j = 0; j < size->y; j++)
-            new_wordlist[index][j]=(*wordlist)[i][j];
+        for (int j = 0; j < size->y-start_index; j++)
+            new_wordlist[index][j]=(*wordlist)[i][j+start_index];
         index++;
     }
     printf("New wordlist:\n");
     print_matrix(new_wordlist, sizeWN);
     *wordlist = new_wordlist;
     *size = sizeWN;
-    //TODO: do it in the vertical matrice too
 }
 
 
