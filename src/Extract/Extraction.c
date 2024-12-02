@@ -225,7 +225,7 @@ void expand_rows(Cluster** **table, int *xs, int ys, int size) {
         ys++;
     int difference = size-*xs;
     if (difference < 0) {
-        for (int i = *xs-1; i > size; i--)
+        for (int i = *xs-1; i > size-1; i--)
             free((*table)[i]);
     }
     *xs=size;
@@ -501,7 +501,10 @@ Size find_grid(Cluster ***SRC, Cluster ***CMP, Size sizeSRC, Size sizeCMP,
             if (sizeG.cols >= 5)
                 break;
             //Reset TRIAL
-            expand_rows(DST,&sizeG.rows,sizeG.cols,0);
+            free_matrix(*DST,sizeG.rows);
+            sizeG.rows = 0;
+            sizeG.cols = 0;
+            *DST=NULL;
         }
         if (sizeG.cols >= 5)
             break;
@@ -721,7 +724,7 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
 void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
         Size *sizeV) {
     Cluster ***matrixH = *grid; Cluster ***matrixV = *wordlist;
-    *grid = NULL;
+    *grid = NULL; *wordlist = NULL;
 
     //Test in both direction to obtain the biggest result
     Cluster ***gridH, ***gridV;
@@ -751,7 +754,6 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
     }
 
     //FIND WORD LIST - ASSUME GRID HAS BEEN FOUND
-    *wordlist = NULL;
     Size wordS=find_wordlist(matrixH,matrixV,*sizeH,*sizeV,wordlist);
     filter_wordlist(wordlist,&wordS,matrixH,*sizeH,matrixV,*sizeV);
 
@@ -880,6 +882,8 @@ void extract_information(GdkPixbuf *input, char* grid_output,
     Line *rows, *cols;
     Size sizeH, sizeV;
     align_clusters(start, &matrixH, &matrixV, &rows, &cols,&sizeH,&sizeV);
+    free(rows);
+    free(cols);
     //STEP 4: Classify clusters
     classify_clusters(&matrixH,&matrixV,&sizeH,&sizeV);
 
@@ -888,8 +892,6 @@ void extract_information(GdkPixbuf *input, char* grid_output,
     cut_wordlist(matrixV, sizeV, input, wordlist_output);
 
     //Freeing memory
-    free(rows);
-    free(cols);
     free_matrix(matrixH,sizeH.rows);
     free_matrix(matrixV, sizeV.rows);
     while (start!=NULL) {
