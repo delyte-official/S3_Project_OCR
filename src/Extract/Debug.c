@@ -62,9 +62,9 @@ void print_testing(Cluster ***rows, Cluster ***cols, int rows_x, int rows_y,
 
 //TEST FUNCTION
 void print_matrix(Cluster ***matrix, Size size) {
-    printf("\nPRINT MATRIX(%d;%d):\n",size.x,size.y);
-    for (int y = 0; y < size.y; y++) {
-        for (int x = 0; x < size.x; x++)
+    printf("\nPRINT MATRIX(%d;%d):\n",size.rows,size.cols);
+    for (int y = 0; y < size.cols; y++) {
+        for (int x = 0; x < size.rows; x++)
             printf("%c ", matrix[x][y]!=NULL ? 'X' : '\\');
         printf("\n");
     }
@@ -81,8 +81,8 @@ void grid_testing(Cluster ***matrix, Size size, GdkPixbuf *pixbuf, char* filenam
 
     guchar *p;
     //Iterating over the clusters
-    for (int x = 0; x < size.x; x++) {
-        for (int y = 0; y < size.y; y++) {
+    for (int x = 0; x < size.rows; x++) {
+        for (int y = 0; y < size.cols; y++) {
             Cluster *first = matrix[x][y];
             //Coloring into red the whole cluster
             for (int x = first->minX; x <= first->maxX; x++) {
@@ -114,10 +114,10 @@ void wordList_testing(Cluster ***matrix, Size size, GdkPixbuf *pixbuf,
 
     guchar *p;
     //Iterating over the clusters
-    for (int x = 0; x < size.x; x++) {
+    for (int x = 0; x < size.rows; x++) {
         //New word
         int r = (x*40)%256, g = (255-x*40)%256, b = 255;
-        for (int y = 0; y < size.y; y++) {
+        for (int y = 0; y < size.cols; y++) {
             Cluster *first = matrix[x][y];
             if (first == NULL)
                 break; //Skip row

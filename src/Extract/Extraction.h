@@ -7,11 +7,17 @@
 #define FLAG_WORD (1 << 1)
 #define FLAG_UNUSED 0
 
+typedef struct pixel {
+    int x, y;
+    struct pixel *next;
+} Pixel;
+
 typedef struct cluster {
     int size;
     int centerX, centerY;
     int maxX, maxY, minX, minY;
     struct cluster *next;
+    Pixel *pixels;
     int flags;
 } Cluster;
 
@@ -21,6 +27,10 @@ typedef struct {
 
 typedef struct {
     int x, y;
+} Position;
+
+typedef struct {
+    int rows, cols;
 } Size;
 
 void extract_information(GdkPixbuf *input, char *grid_output,

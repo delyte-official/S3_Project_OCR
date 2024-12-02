@@ -15,19 +15,17 @@ void free_matrix(Cluster ***matrix, int xs) {
 }
 
 
-/* cut_from_pixbuf():
-    Cut a pixbuf into a sub-pixbuf given two coordinates of a rectangle.
+/* free_cluster():
+    Free the given cluster.
 */
-GdkPixbuf* cut_from_pixbuf(GdkPixbuf *original, Size topL, Size botR)
-{
-    int width = botR.x - topL.x+1; //+1 because its a size
-    int height = botR.y - topL.y+1;
-    GdkPixbuf *subpix = gdk_pixbuf_new_subpixbuf(original, topL.x, topL.y,
-            width, height);
-    //Create copy bc "subpix" shares data with "original"
-    GdkPixbuf *res = gdk_pixbuf_copy(subpix);
-    g_object_unref(subpix);
-    return res;
+void free_cluster(Cluster *to_free) {
+    Pixel *curr = to_free->pixels;
+    while (curr!=NULL) {
+        Pixel *next = curr->next;
+        free(curr);
+        curr = next;
+    }
+    free(to_free);
 }
 
 
@@ -42,9 +40,16 @@ int is_black(guchar *p) {
 /* dfs():
     Adds pixels to an initialized cluster.
 */
-void dfs(Cluster *end, int x, int y, gboolean** visit,
+Pixel *dfs(Cluster *end, Pixel *old, int x, int y, gboolean** visit,
         GdkPixbuf *pixbuf) {
     end->size++;
+    Pixel *new_pixel = malloc(sizeof(Pixel));
+    if (!new_pixel)
+        errx(EXIT_FAILURE, "malloc()");
+    new_pixel->x = x;
+    new_pixel->y = y;
+    new_pixel->next = NULL;
+    old->next = new_pixel;
     if (x > end->maxX)
         end->maxX = x;
     else if (x < end->minX)
@@ -69,8 +74,9 @@ void dfs(Cluster *end, int x, int y, gboolean** visit,
         guchar *p = pixels + new_x * N + new_y*rowstride;
         if (visit[new_x][new_y] || !is_black(p))
             continue;
-        dfs(end, new_x, new_y, visit, pixbuf);
+        new_pixel =dfs(end,new_pixel, new_x, new_y, visit, pixbuf);
     }
+    return new_pixel;
 }
 
 
@@ -85,10 +91,17 @@ Cluster* initCluster(int x, int y, gboolean** visit,
         .centerX = 0, .centerY = 0,
         .maxX = x, .minX = x,
         .maxY = y, .minY = y,
-        .next = NULL,
+        .pixels = NULL,
         .flags = 0
     };
-    dfs(end, x, y, visit, pixbuf);
+    Pixel *pixel = malloc(sizeof(Pixel));
+    if (!pixel)
+        errx(EXIT_FAILURE, "malloc()");
+    pixel->x = x;
+    pixel->y = y;
+    pixel->next = NULL;
+    end->pixels = pixel;
+    dfs(end, pixel, x, y, visit, pixbuf);
     end->centerX = (end->minX + end->maxX)/2;
     end->centerY = (end->minY + end->maxY)/2;
     return end;
@@ -173,7 +186,7 @@ int threshold_filter(Cluster **clusters, int count, int median) {
             else
                 prev->next = curr->next;
             Cluster *next = curr->next;
-            free(curr);
+            free_cluster(curr);
             curr = next;
             count--;
         } else {
@@ -185,10 +198,10 @@ int threshold_filter(Cluster **clusters, int count, int median) {
 }
 
 
-/* expand_y:
+/* expand_cols():
     Expand the table on y by 1
 */
-void expand_y(Cluster** *table, int xs, int *ys, int size) {
+void expand_cols(Cluster** *table, int xs, int *ys, int size) {
     int difference = size - *ys;
     *ys=size;
     for (int i = 0; i < xs; i++) {
@@ -204,10 +217,10 @@ void expand_y(Cluster** *table, int xs, int *ys, int size) {
 }
 
 
-/* expand_x():
+/* expand_rows():
     Expand the table on x by 1.
 */
-void expand_x(Cluster** **table, int *xs, int ys, int size) {
+void expand_rows(Cluster** **table, int *xs, int ys, int size) {
     if (ys==0)
         ys++;
     int difference = size-*xs;
@@ -339,13 +352,13 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
             }
         }
         if (ROW == -1) { //Did not find: create a new line after
-            expand_x(&rows, &rows_x,rows_y, rows_x+1);
+            expand_rows(&rows, &rows_x,rows_y, rows_x+1);
             expand_line(&row_avg,rows_x);
             ROW = rows_x - 1;
         }
         //Detect if line is full
         if (rows_y < 1 || rows[ROW][rows_y-1] != NULL)
-            expand_y(rows,rows_x,&rows_y,rows_y+1);
+            expand_cols(rows,rows_x,&rows_y,rows_y+1);
         //Adding to ROW
         int add = 0;
         while (rows[ROW][add]!=NULL)
@@ -368,13 +381,13 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
             }
         }
         if (COL == -1) { //Did not find: create a new line after
-            expand_x(&cols, &cols_x,cols_y,cols_x+1);
+            expand_rows(&cols, &cols_x,cols_y,cols_x+1);
             expand_line(&col_avg,cols_x);
             COL = cols_x - 1;
         }
         //Detect if line is full
         if (cols_y < 1 || cols[COL][cols_y-1] != NULL)
-            expand_y(cols,cols_x,&cols_y,cols_y+1);
+            expand_cols(cols,cols_x,&cols_y,cols_y+1);
         //Adding to ROW
         int add = 0;
         while (cols[COL][add]!=NULL)
@@ -393,11 +406,27 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
     *matrixV = cols;
     *rows_p = row_avg;
     *cols_p = col_avg;
-    *sizeH = (Size) {.x=rows_x,.y=rows_y};
-    *sizeV = (Size) {.x=cols_x,.y=cols_y};
+    *sizeH = (Size) {.rows=rows_x,.cols=rows_y};
+    *sizeV = (Size) {.rows=cols_x,.cols=cols_y};
     //Freeing
     free(sortHori);
     free(sortVert);
+}
+
+
+/* find_cluster():
+    Returns the coordinates of a cluster in a cluster matrix.
+*/
+Position find_cluster(Cluster ***matrix, Size size, Cluster* tofind) {
+    for (int x = 0; x < size.rows; x++) {
+        for (int y = 0; y < size.cols; y++) {
+            if (matrix[x][y]==NULL)
+                break; //Skip line
+            if (matrix[x][y]==tofind)
+                return (Position) {.x=x,.y=y};
+        }
+    }
+    return (Position) {.x=-1,.y=-1};
 }
 
 
@@ -407,25 +436,9 @@ void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
 int check_align(Cluster ***SRC, Cluster *first, Cluster *second,
         Size size) {
     //Find the x coordinates of the two
-    int x1 = -1;
-    int x2 = -2; //Different values for the case they're not in the matrix
-    for (int f = 0; f < size.x * size.y; f++) {
-        int x = f / size.y, y = f % size.y;
-        if (SRC[x][y] == NULL) {
-            f += size.y-f % size.y - 1; //skip column
-            continue;
-        }
-        if (SRC[x][y] == first) {
-            x1 = x;
-            if (x2>=0)
-                break; //Found both
-        } if (SRC[x][y] == second) {
-            x2 = x;
-            if (x1>=0)
-                break; //found both
-        }
-    }
-    return x1 == x2;
+    Position pos1 = find_cluster(SRC,size,first);
+    Position pos2 = find_cluster(SRC,size,second);
+    return pos1.x == pos2.x && pos1.x != -1;
 }
 
 
@@ -434,29 +447,29 @@ int check_align(Cluster ***SRC, Cluster *first, Cluster *second,
 */
 Size find_grid(Cluster ***SRC, Cluster ***CMP, Size sizeSRC, Size sizeCMP,
         Cluster ****DST) {
-    Size sizeG = (Size) {.x=0,.y=0};
+    Size sizeG = (Size) {.rows=0,.cols=0};
     *DST = NULL;
     ////FIND GRID
     //Search for grid in matrix HORIZONTAL
-    for (int x = 0; x < sizeSRC.x; x++) {
-        for (int y = 0; y < sizeSRC.y; y++) {
+    for (int x = 0; x < sizeSRC.rows; x++) {
+        for (int y = 0; y < sizeSRC.cols; y++) {
             if (SRC[x][y]==NULL)
                 break; //row empty from now on
-            sizeG.x = 0; sizeG.y = 0;
+            sizeG.rows = 0; sizeG.cols = 0;
             //Begin finding for Cluster at (x;y)
-            for (int i = y; i < sizeSRC.y && SRC[x][i]!=NULL; i++)
-                sizeG.x++;
-            if (sizeG.x < 5)
+            for (int i = y; i < sizeSRC.cols && SRC[x][i]!=NULL; i++)
+                sizeG.rows++;
+            if (sizeG.rows < 5)
                 break; //Skip line
-            int expand = sizeG.x; sizeG.x = 0; sizeG.y = 1;
-            expand_x(DST,&sizeG.x,sizeG.y,expand);
+            int expand = sizeG.rows; sizeG.rows = 0; sizeG.cols = 1;
+            expand_rows(DST,&sizeG.rows,sizeG.cols,expand);
             //Putting the first line into the grid matrix
-            for (int i = 0; i < sizeG.x; i++)
+            for (int i = 0; i < sizeG.rows; i++)
                 (*DST)[i][0]=SRC[x][y+i];
-            for (int j = x+1; j < sizeSRC.x; j++) {
+            for (int j = x+1; j < sizeSRC.rows; j++) {
                 int line_c = 0;
                 int start_line = -1;
-                for (int i = 0; i <= sizeSRC.y-5; i++) {
+                for (int i = 0; i <= sizeSRC.cols-5; i++) {
                     //Find the cluster of the row which align with previous
                     if (SRC[j][i] == NULL)
                         break;
@@ -469,49 +482,33 @@ Size find_grid(Cluster ***SRC, Cluster ***CMP, Size sizeSRC, Size sizeCMP,
                 if (start_line==-1)
                     continue;
                 //Iterate from start_row
-                for (int i = start_line; i-start_line<sizeG.x && i<sizeSRC.y;
-                        i++) {
+                for (int i = start_line; i-start_line<sizeG.rows &&
+                        i<sizeSRC.cols; i++) {
                     if (SRC[j][i] == NULL || !check_align(CMP,
                                 SRC[x][y+i-start_line],SRC[j][i],sizeCMP)) {
-                        if (line_c < sizeG.x && line_c>=5)
-                            expand_x(DST,&sizeG.x,sizeG.y,line_c);
+                        if (line_c < sizeG.rows && line_c>=5)
+                            expand_rows(DST,&sizeG.rows,sizeG.cols,line_c);
                         break;
                     }
                     line_c++;
                 }
                 if (line_c < 5)
                     break;
-                expand_y(*DST,sizeG.x,&sizeG.y,sizeG.y+1);
-                for (int i = 0; i < sizeG.x; i++)
-                    (*DST)[i][sizeG.y-1]=SRC[j][start_line+i];
+                expand_cols(*DST,sizeG.rows,&sizeG.cols,sizeG.cols+1);
+                for (int i = 0; i < sizeG.rows; i++)
+                    (*DST)[i][sizeG.cols-1]=SRC[j][start_line+i];
             }
-            if (sizeG.y >= 5)
+            if (sizeG.cols >= 5)
                 break;
             //Reset TRIAL
-            expand_x(DST,&sizeG.x,sizeG.y,0);
+            expand_rows(DST,&sizeG.rows,sizeG.cols,0);
         }
-        if (sizeG.y >= 5)
+        if (sizeG.cols >= 5)
             break;
     }
-    if (sizeG.x < 1 || sizeG.y < 5)
-        return (Size) {.x=-1,.y=-1};
+    if (sizeG.rows < 1 || sizeG.cols < 5)
+        return (Size) {.rows=-1,.cols=-1};
     return sizeG;
-}
-
-
-/* find_cluster():
-    Returns the coordinates of a cluster in a cluster matrix.
-*/
-Size find_cluster(Cluster ***matrix, Size size, Cluster* tofind) {
-    for (int x = 0; x < size.x; x++) {
-        for (int y = 0; y < size.y; y++) {
-            if (matrix[x][y]==NULL)
-                break; //Skip line
-            if (matrix[x][y]==tofind)
-                return (Size) {.x=x,.y=y};
-        }
-    }
-    return (Size) {.x=-1,.y=-1};
 }
 
 
@@ -520,19 +517,20 @@ Size find_cluster(Cluster ***matrix, Size size, Cluster* tofind) {
 */
 Size find_wordlist(Cluster ***matrixH, Cluster***matrixV, Size sizeH,
         Size sizeV, Cluster ****wordList) {
-    Size sizeW = (Size) {.x=0,.y=0};
+    Size sizeW = (Size) {.rows=0,.cols=0};
     //Iteratove over the vertical matrix to find unflagged clusters
-    for (int x = 0; x < sizeV.x; x++) {
-        for (int y = 0; y < sizeV.y; y++) {
+    for (int x = 0; x < sizeV.rows; x++) {
+        for (int y = 0; y < sizeV.cols; y++) {
             if (matrixV[x][y]==NULL)
                 break; //Skip column
             if (matrixV[x][y]->flags)
                 continue; //Flagged => skip
             //Find its position in the horizontal matrix
-            Size pos = find_cluster(matrixH,sizeH,matrixV[x][y]);
+            Position pos = find_cluster(matrixH,sizeH,matrixV[x][y]);
             //Grab the longest word from there
             int len = 1;
-            for (int i = pos.y+1; i < sizeH.y && matrixH[pos.x][i]!=NULL;i++){
+            for (int i = pos.y+1; i < sizeH.cols &&
+                    matrixH[pos.x][i]!=NULL;i++){
                 int space = matrixH[pos.x][i]->centerX-
                     matrixH[pos.x][i-1]->centerX;
                 int avg = matrixH[pos.x][i]->maxX-matrixH[pos.x][i]->minX +
@@ -543,15 +541,15 @@ Size find_wordlist(Cluster ***matrixH, Cluster***matrixV, Size sizeH,
             }
             if (len < 3) //Threshold for length of shortest word
                 continue;
-            expand_x(wordList,&sizeW.x,sizeW.y,sizeW.x+1);
-            if (len+1>sizeW.y) //+1 for NULL terminator
-                expand_y(*wordList,sizeW.x,&sizeW.y,len+1);
+            expand_rows(wordList,&sizeW.rows,sizeW.cols,sizeW.rows+1);
+            if (len+1>sizeW.cols) //+1 for NULL terminator
+                expand_cols(*wordList,sizeW.rows,&sizeW.cols,len+1);
             //Save the values and flag the clusters
             for (int i = 0; i < len; i++) {
-                (*wordList)[sizeW.x-1][i]=matrixH[pos.x][pos.y+i];
+                (*wordList)[sizeW.rows-1][i]=matrixH[pos.x][pos.y+i];
                 matrixH[pos.x][pos.y+i]->flags |= FLAG_WORD;
             }
-            (*wordList)[sizeW.x-1][len]=NULL; //Null terminator for the words
+            (*wordList)[sizeW.rows-1][len]=NULL; //Null terminator
         }
     }
     return sizeW;
@@ -562,26 +560,26 @@ Size find_wordlist(Cluster ***matrixH, Cluster***matrixV, Size sizeH,
     Transpose a matrix, X*Y => Y*X.
 */
 void transpose_matrix(Cluster ****matrix, Size *size) {
-    Cluster ***transposed = malloc(size->y*sizeof(Cluster**));
+    Cluster ***transposed = malloc(size->cols*sizeof(Cluster**));
     if (!transposed)
         errx(EXIT_FAILURE, "malloc()");
-    for (int i = 0; i < size->y; i++) {
-        Cluster **tmp = malloc(size->x*sizeof(Cluster*));
+    for (int i = 0; i < size->cols; i++) {
+        Cluster **tmp = malloc(size->rows*sizeof(Cluster*));
         if (!tmp)
             errx(EXIT_FAILURE, "malloc()");
         transposed[i] = tmp;
     }
 
     //Transpose data
-    for (int i = 0; i < size->x; i++) {
-        for (int j = 0; j < size->y; j++) {
+    for (int i = 0; i < size->rows; i++) {
+        for (int j = 0; j < size->cols; j++) {
             transposed[j][i] = (*matrix)[i][j];
         }
         free((*matrix)[i]);
     }
     free(*matrix);
     *matrix = transposed;
-    *size = (Size) {.x=size->y,.y=size->x};
+    *size = (Size) {.rows=size->cols,.cols=size->rows};
 }
 
 
@@ -592,56 +590,56 @@ void transpose_matrix(Cluster ****matrix, Size *size) {
 void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
         Size sizeH, Cluster ***matrixV, Size sizeV) {
     ////Build alignement matrices
-    int *calcH = calloc(sizeH.x,sizeof(int));
-    int *calcV = calloc(sizeV.x,sizeof(int));
+    int *calcH = calloc(sizeH.rows,sizeof(int));
+    int *calcV = calloc(sizeV.rows,sizeof(int));
     if (!calcH || !calcV)
         errx(EXIT_FAILURE, "calloc()");
-    for (int i = 0; i < size->x; i++) {
+    for (int i = 0; i < size->rows; i++) {
         //Horizontal alignment
-        Size pos = find_cluster(matrixH,sizeH,(*wordlist)[i][0]);
+        Position pos = find_cluster(matrixH,sizeH,(*wordlist)[i][0]);
         calcH[pos.x]++;
         //Vertical alignment
         pos = find_cluster(matrixV,sizeV,(*wordlist)[i][0]);
         calcV[pos.x]++;
     }
-    Size sizeHN = (Size) {.x=0,.y=0};
-    for (int i = 0; i < sizeH.x; i++) {
+    Size sizeHN = (Size) {.rows=0,.cols=0};
+    for (int i = 0; i < sizeH.rows; i++) {
         if (calcH[i] == 0)
             continue;
-        sizeHN.x++;
-        if (calcH[i]>sizeHN.y)
-            sizeHN.y=calcH[i];
+        sizeHN.rows++;
+        if (calcH[i]>sizeHN.cols)
+            sizeHN.cols=calcH[i];
     }
-    Size sizeVN = (Size) {.x=0,.y=0};
-    for (int i = 0; i < sizeV.x; i++) {
+    Size sizeVN = (Size) {.rows=0,.cols=0};
+    for (int i = 0; i < sizeV.rows; i++) {
         if (calcV[i]==0)
             continue;
-        sizeVN.x++;
-        if (calcV[i]>sizeVN.y)
-            sizeVN.y=calcV[i];
+        sizeVN.rows++;
+        if (calcV[i]>sizeVN.cols)
+            sizeVN.cols=calcV[i];
     }
     
     //Allocate matrices
-    Cluster ***matrixHN = malloc(sizeof(Cluster**)*sizeHN.x);
+    Cluster ***matrixHN = malloc(sizeof(Cluster**)*sizeHN.rows);
     if (!matrixHN)
         errx(EXIT_FAILURE, "malloc()");
-    for (int i = 0; i < sizeHN.x; i++) {
-        Cluster **tmp = calloc(sizeHN.y,sizeof(Cluster*));
+    for (int i = 0; i < sizeHN.rows; i++) {
+        Cluster **tmp = calloc(sizeHN.cols,sizeof(Cluster*));
         if (!tmp)
             errx(EXIT_FAILURE, "calloc()");
         matrixHN[i]=tmp;
     }
 
     //Fill matrices
-    for (int i = 0; i < size->x; i++) {
+    for (int i = 0; i < size->rows; i++) {
         //Horizontal alignment
-        Size pos = find_cluster(matrixH,sizeH,(*wordlist)[i][0]);
-        Size index = (Size) {.x=0,.y=0};
+        Position pos = find_cluster(matrixH,sizeH,(*wordlist)[i][0]);
+        Position index = (Position) {.x=0,.y=0};
         for (int j = 0; j < pos.x; j++) {
             if (calcH[j]!=0)
                 index.x++;
         }
-        for (int j = 0; j < sizeHN.y && matrixHN[index.x][j]!=NULL; j++)
+        for (int j = 0; j < sizeHN.cols && matrixHN[index.x][j]!=NULL; j++)
             index.y++;
         matrixHN[index.x][index.y] = (*wordlist)[i][0];
     }
@@ -650,7 +648,7 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
 
     //NEXT STEP: filter out those too far in both matrices
     int upper_bd = -1, min = INT_MAX;
-    for (int i = 1; i < sizeHN.x; i++) {
+    for (int i = 1; i < sizeHN.rows; i++) {
         int distance = matrixHN[i][0]->minY-matrixHN[i-1][0]->maxY;
         if (distance < min) {
             min = distance;
@@ -664,53 +662,53 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
         if (distance > TOLERANCE)
             break;
     }
-    for (int i = upper_bd; i < sizeHN.x-1; i++, upper_bd++) {
+    for (int i = upper_bd; i < sizeHN.rows-1; i++, upper_bd++) {
         int distance = matrixHN[i+1][0]->minY-matrixHN[i][0]->maxY;
         if (distance > TOLERANCE)
             break;
     }
     //Rebuild wordlist
-    Size sizeWN = (Size) {.x=0,.y=0};
+    Size sizeWN = (Size) {.rows=0,.cols=0};
     int count_bullets = 0;
-    for (int i = 0; i < size->x; i++) {
+    for (int i = 0; i < size->rows; i++) {
         Cluster *curr = (*wordlist)[i][0];
-        Size pos = find_cluster(matrixHN,sizeHN,curr);
+        Position pos = find_cluster(matrixHN,sizeHN,curr);
         if (pos.x > upper_bd || pos.x < lower_bd)
             continue;
         float density = (float)(curr->size)/
             ((curr->maxX-curr->minX+1)*(curr->maxY-curr->minY+1));
         if (density < 0.2f) //threshold between a fake and real letter
             count_bullets++;
-        sizeWN.x++;
+        sizeWN.rows++;
         int count = 0;
-        for (int j = 0; j < size->y && (*wordlist)[i][j]!=NULL; j++)
+        for (int j = 0; j < size->cols && (*wordlist)[i][j]!=NULL; j++)
             count++;
-        if (count > sizeWN.y)
-            sizeWN.y = count;
+        if (count > sizeWN.cols)
+            sizeWN.cols = count;
     }
     int start_index = 0;
-    sizeWN.y++; //Taking into account NULL pointer
-    Cluster ***new_wordlist = malloc(sizeof(Cluster**)*sizeWN.x);
+    sizeWN.cols++; //Taking into account NULL pointer
+    Cluster ***new_wordlist = malloc(sizeof(Cluster**)*sizeWN.rows);
     if (!new_wordlist)
         errx(EXIT_FAILURE, "malloc()");
-    for (int i = 0; i < sizeWN.x; i++) {
-        Cluster **tmp = calloc(sizeWN.y, sizeof(Cluster*));
+    for (int i = 0; i < sizeWN.rows; i++) {
+        Cluster **tmp = calloc(sizeWN.cols, sizeof(Cluster*));
         if (!tmp)
             errx(EXIT_FAILURE, "calloc()");
         new_wordlist[i] = tmp;
     }
     int index = 0;
-    for (int i = 0; i < size->x; i++) {
-        Size pos = find_cluster(matrixHN,sizeHN,(*wordlist)[i][0]);
+    for (int i = 0; i < size->rows; i++) {
+        Position pos = find_cluster(matrixHN,sizeHN,(*wordlist)[i][0]);
         if (pos.x < lower_bd || pos.x > upper_bd)
             continue;
-        for (int j = 0; j < size->y-start_index; j++)
+        for (int j = 0; j < size->cols-start_index; j++)
             new_wordlist[index][j]=(*wordlist)[i][j+start_index];
         index++;
     }
     //Freeing old wordlist
-    free_matrix(*wordlist,size->x);
-    free_matrix(matrixHN,sizeHN.x);
+    free_matrix(*wordlist,size->rows);
+    free_matrix(matrixHN,sizeHN.rows);
     *wordlist = new_wordlist;
     *size = sizeWN;
 }
@@ -729,26 +727,26 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
     Cluster ***gridH, ***gridV;
     Size gridSH = find_grid(matrixH,matrixV,*sizeH,*sizeV,&gridH);
     Size gridSV = find_grid(matrixV,matrixH,*sizeV,*sizeH,&gridV);
-    if (gridSV.x>0)
+    if (gridSV.rows>0)
         transpose_matrix(&gridV,&gridSV);
 
-    if (gridSH.x==-1 && gridSV.x ==-1) {
+    if (gridSH.rows==-1 && gridSV.rows ==-1) {
         printf("Grid not found. Error.\n");
         return;
     }
     Size gridS;
-    if (gridSV.x==-1 || gridSH.x*gridSH.y >= gridSV.x*gridSV.y) {
+    if (gridSV.rows==-1 || gridSH.rows*gridSH.cols >= gridSV.rows*gridSV.cols) {
         gridS = gridSH;
         *grid = gridH;
-        free_matrix(gridV,gridSV.x);
+        free_matrix(gridV,gridSV.rows);
     } else {
         gridS = gridSV;
         *grid = gridV;
-        free_matrix(gridH,gridSH.x);
+        free_matrix(gridH,gridSH.rows);
     }
     //Marking all the clusters appart of the GRID
-    for (int x = 0; x < gridS.x; x++) {
-        for (int y = 0; y < gridS.y; y++)
+    for (int x = 0; x < gridS.rows; x++) {
+        for (int y = 0; y < gridS.cols; y++)
             (*grid)[x][y]->flags |= FLAG_GRID;
     }
 
@@ -758,22 +756,66 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
     filter_wordlist(wordlist,&wordS,matrixH,*sizeH,matrixV,*sizeV);
 
     //Free memory
-    free_matrix(matrixH,sizeH->x);
-    free_matrix(matrixV,sizeV->x);
+    free_matrix(matrixH,sizeH->rows);
+    free_matrix(matrixV,sizeV->rows);
     //Set data
     *sizeH = gridS; *sizeV = wordS;
+}
+
+
+/* cut_from_pixbuf():
+    Cut a pixbuf into a sub-pixbuf given two coordinates of a rectangle.
+*/
+GdkPixbuf* cut_from_pixbuf(GdkPixbuf *original, Position topL, Position botR)
+{
+    int width = botR.x - topL.x+1; //+1 because its a size
+    int height = botR.y - topL.y+1;
+    GdkPixbuf *subpix = gdk_pixbuf_new_subpixbuf(original, topL.x, topL.y,
+            width, height);
+    //Create copy bc "subpix" shares data with "original"
+    GdkPixbuf *res = gdk_pixbuf_copy(subpix);
+    g_object_unref(subpix);
+    return res;
+}
+
+
+/* save_cluster_pixbuf():
+    Save a cluster as a pixbuf.
+*/
+GdkPixbuf *save_cluster_pixbuf(Cluster *input) {
+    int width = input->maxX-input->minX+1;
+    int height = input->maxY-input->minY+1;
+    GdkPixbuf *res = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, width,
+            height);
+    int rowstride = gdk_pixbuf_get_rowstride(res);
+    int n = gdk_pixbuf_get_n_channels(res);
+    guchar *pixels = gdk_pixbuf_get_pixels(res);
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            guchar *p = pixels + y*rowstride +x*n;
+            p[0]=p[1]=p[2]=255;
+        }
+    }
+    //Redraw the pixels
+    Pixel *curr = input->pixels;
+    while (curr != NULL) {
+        int x = curr->x-input->minX;
+        int y = curr->y-input->minY;
+        guchar *p = pixels + y*rowstride +x*n;
+        p[0]=p[1]=p[2]=0;
+        curr = curr->next;
+    }
+    return res;
 }
 
 
 /* cut_grid():
     Cut the grid clusters into sub-images.
 */
-void cut_grid(Cluster ***grid, Size size, GdkPixbuf* input, char *output) {
-    for (int x = 0; x < size.x; x++) {
-        for (int y = 0; y < size.y; y++) {
-            Size topL = (Size) {.x=grid[x][y]->minX,.y=grid[x][y]->minY};
-            Size botR = (Size) {.x=grid[x][y]->maxX,.y=grid[x][y]->maxY};
-            GdkPixbuf *letter_img = cut_from_pixbuf(input,topL,botR);
+void cut_grid(Cluster ***grid, Size size, char *output) {
+    for (int x = 0; x < size.rows; x++) {
+        for (int y = 0; y < size.cols; y++) {
+            GdkPixbuf *letter_img = save_cluster_pixbuf(grid[x][y]);
             //Calculating the filename
             char *filename;
             if (asprintf(&filename,"%sgrid_%d_%d.png",output,x,y) ==-1)
@@ -792,13 +834,14 @@ void cut_grid(Cluster ***grid, Size size, GdkPixbuf* input, char *output) {
 */
 void cut_wordlist(Cluster ***wordlist, Size size, GdkPixbuf *input,
         char *output) {
-    for (int x = 0; x < size.x; x++) {
+    for (int x = 0; x < size.rows; x++) {
         //Deducing the size
         int len = 0;
-        for (int i = 0; i < size.y && wordlist[x][i]!=NULL;i++)
+        for (int i = 0; i < size.cols && wordlist[x][i]!=NULL;i++)
             len++;
-        Size WtopL = (Size) {.x=wordlist[x][0]->minX,.y=wordlist[x][0]->minY};
-        Size WbotR = (Size) {.x=wordlist[x][len-1]->maxX,
+        Position WtopL = (Position) {.x=wordlist[x][0]->minX,
+            .y=wordlist[x][0]->minY};
+        Position WbotR = (Position) {.x=wordlist[x][len-1]->maxX,
             .y=wordlist[x][len-1]->maxY};
         char *word_name;
         asprintf(&word_name,"%swords_%d.png",output,x);
@@ -808,13 +851,9 @@ void cut_wordlist(Cluster ***wordlist, Size size, GdkPixbuf *input,
         g_object_unref(word_img);
         //Letters
         for (int y = 0; y < len; y++) {
-            Size topL = (Size) {.x=wordlist[x][y]->minX,
-                .y=wordlist[x][y]->minY};
-            Size botR = (Size) {.x=wordlist[x][y]->maxX,
-                .y=wordlist[x][y]->maxY};
             char *letter_name;
             asprintf(&letter_name,"%swords_%d_ltr_%d.png",output,x,y);
-            GdkPixbuf *letter_img = cut_from_pixbuf(input,topL,botR);
+            GdkPixbuf *letter_img = save_cluster_pixbuf(wordlist[x][y]);
             gdk_pixbuf_save(letter_img,letter_name,"png",NULL,NULL);
             free(letter_name);
             g_object_unref(letter_img);
@@ -836,7 +875,6 @@ void extract_information(GdkPixbuf *input, char* grid_output,
     int count = retrieve_clusters(input, &start, &median_size);
     //STEP 2: Filter clusters
     count = threshold_filter(&start, count, median_size);
-
     //STEP 3: Align clusters
     Cluster ***matrixH, ***matrixV;
     Line *rows, *cols;
@@ -846,17 +884,17 @@ void extract_information(GdkPixbuf *input, char* grid_output,
     classify_clusters(&matrixH,&matrixV,&sizeH,&sizeV);
 
     //STEP 5: Cut the image into sub-images
-    cut_grid(matrixH,sizeH,input, grid_output);
+    cut_grid(matrixH,sizeH, grid_output);
     cut_wordlist(matrixV, sizeV, input, wordlist_output);
 
     //Freeing memory
     free(rows);
     free(cols);
-    free_matrix(matrixH,sizeH.x);
-    free_matrix(matrixV, sizeV.x);
+    free_matrix(matrixH,sizeH.rows);
+    free_matrix(matrixV, sizeV.rows);
     while (start!=NULL) {
         Cluster *next = start->next;
-        free(start);
+        free_cluster(start);
         start = next;
     }
 }
