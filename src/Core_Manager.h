@@ -4,7 +4,7 @@
 #include <gtk/gtk.h>
 
 #define GETWIDGET(id) GTK_WIDGET(gtk_builder_get_object(\
-            get_app_state()->builder, id))
+            get_appState()->builder, id))
 #define DISPLAY GETWIDGET("display_section_id")
 
 typedef enum {
@@ -17,22 +17,18 @@ typedef enum {
 } STEP;
 
 typedef struct {
-    GtkBuilder* builder; //App builder
+    GtkBuilder *builder; //App builder
+    GtkWidget *window;
     STEP step; //Current step
     int width, height; //Window SIZE
     int alloc_width, alloc_height; //Content area SIZE
     GtkWidget* steps_tracker[6]; //Steps Storage
 } AppState;
 
-AppState *get_app_state();
-void set_display(GtkWidget* widget);
-GtkWidget* step_widget(int step, GtkWidget* set);
+AppState *get_appState();
 void Filter_Params(char** all_params, int len, char* *init_params,
         int *init_size, char* *gtk_params, int *gtk_size);
 void StartUp(char** gtk_params, int gtk_len,
         char** init_params, int init_len);
-void ShowNext();
-int NextStep(GtkWidget*, gpointer);
-void ShowPrevious(GtkWidget*, gpointer);
 
 #endif

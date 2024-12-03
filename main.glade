@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 -->
+<!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkOverlay" id="toplvl_id">
@@ -7,17 +7,10 @@
     <property name="visible">True</property>
     <property name="can-focus">False</property>
     <child>
-      <object class="GtkBox" id="divide_box_id">
-        <property name="name">Dividing Box</property>
+      <object class="GtkImage">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="homogeneous">True</property>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
+        <property name="pixbuf">src/assets/app_bg.png</property>
       </object>
       <packing>
         <property name="index">-1</property>
