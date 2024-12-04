@@ -31,18 +31,6 @@ GtkWidget* image_new_from_file(
 }
 
 
-void adjust_assets_size() {
-    AppState *state = get_appState();
-    int width = state->alloc_width;
-    int height = state->alloc_height;
-
-    GdkPixbuf *app_bg = gdk_pixbuf_new_from_file("src/assets/app_bg.png",NULL);
-    GdkPixbuf *app_bg_cache = gdk_pixbuf_scale_simple(app_bg,width,height,
-            GDK_INTERP_HYPER);
-    gdk_pixbuf_save(app_bg_cache,"src/bin/app_bg_cache.png","png",NULL,NULL);
-}
-
-
 /* gtk_builder_new_custom():
     Load XML file and modify its size into percentage of given dimensions.
 */
@@ -121,8 +109,6 @@ GtkBuilder *gtk_builder_new_custom(char* filename, int width, int height) {
 
 void Build_Interface() {
     AppState *state = get_appState();
-    //Resize assets that are bigger than the screen (prevent crashes)
-    //adjust_assets_size();
     //Construct interface from XML file
     state->builder = gtk_builder_new_custom("main.glade",
             state->alloc_width, state->alloc_height);
