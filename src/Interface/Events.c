@@ -41,3 +41,17 @@ void _application_init(GtkWidget *window, GtkAllocation*, gpointer) {
     g_signal_handlers_disconnect_matched(window, G_SIGNAL_MATCH_FUNC, 0, 0,
             NULL, G_CALLBACK(_application_init), NULL);
 }
+
+
+/* _on_auto_btn():
+    Computes all the steps automatically.
+*/
+void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
+    AppState *state = APPSTATE;
+    //Perform every step
+    for (int i = state->step; i < STEP_END; i++) {
+        if (!NextStep(NULL, NULL))
+            return; //Error, stop
+    }
+    gtk_widget_set_sensitive(auto_btn, FALSE);
+}

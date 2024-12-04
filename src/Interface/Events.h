@@ -6,5 +6,6 @@
 
 void Standard_Signals();
 void _application_init(GtkWidget*, GtkAllocation*, gpointer);
+void _on_auto_btn(GtkWidget *auto_btn, gpointer);
 
 #endif
