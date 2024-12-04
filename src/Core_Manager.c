@@ -1,3 +1,4 @@
+
 /*
       ##############################################################
       #                                                            #
@@ -104,6 +105,56 @@ int NextStep(GtkWidget*, gpointer) {
             errx(EXIT_FAILURE, "Step format error.");
     }
     printf("Step: %d\n",(int)state->step);
+    ShowNext();
     state->step++;
     return 1;
+}
+
+
+void ShowNext() {
+    AppState *state=APPSTATE;
+    switch (state->step) {
+        case STEP_LOAD:
+            gtk_widget_set_sensitive(GETWIDGET("previous_btn"), TRUE);
+            break;
+        case STEP_FILTER:
+            break;
+        case STEP_EXTRACT:
+            break;
+        case STEP_OCR:
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_RECONSTRUCT:
+            gtk_widget_set_sensitive(GETWIDGET("next_btn"), FALSE);
+            gtk_widget_set_sensitive(GETWIDGET("auto_complete"), FALSE);
+            break;
+        default:
+            errx(EXIT_FAILURE, "STEP is in incorrect format.");
+    }
+}
+
+
+void ShowPrevious(GtkWidget*, gpointer) {
+    AppState *state = APPSTATE;
+    state->step--;
+    switch (state->step) {
+        case STEP_RECONSTRUCT:
+            gtk_widget_set_sensitive(GETWIDGET("next_btn"), TRUE);
+            gtk_widget_set_sensitive(GETWIDGET("auto_complete"), TRUE);
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_OCR:
+            break;
+        case STEP_EXTRACT:
+            break;
+        case STEP_FILTER:
+            break;
+        case STEP_LOAD:
+            gtk_widget_set_sensitive(GETWIDGET("previous_btn"), FALSE);
+            break;
+        default:
+            errx(EXIT_FAILURE, "STEP is in incorrect form.");
+    }
 }

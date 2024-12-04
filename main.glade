@@ -33,7 +33,7 @@
                 <property name="can-focus">False</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkButton">
+                  <object class="GtkButton" id="auto_complete">
                     <property name="label" translatable="yes">Auto Complete</property>
                     <property name="height-request">12</property>
                     <property name="visible">True</property>
@@ -53,12 +53,14 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
-                      <object class="GtkButton">
+                      <object class="GtkButton" id="previous_btn">
                         <property name="label" translatable="yes">Previous</property>
                         <property name="width-request">9</property>
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
+                        <signal name="clicked" handler="ShowPrevious" swapped="no"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -67,7 +69,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton">
+                      <object class="GtkButton" id="next_btn">
                         <property name="label" translatable="yes">Next</property>
                         <property name="width-request">9</property>
                         <property name="visible">True</property>
