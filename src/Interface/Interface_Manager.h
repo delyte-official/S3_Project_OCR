@@ -2,5 +2,6 @@
 #define INTERFACE_MANAGER_H
 
 void Build_Interface();
+int Load_Image();
 
 #endif

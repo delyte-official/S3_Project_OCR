@@ -3,17 +3,19 @@
 
 #include <gtk/gtk.h>
 
+#define APPSTATE get_appState()
 #define GETWIDGET(id) GTK_WIDGET(gtk_builder_get_object(\
-            get_appState()->builder, id))
+            APPSTATE->builder, id))
 #define DISPLAY GETWIDGET("display_section_id")
 
 typedef enum {
     STEP_LOAD = 0,
     STEP_FILTER = 1,
     STEP_EXTRACT = 2,
-    STEP_SOLVE = 3,
-    STEP_RECONSTRUCT = 4,
-    STEP_END = 5
+    STEP_OCR = 3,
+    STEP_SOLVE = 4,
+    STEP_RECONSTRUCT = 5,
+    STEP_END = 6
 } STEP;
 
 typedef struct {
@@ -30,5 +32,6 @@ void Filter_Params(char** all_params, int len, char* *init_params,
         int *init_size, char* *gtk_params, int *gtk_size);
 void StartUp(char** gtk_params, int gtk_len,
         char** init_params, int init_len);
+int NextStep(GtkWidget*, gpointer);
 
 #endif

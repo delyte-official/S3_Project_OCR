@@ -21,7 +21,7 @@
 
 
 void Standard_Signals() {
-    AppState *state = get_appState();
+    AppState *state = APPSTATE;
     g_signal_connect(state->window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(state->window, "size-allocate",
             G_CALLBACK(_application_init), NULL);
@@ -29,7 +29,7 @@ void Standard_Signals() {
 
 
 void _application_init(GtkWidget *window, GtkAllocation*, gpointer) {
-    AppState *state = get_appState();
+    AppState *state = APPSTATE;
     int width, height;
     gtk_window_get_size(GTK_WINDOW(window), &width, &height);
     if (width > state->width || height >= state->height)

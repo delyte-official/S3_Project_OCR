@@ -19,6 +19,7 @@
 #include "Core_Manager.h"
 #include "Interface/GTK_Window.h"
 #include "Interface/Events.h"
+#include "Interface/Interface_Manager.h"
 ////DEFINING
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] =  {"--force"};
@@ -64,7 +65,7 @@ void StartUp(char** gtk_params, int gtk_len,
     (void) init_len;
 
     gtk_init(&gtk_len, &gtk_params);
-    AppState *state = get_appState();
+    AppState *state = APPSTATE;
 
     //Creation of the window
     char* title = "#Free Galane - Word Search Solver";
@@ -79,4 +80,30 @@ void StartUp(char** gtk_params, int gtk_len,
     Standard_Signals();
     gtk_widget_show_all(state->window);
     gtk_main();
+}
+
+
+int NextStep(GtkWidget*, gpointer) {
+    AppState *state = APPSTATE;
+    switch (state->step) {
+        case STEP_LOAD:
+            if (!Load_Image())
+                return 0;
+            break;
+        case STEP_FILTER:
+            break;
+        case STEP_EXTRACT:
+            break;
+        case STEP_OCR:
+            break;
+        case STEP_SOLVE:
+            break;
+        case STEP_RECONSTRUCT:
+            break;
+        default:
+            errx(EXIT_FAILURE, "Step format error.");
+    }
+    printf("Step: %d\n",(int)state->step);
+    state->step++;
+    return 1;
 }

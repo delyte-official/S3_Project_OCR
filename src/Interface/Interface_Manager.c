@@ -108,7 +108,7 @@ GtkBuilder *gtk_builder_new_custom(char* filename, int width, int height) {
 
 
 void Build_Interface() {
-    AppState *state = get_appState();
+    AppState *state = APPSTATE;
     //Construct interface from XML file
     state->builder = gtk_builder_new_custom("main.glade",
             state->alloc_width, state->alloc_height);
@@ -116,14 +116,31 @@ void Build_Interface() {
     GtkWidget *toplvl = GETWIDGET("toplvl_id");
     gtk_container_add(GTK_CONTAINER(state->window), toplvl);
     gtk_builder_connect_signals(state->builder, NULL);
+}
 
-    /*//////Manual adjustements not possible with Glade
-    //Image Background - Reordering
-    GtkWidget *app_bg = image_new_from_file("src/assets/app_bg.png");
-    GtkWidget *box = GTK_WIDGET(gtk_builder_get_object(state->builder,"divide_box_id"));
-    //GETWIDGET("divide_box_id");
-    gtk_container_remove(GTK_CONTAINER(toplvl), box);
-    gtk_overlay_add_overlay(GTK_OVERLAY(toplvl),app_bg);
-    gtk_overlay_add_overlay(GTK_OVERLAY(toplvl),box);
-    gtk_widget_show(app_bg);*/
+
+int Load_Image() {
+    GtkWidget* dialog = gtk_file_chooser_dialog_new("Select Image",
+            GTK_WINDOW(gtk_widget_get_toplevel(APPSTATE->window)),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            "_Cancel", GTK_RESPONSE_CANCEL,
+            "_Open", GTK_RESPONSE_ACCEPT,
+            NULL);
+    //Only accepting images
+    GtkFileFilter *filter = gtk_file_filter_new();
+    gtk_file_filter_add_pixbuf_formats(filter);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+    //Run the dialog
+    int response = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT;
+    if (response) {
+        char* filename = gtk_file_chooser_get_filename(
+                GTK_FILE_CHOOSER(dialog));
+        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
+        if (pixbuf != NULL) {
+            gdk_pixbuf_save(pixbuf,"test.png","png",NULL,NULL);
+        }
+        g_free(filename);
+    }
+    gtk_widget_destroy(dialog);
+    return response;
 }
