@@ -31,6 +31,18 @@ GtkWidget* image_new_from_file(
 }
 
 
+void adjust_assets_size() {
+    AppState *state = get_appState();
+    int width = state->alloc_width;
+    int height = state->alloc_height;
+
+    GdkPixbuf *app_bg = gdk_pixbuf_new_from_file("src/assets/app_bg.png",NULL);
+    GdkPixbuf *app_bg_cache = gdk_pixbuf_scale_simple(app_bg,width,height,
+            GDK_INTERP_HYPER);
+    gdk_pixbuf_save(app_bg_cache,"src/bin/app_bg_cache.png","png",NULL,NULL);
+}
+
+
 /* gtk_builder_new_custom():
     Load XML file and modify its size into percentage of given dimensions.
 */
@@ -79,10 +91,14 @@ GtkBuilder *gtk_builder_new_custom(char* filename, int width, int height) {
         towrite+=prefix_l;
         char *end_value = strchr(value,'<');
         *end_value = '\0';
-        int percentage=atoi(value);
+        int read_value=atoi(value);
         *end_value = '<';
         //Calculating and writing the new value
-        int new_value = (int)((percentage/100.0f)*(isWIDTH?width:height));
+        int new_value = read_value;
+        if (read_value>=0&&read_value<=100)
+            new_value= (int)((read_value/100.0f)*(isWIDTH?width:height));
+        else if (read_value>100)
+            new_value=read_value-100;
         int expand = snprintf(NULL,0,"%d",new_value) - (end_value-value);
         new_size+=expand;
         size_t curr_len = towrite-xml_modified;
@@ -105,6 +121,8 @@ GtkBuilder *gtk_builder_new_custom(char* filename, int width, int height) {
 
 void Build_Interface() {
     AppState *state = get_appState();
+    //Resize assets that are bigger than the screen (prevent crashes)
+    //adjust_assets_size();
     //Construct interface from XML file
     state->builder = gtk_builder_new_custom("main.glade",
             state->alloc_width, state->alloc_height);
