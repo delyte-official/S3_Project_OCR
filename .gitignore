@@ -1,7 +1,7 @@
-#Custom Ignored Files
+### Custom Ignored Files (executables)
+# MAIN
 main
 src/Solving/solver
-src/OCR/neural_network
 *.glade~
 
 # VS-Code
