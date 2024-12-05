@@ -19,7 +19,8 @@
 #include "Core_Manager.h"
 #include "Interface/GTK_Window.h"
 #include "Interface/Events.h"
-#include "Interface/Interface_Manager.h"
+#include "Interface/Interface.h"
+#include "Filter/Filter.h"
 ////DEFINING
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] =  {"--force"};
@@ -96,6 +97,9 @@ int NextStep(GtkWidget*, gpointer) {
                 return 0;
             break;
         case STEP_FILTER:
+            GtkWidget *data = GETSTEPDATA(STEP_LOAD);
+            if (!Filter_Image(g_object_get_data(G_OBJECT(data),"pixbuf")))
+                return 0;
             break;
         case STEP_EXTRACT:
             break;
@@ -123,6 +127,7 @@ void ShowNext() {
             ShowWidget(GETSTEPDATA(STEP_LOAD));
             break;
         case STEP_FILTER:
+            ShowWidget(GETSTEPDATA(STEP_FILTER));
             break;
         case STEP_EXTRACT:
             break;
@@ -155,11 +160,11 @@ void ShowPrevious(GtkWidget*, gpointer) {
         case STEP_EXTRACT:
             break;
         case STEP_FILTER:
+            ShowWidget(GETSTEPDATA(STEP_LOAD));
             break;
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), FALSE);
-            GtkWidget *widget = GETWIDGET("import_btn");
-            ShowWidget(widget);
+            ShowWidget(GETWIDGET("import_btn"));
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");

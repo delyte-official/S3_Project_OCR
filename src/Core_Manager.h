@@ -10,6 +10,9 @@
 #define WINDOW APPSTATE->window
 #define GETSTEPDATA(step) APPSTATE->steps_tracker[step]
 #define SETSTEPDATA(step,widget) APPSTATE->steps_tracker[step]=widget
+#define DESTROYSTEPDATA(step) if (APPSTATE->steps_tracker[step]!=NULL)\
+    gtk_widget_destroy(APPSTATE->steps_tracker[step]);
+
 
 typedef enum {
     STEP_LOAD = 0,

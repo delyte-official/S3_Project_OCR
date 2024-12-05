@@ -17,7 +17,7 @@
 //Project Headers
 #include "../Core_Manager.h"
 #include "Events.h"
-#include "Interface_Manager.h"
+#include "Interface.h"
 
 
 void Standard_Signals() {
@@ -58,12 +58,19 @@ void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
 
 
 void _on_import_btn(GtkWidget*, gpointer) {
-    AppState *state = APPSTATE;
-    if (state->steps_tracker[STEP_LOAD]==NULL)
+    if (GETSTEPDATA(STEP_LOAD)==NULL)
         NextStep(NULL,NULL);
     else if (confirm_dialog("Further steps will be deleted.")) {
         if (Load_Image()) {
             //Reset steps
+            for (int i = STEP_FILTER; i < STEP_END; i++) {
+                GtkWidget *stepdata = GETSTEPDATA(i);
+                if (stepdata!=NULL)
+                    g_object_unref(GETSTEPDATA(i));
+                SETSTEPDATA(i,NULL);
+            }
+            ShowNext();
+            APPSTATE->step++;
         }
     }
 }

@@ -59,13 +59,20 @@
                     <property name="can-focus">False</property>
                     <child>
                       <object class="GtkButton" id="previous_btn">
-                        <property name="label" translatable="yes">Previous</property>
                         <property name="width-request">9</property>
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
+                        <property name="always-show-image">True</property>
                         <signal name="clicked" handler="ShowPrevious" swapped="no"/>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="stock">gtk-go-back</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -75,12 +82,20 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="next_btn">
-                        <property name="label" translatable="yes">Next</property>
                         <property name="width-request">9</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
+                        <property name="image-position">top</property>
+                        <property name="always-show-image">True</property>
                         <signal name="clicked" handler="NextStep" swapped="no"/>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="stock">gtk-go-forward</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -174,6 +189,7 @@
                     <property name="image">import_image</property>
                     <property name="relief">none</property>
                     <property name="always-show-image">True</property>
+                    <signal name="clicked" handler="_on_import_btn" swapped="no"/>
                   </object>
                   <packing>
                     <property name="index">-1</property>

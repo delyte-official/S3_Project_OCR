@@ -19,7 +19,7 @@
 //Project Headers
 #include "Events.h"
 #include "../Core_Manager.h"
-#include "Interface_Manager.h"
+#include "Interface.h"
 
 
 GtkWidget* image_new_from_file(
@@ -171,6 +171,7 @@ int Load_Image() {
             GtkWidget *image = gtk_image_new_from_pixbuf(resized);
             g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
             g_object_ref(pixbuf);
+            DESTROYSTEPDATA(STEP_LOAD);
             SETSTEPDATA(STEP_LOAD,image);
         }
         g_free(filename);
@@ -186,10 +187,12 @@ int Load_Image() {
 */
 int confirm_dialog(char* text) {
     GtkBuilder *builder = gtk_builder_new_from_file(
-            "src/assets/confirm_dialog");
+            "src/assets/confirm_dialog.glade");
     GtkWidget *dialog = GTK_WIDGET(gtk_builder_get_object(builder,"dialog"));
     gtk_window_set_transient_for(GTK_WINDOW(dialog),GTK_WINDOW(WINDOW));
+    gtk_label_set_text(GTK_LABEL(gtk_builder_get_object(builder,
+                    "confirm_text")), text);
     gint response = gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
-    return response == GTK_RESPONSE_OK;
+    return response == GTK_RESPONSE_ACCEPT;
 }

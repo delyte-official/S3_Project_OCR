@@ -6,15 +6,15 @@ LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 
 
 #All object files needed, categorized in directives:
-INTERFACE = GTK_Window.o Events.o Interface_Manager.o
-FILTERING = Prefilter.o filter.o
+INTERFACE = GTK_Window.o Events.o Interface.o
+FILTERING = Filter.o
 EXTRACTION = #Detection.o
 SOLVING = Solver_Manager.o
 SRC = Core_Manager.o \
-	$(addprefix Interface/, $(INTERFACE))
-# 	$(addprefix Filter/, $(FILTERING)) \
-	$(addprefix Extract/, $(EXTRACTION)) #\
-#	$(addprefix Solving/, $(SOLVING)) #Debug.o
+	$(addprefix Interface/, $(INTERFACE)) \
+	$(addprefix Filter/, $(FILTERING))
+#	$(addprefix Extract/, $(EXTRACTION)) \
+	$(addprefix Solving/, $(SOLVING)) #Debug.o
 
 #SOLVER = src/Solving/solver #Independent program, so independant category
 OCR = src/OCR/neural_network #Independent compiling for the first defense
