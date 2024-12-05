@@ -77,7 +77,8 @@ void StartUp(char** gtk_params, int gtk_len,
     state->height = geometry.height;
     int type = GTK_WINDOW_TOPLEVEL;
     WINDOW = create_window(type, title, state->width, state->height);
-
+    //Redirecting logs
+    g_log_set_default_handler(_log_handler,NULL);
     //Run the application
     Standard_Signals();
     gtk_widget_show_all(WINDOW);
@@ -113,7 +114,7 @@ int NextStep(GtkWidget*, gpointer) {
         default:
             errx(EXIT_FAILURE, "Step format error.");
     }
-    print("Step: %d\n",(int)state->step);
+    g_log("App",G_LOG_LEVEL_MESSAGE,"Step advanced to %d.",state->step);
     ShowNext();
     state->step++;
     return 1;
@@ -182,10 +183,15 @@ void print(const char *format, ...) {
     char *result;
     if (vasprintf(&result,format,args)==-1)
         return;
+    char *toprint;
+    if (asprintf(&toprint, "| %s",result) ==-1)
+        return;
     GtkTextIter end;
     GtkTextView *textview = GTK_TEXT_VIEW(GETWIDGET("logs"));
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(textview);
     gtk_text_buffer_get_end_iter(buffer,&end);
-    gtk_text_buffer_insert(buffer,&end,result,-1);
+    gtk_text_buffer_insert(buffer,&end,toprint,-1);
     va_end(args);
+    free(result);
+    free(toprint);
 }

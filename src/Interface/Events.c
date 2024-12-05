@@ -74,3 +74,41 @@ void _on_import_btn(GtkWidget*, gpointer) {
         }
     }
 }
+
+
+/* _log_handler():
+    Redirects stdout and stderr messages from GTK libs to application.
+*/
+void _log_handler(const gchar* log_domain, GLogLevelFlags log_level,
+        const gchar *message, gpointer) {
+    const char *category;
+    if (log_level & G_LOG_LEVEL_ERROR)
+        category = "ERROR: ";
+    else if (log_level & G_LOG_LEVEL_WARNING)
+        category = "WARNING: ";
+    else if (log_level & G_LOG_LEVEL_INFO)
+        category = "INFO: ";
+    else if (log_level & G_LOG_FLAG_RECURSION)
+        category = "RECURSION: ";
+    else if (log_level & G_LOG_FLAG_FATAL)
+        category = "FATAL: ";
+    else if (log_level & G_LOG_LEVEL_MESSAGE)
+        category = "MESSAGE: ";
+    else if (log_level & G_LOG_LEVEL_DEBUG)
+        category = "DEBUG: ";
+    else if (log_level & G_LOG_LEVEL_CRITICAL)
+        category = "CRITICAL: ";
+    else
+        category = "";
+    print("%s-%s%s\n",log_domain,category,message);
+}
+
+
+void _on_logs_change(GtkTextBuffer *buffer, GtkTextView *text_view) {
+    GtkTextIter end_iter;
+    GtkTextMark *end_mark;
+    gtk_text_buffer_get_end_iter(buffer,&end_iter);
+    end_mark = gtk_text_buffer_create_mark(buffer,NULL,&end_iter,FALSE);
+    gtk_text_view_scroll_to_mark(text_view,end_mark,0.0,TRUE,0.0,1.0);
+    gtk_text_buffer_delete_mark(buffer,end_mark);
+}

@@ -7,6 +7,9 @@
     <property name="can-focus">False</property>
     <property name="pixbuf">src/assets/button_import.png</property>
   </object>
+  <object class="GtkTextBuffer" id="log_buffer">
+    <signal name="changed" handler="_on_logs_change" object="logs" swapped="no"/>
+  </object>
   <object class="GtkOverlay" id="toplvl_id">
     <property name="name">Top Level Container</property>
     <property name="visible">True</property>
@@ -318,8 +321,9 @@
                         <property name="can-focus">True</property>
                         <property name="editable">False</property>
                         <property name="wrap-mode">char</property>
-                        <property name="indent">1</property>
+                        <property name="indent">8</property>
                         <property name="cursor-visible">False</property>
+                        <property name="buffer">log_buffer</property>
                         <property name="accepts-tab">False</property>
                       </object>
                     </child>
