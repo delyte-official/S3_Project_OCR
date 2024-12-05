@@ -55,3 +55,15 @@ void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
     }
     gtk_widget_set_sensitive(auto_btn, FALSE);
 }
+
+
+void _on_import_btn(GtkWidget*, gpointer) {
+    AppState *state = APPSTATE;
+    if (state->steps_tracker[STEP_LOAD]==NULL)
+        NextStep(NULL,NULL);
+    else if (confirm_dialog("Further steps will be deleted.")) {
+        if (Load_Image()) {
+            //Reset steps
+        }
+    }
+}

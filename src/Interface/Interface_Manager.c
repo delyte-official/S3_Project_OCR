@@ -114,14 +114,14 @@ void Build_Interface() {
             state->alloc_width, state->alloc_height);
     //Connect to window
     GtkWidget *toplvl = GETWIDGET("toplvl_id");
-    gtk_container_add(GTK_CONTAINER(state->window), toplvl);
+    gtk_container_add(GTK_CONTAINER(WINDOW), toplvl);
     gtk_builder_connect_signals(state->builder, NULL);
     //Manual data
     state->display = GETWIDGET("display_section");
 }
 
 
-void Show_Widget(GtkWidget *widget) {
+void ShowWidget(GtkWidget *widget) {
     GtkWidget* display = DISPLAY;
     GList *children = gtk_container_get_children(GTK_CONTAINER(display));
     if (children) {
@@ -157,18 +157,10 @@ GdkPixbuf* resize_from_container(GdkPixbuf* pixbuf, GtkWidget* container) {
 
 
 int Load_Image() {
-    AppState *state = APPSTATE;
-    GtkWidget* dialog = gtk_file_chooser_dialog_new("Select Image",
-            GTK_WINDOW(gtk_widget_get_toplevel(state->window)),
-            GTK_FILE_CHOOSER_ACTION_OPEN,
-            "_Cancel", GTK_RESPONSE_CANCEL,
-            "_Open", GTK_RESPONSE_ACCEPT,
-            NULL);
-    //Only accepting images
-    GtkFileFilter *filter = gtk_file_filter_new();
-    gtk_file_filter_add_pixbuf_formats(filter);
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-    //Run the dialog
+    GtkBuilder *builder = gtk_builder_new_from_file(
+            "src/assets/image_selector.glade");
+    GtkWidget *dialog = GTK_WIDGET(gtk_builder_get_object(builder, "dialog"));
+    gtk_window_set_transient_for(GTK_WINDOW(dialog),GTK_WINDOW(WINDOW));
     int response = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT;
     if (response) {
         char* filename = gtk_file_chooser_get_filename(
@@ -179,10 +171,25 @@ int Load_Image() {
             GtkWidget *image = gtk_image_new_from_pixbuf(resized);
             g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
             g_object_ref(pixbuf);
-            state->steps_tracker[0]=image;
+            SETSTEPDATA(STEP_LOAD,image);
         }
         g_free(filename);
     }
     gtk_widget_destroy(dialog);
+    g_object_unref(builder);
     return response;
+}
+
+
+/* confirm_dialog():
+    Pops up a confirmation dialog on the window, with custom message.
+*/
+int confirm_dialog(char* text) {
+    GtkBuilder *builder = gtk_builder_new_from_file(
+            "src/assets/confirm_dialog");
+    GtkWidget *dialog = GTK_WIDGET(gtk_builder_get_object(builder,"dialog"));
+    gtk_window_set_transient_for(GTK_WINDOW(dialog),GTK_WINDOW(WINDOW));
+    gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+    return response == GTK_RESPONSE_OK;
 }

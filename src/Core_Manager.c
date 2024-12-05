@@ -74,17 +74,22 @@ void StartUp(char** gtk_params, int gtk_len,
     state->width = geometry.width;
     state->height = geometry.height;
     int type = GTK_WINDOW_TOPLEVEL;
-    state->window = create_window(type, title, state->width, state->height);
+    WINDOW = create_window(type, title, state->width, state->height);
 
     //Run the application
     Standard_Signals();
-    gtk_widget_show_all(state->window);
+    gtk_widget_show_all(WINDOW);
     gtk_main();
 }
 
 
 int NextStep(GtkWidget*, gpointer) {
     AppState *state = APPSTATE;
+    if (state->steps_tracker[state->step]!=NULL) {
+        ShowNext();
+        state->step++;
+        return 1;
+    }
     switch (state->step) {
         case STEP_LOAD:
             if (!Load_Image())
@@ -115,8 +120,7 @@ void ShowNext() {
     switch (state->step) {
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), TRUE);
-            GtkWidget *widget = GETSTEPDATA(STEP_LOAD);
-            Show_Widget(widget);
+            ShowWidget(GETSTEPDATA(STEP_LOAD));
             break;
         case STEP_FILTER:
             break;
@@ -154,6 +158,8 @@ void ShowPrevious(GtkWidget*, gpointer) {
             break;
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), FALSE);
+            GtkWidget *widget = GETWIDGET("import_btn");
+            ShowWidget(widget);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");
