@@ -303,15 +303,26 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
-                  <object class="GtkButton">
-                    <property name="label" translatable="yes">Logs</property>
+                  <placeholder/>
+                </child>
+                <child type="overlay">
+                  <object class="GtkScrolledWindow">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="shadow-type">in</property>
+                    <child>
+                      <object class="GtkTextView" id="logs">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="editable">False</property>
+                        <property name="wrap-mode">char</property>
+                        <property name="indent">1</property>
+                        <property name="cursor-visible">False</property>
+                        <property name="accepts-tab">False</property>
+                      </object>
+                    </child>
                   </object>
-                  <packing>
-                    <property name="index">-1</property>
-                  </packing>
                 </child>
               </object>
               <packing>

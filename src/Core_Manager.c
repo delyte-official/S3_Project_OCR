@@ -11,6 +11,7 @@
 
 
 ////HEADERS
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <err.h>
@@ -112,7 +113,7 @@ int NextStep(GtkWidget*, gpointer) {
         default:
             errx(EXIT_FAILURE, "Step format error.");
     }
-    printf("Step: %d\n",(int)state->step);
+    print("Step: %d\n",(int)state->step);
     ShowNext();
     state->step++;
     return 1;
@@ -169,4 +170,22 @@ void ShowPrevious(GtkWidget*, gpointer) {
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");
     }
+}
+
+
+/* print():
+    Custom print function compatible with the application.
+*/
+void print(const char *format, ...) {
+    va_list args;
+    va_start(args,format);
+    char *result;
+    if (vasprintf(&result,format,args)==-1)
+        return;
+    GtkTextIter end;
+    GtkTextView *textview = GTK_TEXT_VIEW(GETWIDGET("logs"));
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(textview);
+    gtk_text_buffer_get_end_iter(buffer,&end);
+    gtk_text_buffer_insert(buffer,&end,result,-1);
+    va_end(args);
 }

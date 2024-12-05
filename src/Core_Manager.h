@@ -1,6 +1,6 @@
 #ifndef CORE_MANAGER_H
 #define CORE_MANAGER_H
-
+#define _GNU_SOURCE
 #include <gtk/gtk.h>
 
 #define APPSTATE get_appState()
@@ -41,5 +41,6 @@ void StartUp(char** gtk_params, int gtk_len,
         char** init_params, int init_len);
 int NextStep(GtkWidget*, gpointer);
 void ShowNext();
+void print(const char *format, ...);
 
 #endif
