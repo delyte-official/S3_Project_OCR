@@ -157,20 +157,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkOverlay">
+              <object class="GtkOverlay" id="display_section">
                 <property name="height-request">60</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
-                  <object class="GtkButton">
-                    <property name="label" translatable="yes">Display Section</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                  </object>
-                  <packing>
-                    <property name="index">-1</property>
-                  </packing>
+                  <placeholder/>
                 </child>
               </object>
               <packing>

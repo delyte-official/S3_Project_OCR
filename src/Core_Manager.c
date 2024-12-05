@@ -1,4 +1,3 @@
-
 /*
       ##############################################################
       #                                                            #
@@ -116,6 +115,8 @@ void ShowNext() {
     switch (state->step) {
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), TRUE);
+            GtkWidget *widget = GETSTEPDATA(STEP_LOAD);
+            Show_Widget(widget);
             break;
         case STEP_FILTER:
             break;

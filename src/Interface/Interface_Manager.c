@@ -116,12 +116,50 @@ void Build_Interface() {
     GtkWidget *toplvl = GETWIDGET("toplvl_id");
     gtk_container_add(GTK_CONTAINER(state->window), toplvl);
     gtk_builder_connect_signals(state->builder, NULL);
+    //Manual data
+    state->display = GETWIDGET("display_section");
+}
+
+
+void Show_Widget(GtkWidget *widget) {
+    GtkWidget* display = DISPLAY;
+    GList *children = gtk_container_get_children(GTK_CONTAINER(display));
+    if (children) {
+        g_object_ref(children->data);
+        gtk_container_remove(GTK_CONTAINER(display), children->data);
+    }
+    if (widget != NULL) {
+        gtk_overlay_add_overlay(GTK_OVERLAY(display), widget);
+        gtk_widget_show_all(widget);
+    }
+}
+
+
+GdkPixbuf* resize_pixbuf(GdkPixbuf* pixbuf, int max_w, int max_h) {
+    int origin_w = gdk_pixbuf_get_width(pixbuf);
+    int origin_h = gdk_pixbuf_get_height(pixbuf);
+    float w_ratio = (float)max_w/origin_w;
+    float h_ratio = (float)max_h/origin_h;
+    float scale = w_ratio < h_ratio ? w_ratio : h_ratio;
+    int width = (int)(origin_w * scale);
+    int height = (int)(origin_h *scale);
+    GdkPixbuf *scaled = gdk_pixbuf_scale_simple(pixbuf, width, height,
+            GDK_INTERP_HYPER);
+    return scaled;
+}
+
+
+GdkPixbuf* resize_from_container(GdkPixbuf* pixbuf, GtkWidget* container) {
+    GtkAllocation alloc;
+    gtk_widget_get_allocation(container, &alloc);
+    return resize_pixbuf(pixbuf, alloc.width, alloc.height);
 }
 
 
 int Load_Image() {
+    AppState *state = APPSTATE;
     GtkWidget* dialog = gtk_file_chooser_dialog_new("Select Image",
-            GTK_WINDOW(gtk_widget_get_toplevel(APPSTATE->window)),
+            GTK_WINDOW(gtk_widget_get_toplevel(state->window)),
             GTK_FILE_CHOOSER_ACTION_OPEN,
             "_Cancel", GTK_RESPONSE_CANCEL,
             "_Open", GTK_RESPONSE_ACCEPT,
@@ -137,7 +175,11 @@ int Load_Image() {
                 GTK_FILE_CHOOSER(dialog));
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
         if (pixbuf != NULL) {
-            gdk_pixbuf_save(pixbuf,"test.png","png",NULL,NULL);
+            GdkPixbuf *resized = resize_from_container(pixbuf, DISPLAY);
+            GtkWidget *image = gtk_image_new_from_pixbuf(resized);
+            g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
+            g_object_ref(pixbuf);
+            state->steps_tracker[0]=image;
         }
         g_free(filename);
     }
