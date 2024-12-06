@@ -105,12 +105,6 @@ GdkPixbuf *view_wordlist(Cluster ***matrix, Size size, GdkPixbuf *pixbuf) {
     Retrieves the grid and wordlist.
 */
 int Extract_Data(GdkPixbuf *input, char* bin_filename) {
-    char *grid_output;
-    char *wordlist_output;
-    if (asprintf(&grid_output,"%sgrid/",bin_filename) ==-1)
-        return 0;
-    if (asprintf(&wordlist_output,"%swordlist/",bin_filename) == -1)
-        return 0;
     //Linked list of clusters
     Cluster *start = NULL;
     //STEP 1: retrieving EVERY clusters
@@ -128,8 +122,8 @@ int Extract_Data(GdkPixbuf *input, char* bin_filename) {
     //STEP 4: Classify clusters
     classify_clusters(&matrixH,&matrixV,&sizeH,&sizeV);
     //STEP 5: Cut the image into sub-images
-    cut_grid(matrixH,sizeH, grid_output);
-    cut_wordlist(matrixV, sizeV, input, wordlist_output);
+    cut_grid(matrixH,sizeH, bin_filename);
+    cut_wordlist(matrixV, sizeV, input, bin_filename);
     //STEP 6: Saving result
     GdkPixbuf *grid_img = view_grid(matrixH,sizeH,input);
     GdkPixbuf *final_img = view_wordlist(matrixV,sizeV,grid_img);

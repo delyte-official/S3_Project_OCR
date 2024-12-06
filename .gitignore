@@ -4,6 +4,10 @@ main
 src/Solving/solver
 *.glade~
 
+# Extraction
+src/bin/grid*
+src/bin/word*
+
 # VS-Code
 .vscode/
 
