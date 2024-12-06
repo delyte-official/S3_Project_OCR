@@ -1,15 +1,3 @@
-/*
-      ##############################################################
-      #                                                            #
-      #                         GTK_Window.c                       #
-      #                                                            #
-      #         Contains all functions related to handling,        #
-      #   modifying and supervising memory of GTK windows system.  #
-      #                                                            #
-      ##############################################################
-*/
-
-
 ////HEADERS
 #include <err.h>
 #include <gtk/gtk.h>

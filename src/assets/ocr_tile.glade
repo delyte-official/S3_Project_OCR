@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.38.2 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkTextBuffer" id="grid"/>
+  <object class="GtkTextBuffer" id="wordlist"/>
+  <object class="GtkBox" id="toplvl">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="hexpand">False</property>
+    <property name="vexpand">False</property>
+    <child>
+      <object class="GtkScrolledWindow">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="shadow-type">in</property>
+        <child>
+          <object class="GtkTextView">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="buffer">grid</property>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">True</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkScrolledWindow">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="shadow-type">in</property>
+        <child>
+          <object class="GtkTextView">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="buffer">wordlist</property>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">True</property>
+        <property name="fill">True</property>
+        <property name="pack-type">end</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+  </object>
+</interface>

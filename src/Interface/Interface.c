@@ -1,15 +1,3 @@
-/*
-      ##############################################################
-      #                                                            #
-      #                  GTK_Interface_Manager.c                   #
-      #                                                            #
-      #            Create, modify and destroy GTK Widgets.         #
-      #  Offer easy access to widgets and redirects their events.  #
-      #                                                            #
-      ##############################################################
-*/
-
-
 ////HEADERS
 #include <stdlib.h>
 #include <stdio.h>

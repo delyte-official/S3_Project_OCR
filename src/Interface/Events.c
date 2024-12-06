@@ -1,14 +1,3 @@
-/*
-      ##############################################################
-      #                                                            #
-      #                           Events.c                         #
-      #                                                            #
-      #       Contains all functions receiving, handling and       #
-      #    sending signals and events to other declared systems.   #
-      #                                                            #
-      ##############################################################
-*/
-
 ////HEADERS
 #include <err.h>
 #include <stdio.h>

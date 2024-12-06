@@ -23,6 +23,7 @@
 #include "Interface/Interface.h"
 #include "Filter/Filter.h"
 #include "Extract/Extraction_Manager.h"
+#include "OCR/OCR_Manager.h"
 ////DEFINING
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] =  {"--force"};
@@ -122,6 +123,8 @@ int NextStep(GtkWidget*, gpointer) {
                 return 0;
             break;
         case STEP_OCR:
+            if (!Identify_Characters())
+                return 0;
             break;
         case STEP_SOLVE:
             break;
@@ -151,6 +154,7 @@ void ShowNext() {
             ShowWidget(GETSTEPDATA(STEP_EXTRACT));
             break;
         case STEP_OCR:
+            ShowWidget(GETSTEPDATA(STEP_OCR));
             break;
         case STEP_SOLVE:
             break;
@@ -175,6 +179,7 @@ void ShowPrevious(GtkWidget*, gpointer) {
         case STEP_SOLVE:
             break;
         case STEP_OCR:
+            ShowWidget(GETSTEPDATA(STEP_EXTRACT));
             break;
         case STEP_EXTRACT:
             ShowWidget(GETSTEPDATA(STEP_FILTER));

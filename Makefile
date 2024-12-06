@@ -9,14 +9,17 @@ LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 INTERFACE = GTK_Window.o Events.o Interface.o
 FILTERING = Filter.o
 EXTRACTION = Extract.o Extraction_Manager.o
+OCR = OCR_Manager.o
 SOLVING = Solver_Manager.o
 SRC = Core_Manager.o \
 	$(addprefix Interface/, $(INTERFACE)) \
 	$(addprefix Filter/, $(FILTERING)) \
-	$(addprefix Extract/, $(EXTRACTION))
+	$(addprefix Extract/, $(EXTRACTION)) \
+	$(addprefix OCR/, $(OCR))
 #	$(addprefix Solving/, $(SOLVING)) #Debug.o
 
 #SOLVER = src/Solving/solver #Independent program, so independant category
+CUT_IMAGES = src/bin/grid* src/bin/word*
 
 #Put all of them together
 OBJS = main.o \
@@ -32,7 +35,7 @@ $(TARGET): $(OBJS) #Creating all needed files to compile final program
 
 #Clean command used to clean up any object and executable files
 clean:
-	$(RM) $(OBJS) $(TARGET) $(SOLVER) nohup.out
+	$(RM) $(OBJS) $(TARGET) $(SOLVER) nohup.out $(CUT_IMAGES)
 
 #Reset command to clean, clear and make
 remake:
