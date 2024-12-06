@@ -2,7 +2,6 @@
 #define EXTRACTION_H
 #include <gtk/gtk.h>
 
-
 #define FLAG_GRID 1
 #define FLAG_WORD (1 << 1)
 #define FLAG_UNUSED 0

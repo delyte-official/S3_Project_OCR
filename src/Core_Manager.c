@@ -33,6 +33,16 @@ AppState *get_appState() {
     return &state;
 }
 
+/* free_step_data():
+    Destroys the widget and free all data associated with the step, if any.
+*/
+void free_step_data(STEP step) {
+    GtkWidget *data = GETSTEPDATA(step);
+    if (data==NULL)
+        return;
+    gtk_widget_destroy(data);
+}
+
 
 int check_param(const char** PARAMS, int len, char* to_check) {
     for (int i = 0; i < len; i++) {
@@ -138,6 +148,7 @@ void ShowNext() {
             ShowWidget(GETSTEPDATA(STEP_FILTER));
             break;
         case STEP_EXTRACT:
+            ShowWidget(GETSTEPDATA(STEP_EXTRACT));
             break;
         case STEP_OCR:
             break;
@@ -166,6 +177,7 @@ void ShowPrevious(GtkWidget*, gpointer) {
         case STEP_OCR:
             break;
         case STEP_EXTRACT:
+            ShowWidget(GETSTEPDATA(STEP_FILTER));
             break;
         case STEP_FILTER:
             ShowWidget(GETSTEPDATA(STEP_LOAD));

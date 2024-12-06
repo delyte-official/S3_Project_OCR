@@ -728,8 +728,8 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
 
     //Test in both direction to obtain the biggest result
     Cluster ***gridH, ***gridV;
-    Size gridSH = find_grid(matrixH,matrixV,*sizeH,*sizeV,&gridH);
-    Size gridSV = find_grid(matrixV,matrixH,*sizeV,*sizeH,&gridV);
+    Size gridSH=find_grid(matrixH,matrixV,*sizeH,*sizeV,&gridH);
+    Size gridSV=find_grid(matrixV,matrixH,*sizeV,*sizeH,&gridV);
     if (gridSV.rows>0)
         transpose_matrix(&gridV,&gridSV);
 

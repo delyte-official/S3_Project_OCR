@@ -171,7 +171,7 @@ int Load_Image() {
             GtkWidget *image = gtk_image_new_from_pixbuf(resized);
             g_object_set_data(G_OBJECT(image), "pixbuf", pixbuf);
             g_object_ref(pixbuf);
-            DESTROYSTEPDATA(STEP_LOAD);
+            FREESTEPDATA(STEP_LOAD);
             SETSTEPDATA(STEP_LOAD,image);
         }
         g_free(filename);

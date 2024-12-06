@@ -10,8 +10,7 @@
 #define WINDOW APPSTATE->window
 #define GETSTEPDATA(step) APPSTATE->steps_tracker[step]
 #define SETSTEPDATA(step,widget) APPSTATE->steps_tracker[step]=widget
-#define DESTROYSTEPDATA(step) if (APPSTATE->steps_tracker[step]!=NULL)\
-    gtk_widget_destroy(APPSTATE->steps_tracker[step]);
+#define FREESTEPDATA(step) free_step_data(step)
 
 
 typedef enum {
@@ -35,6 +34,7 @@ typedef struct {
 } AppState;
 
 AppState *get_appState();
+void free_step_data(STEP step);
 void Filter_Params(char** all_params, int len, char* *init_params,
         int *init_size, char* *gtk_params, int *gtk_size);
 void StartUp(char** gtk_params, int gtk_len,

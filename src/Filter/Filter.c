@@ -10,7 +10,7 @@ int Filter_Image(GdkPixbuf *input) {
     GtkWidget *image = gtk_image_new_from_pixbuf(resized);
     g_object_set_data(G_OBJECT(image), "pixbuf", filtered);
     g_object_ref(filtered);
-    DESTROYSTEPDATA(STEP_FILTER);
+    FREESTEPDATA(STEP_FILTER);
     SETSTEPDATA(STEP_FILTER,image);
     return 1;
 }
