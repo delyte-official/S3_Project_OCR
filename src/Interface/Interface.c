@@ -184,3 +184,88 @@ int confirm_dialog(char* text) {
     gtk_widget_destroy(dialog);
     return response == GTK_RESPONSE_ACCEPT;
 }
+
+
+int file_save(void* data, EXTENSION type) {
+    //Creating the dialog window
+    GtkWidget* dialog = gtk_file_chooser_dialog_new("Save File",
+            GTK_WINDOW(WINDOW), GTK_FILE_CHOOSER_ACTION_SAVE,
+            "_Cancel", GTK_RESPONSE_CANCEL,
+            "_Save", GTK_RESPONSE_ACCEPT,
+            NULL);
+    GtkFileChooser* chooser = GTK_FILE_CHOOSER(dialog);
+    //Filter
+    GtkFileFilter *filter = gtk_file_filter_new();
+    if (type == EXT_PNG) {
+        gtk_file_filter_set_name(filter, "PNG files");
+        gtk_file_filter_add_mime_type(filter, "image/png");
+        gtk_file_chooser_set_current_name(chooser, "untilted.png");
+    } else if (type == EXT_TXT) {
+        gtk_file_filter_set_name(filter, "Text files");
+        gtk_file_filter_add_pattern(filter, "*.txt");
+        gtk_file_chooser_set_current_name(chooser, "untitlted.txt");
+    }
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+    //Run the dialog
+    int response = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT;
+    if (response) {
+        //Get the selected image
+        char* filename = gtk_file_chooser_get_filename(chooser);
+        if (type == EXT_PNG) {
+            //Checking extension
+            if (!g_str_has_suffix(filename, ".png") && !strchr(filename,'.')) {
+                char *newfile = g_strconcat(filename, ".png", NULL);
+                g_free(filename);
+                filename = newfile;
+            }
+            //Data is a pixbuf
+            GdkPixbuf *pixbuf = *(GdkPixbuf**)data;
+            //Save to file
+            if (!gdk_pixbuf_save(pixbuf, filename, "png", NULL, NULL))
+                response = 0;
+        } else if (type == EXT_TXT) {
+            //Data is a buffer
+            GtkTextBuffer *buffer = *(GtkTextBuffer**)data;
+            //Grab content
+            GtkTextIter start, end;
+            gtk_text_buffer_get_start_iter(buffer, &start);
+            gtk_text_buffer_get_end_iter(buffer, &end);
+            char* text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+            //Save to File
+            FILE *file =fopen(filename, "w");
+            if (file == NULL) {
+                response = 0;
+            } else {
+                fprintf(file, "%s",text);
+                fclose(file);
+            }
+        }
+        g_free(filename);
+    }
+    //Closing dialog wether cancel or accepted
+    gtk_widget_destroy(dialog);
+    return response;
+}
+
+
+void save_step(STEP step) {
+    if (step == STEP_LOAD || step == STEP_FILTER || step == STEP_EXTRACT ||
+            step == STEP_RECONSTRUCT) {
+        GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(GETSTEPDATA(step)),
+                "pixbuf");
+        file_save(&pixbuf, EXT_PNG);
+    } else if (step == STEP_OCR) {
+        GtkWidget *extract = GETSTEPDATA(step);;
+        //Grab content of text view or smth
+        GtkTextBuffer *b_grid = g_object_get_data(G_OBJECT(extract),
+                "grid_buffer");
+        file_save(&b_grid, EXT_TXT);
+        GtkTextBuffer *b_wordlist = g_object_get_data(G_OBJECT(extract),
+                "wordlist_buffer");
+        file_save(&b_wordlist, EXT_TXT);
+    } else if (step == STEP_SOLVE) {
+        GtkTextBuffer *buffer = g_object_get_data(G_OBJECT(GETSTEPDATA(
+                        STEP_SOLVE)),"buffer");
+        file_save(&buffer, EXT_TXT);
+    }
+}

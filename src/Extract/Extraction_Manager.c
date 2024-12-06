@@ -129,17 +129,16 @@ int Extract_Data(GdkPixbuf *input, char* bin_filename) {
     GdkPixbuf *final_img = view_wordlist(matrixV,sizeV,grid_img);
     GdkPixbuf *resized = resize_from_container(final_img, DISPLAY);
     GtkWidget *image = gtk_image_new_from_pixbuf(resized);
+    //Pure data
     g_object_set_data(G_OBJECT(image), "pixbuf", final_img);
+    int *word_count = g_new(int,1);
+    *word_count = sizeV.rows;
+    g_object_set_data(G_OBJECT(image), "word_count",word_count);
+    g_object_set_data(G_OBJECT(image), "grid", matrixH);
+    g_object_set_data(G_OBJECT(image), "wordlist", matrixV);
+    //Redirecting results
     g_object_ref(final_img);
     FREESTEPDATA(STEP_EXTRACT);
     SETSTEPDATA(STEP_EXTRACT,image);
-    //Freeing memory
-    free_matrix(matrixH,sizeH.rows);
-    free_matrix(matrixV, sizeV.rows);
-    while (start!=NULL) {
-        Cluster *next = start->next;
-        free_cluster(start);
-        start = next;
-    }
     return 1;
 }

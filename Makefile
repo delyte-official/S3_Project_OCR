@@ -11,14 +11,16 @@ FILTERING = Filter.o
 EXTRACTION = Extract.o Extraction_Manager.o
 OCR = OCR_Manager.o
 SOLVING = Solver_Manager.o
+RECONSTRUCT = Reconstruct.o
 SRC = Core_Manager.o \
 	$(addprefix Interface/, $(INTERFACE)) \
 	$(addprefix Filter/, $(FILTERING)) \
 	$(addprefix Extract/, $(EXTRACTION)) \
-	$(addprefix OCR/, $(OCR))
-#	$(addprefix Solving/, $(SOLVING)) #Debug.o
+	$(addprefix OCR/, $(OCR)) \
+	$(addprefix Solving/, $(SOLVING)) \
+	$(addprefix Reconstruct/, $(RECONSTRUCT))
 
-#SOLVER = src/Solving/solver #Independent program, so independant category
+SOLVER = src/Solving/solver #Independent program, so independant category
 CUT_IMAGES = src/bin/grid* src/bin/word*
 
 #Put all of them together
@@ -28,9 +30,7 @@ OBJS = main.o \
 TARGET = main
 all: $(TARGET) #All command, the default command ran by writing "make"
 $(TARGET): $(OBJS) #Creating all needed files to compile final program
-	#$(CC) -o $(SOLVER) $(addsuffix .c, $(SOLVER))
-	#$(CC) -o $(OCR) $(addsuffix .c, $(OCR)) -lm
-	#$(CC) $(CFLAGS) -o $(EXTRACT) $(addsuffix .c, $(EXTRACT)) $(LDFLAGS)
+	$(CC) -o $(SOLVER) $(addsuffix .c, $(SOLVER))
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 #Clean command used to clean up any object and executable files

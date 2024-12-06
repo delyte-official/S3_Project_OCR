@@ -101,3 +101,8 @@ void _on_logs_change(GtkTextBuffer *buffer, GtkTextView *text_view) {
     gtk_text_view_scroll_to_mark(text_view,end_mark,0.0,TRUE,0.0,1.0);
     gtk_text_buffer_delete_mark(buffer,end_mark);
 }
+
+
+void _save_curr_step(GtkWidget*, gpointer) {
+    save_step(APPSTATE->step-1);
+}

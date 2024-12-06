@@ -24,6 +24,8 @@
 #include "Filter/Filter.h"
 #include "Extract/Extraction_Manager.h"
 #include "OCR/OCR_Manager.h"
+#include "Solving/Solver_Manager.h"
+#include "Reconstruct/Reconstruct.h"
 ////DEFINING
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] =  {"--force"};
@@ -127,8 +129,22 @@ int NextStep(GtkWidget*, gpointer) {
                 return 0;
             break;
         case STEP_SOLVE:
+            data = GETSTEPDATA(STEP_EXTRACT);
+            int count = *(int*)g_object_get_data(G_OBJECT(data),"word_count");
+            if (!Solve("src/bin/grid","src/bin/wordlist",count))
+                return 0;
             break;
         case STEP_RECONSTRUCT:
+            GObject *obj = G_OBJECT(GETSTEPDATA(STEP_LOAD));
+            GdkPixbuf *pixbuf = g_object_get_data(obj,"pixbuf");
+            obj = G_OBJECT(GETSTEPDATA(STEP_EXTRACT));
+            int wcount =*(int*)g_object_get_data(obj,"word_count");
+            Cluster ***grid=g_object_get_data(obj,"grid");
+            Cluster ***wordlist=g_object_get_data(obj,"wordlist");
+            obj = G_OBJECT(GETSTEPDATA(STEP_SOLVE));
+            Solution* *solutions = g_object_get_data(obj,"solutions");
+            if (!Reconstruct(pixbuf,grid,wordlist,solutions,wcount))
+                return 0;
             break;
         default:
             errx(EXIT_FAILURE, "Step format error.");
@@ -157,10 +173,12 @@ void ShowNext() {
             ShowWidget(GETSTEPDATA(STEP_OCR));
             break;
         case STEP_SOLVE:
+            ShowWidget(GETSTEPDATA(STEP_SOLVE));
             break;
         case STEP_RECONSTRUCT:
             gtk_widget_set_sensitive(GETWIDGET("next_btn"), FALSE);
             gtk_widget_set_sensitive(GETWIDGET("auto_complete"), FALSE);
+            ShowWidget(GETSTEPDATA(STEP_RECONSTRUCT));
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect format.");
@@ -175,8 +193,10 @@ void ShowPrevious(GtkWidget*, gpointer) {
         case STEP_RECONSTRUCT:
             gtk_widget_set_sensitive(GETWIDGET("next_btn"), TRUE);
             gtk_widget_set_sensitive(GETWIDGET("auto_complete"), TRUE);
+            ShowWidget(GETSTEPDATA(STEP_SOLVE));
             break;
         case STEP_SOLVE:
+            ShowWidget(GETSTEPDATA(STEP_OCR));
             break;
         case STEP_OCR:
             ShowWidget(GETSTEPDATA(STEP_EXTRACT));
