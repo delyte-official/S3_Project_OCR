@@ -22,6 +22,7 @@
 #include "Interface/Events.h"
 #include "Interface/Interface.h"
 #include "Filter/Filter.h"
+#include "Extract/Extraction_Manager.h"
 ////DEFINING
 #define ID_INIT_SIZE 1
 static const char* ID_INIT_PARAMS[ID_INIT_SIZE] =  {"--force"};
@@ -88,6 +89,7 @@ void StartUp(char** gtk_params, int gtk_len,
 
 int NextStep(GtkWidget*, gpointer) {
     AppState *state = APPSTATE;
+    GtkWidget *data;
     if (state->steps_tracker[state->step]!=NULL) {
         ShowNext();
         state->step++;
@@ -99,11 +101,15 @@ int NextStep(GtkWidget*, gpointer) {
                 return 0;
             break;
         case STEP_FILTER:
-            GtkWidget *data = GETSTEPDATA(STEP_LOAD);
+            data = GETSTEPDATA(STEP_LOAD);
             if (!Filter_Image(g_object_get_data(G_OBJECT(data),"pixbuf")))
                 return 0;
             break;
         case STEP_EXTRACT:
+            data = GETSTEPDATA(STEP_FILTER);
+            if (!Extract_Data(g_object_get_data(G_OBJECT(data),"pixbuf"),
+                    "src/bin/"))
+                return 0;
             break;
         case STEP_OCR:
             break;

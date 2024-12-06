@@ -3,7 +3,7 @@
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <math.h>
-#include "Extraction.h"
+#include "Extract.h"
 
 /* free_matrix():
     Free a dynamically allocated matrix but not its content.
@@ -860,43 +860,5 @@ void cut_wordlist(Cluster ***wordlist, Size size, GdkPixbuf *input,
             free(letter_name);
             g_object_unref(letter_img);
         }
-    }
-}
-
-
-/* extract_information():
-    Performs all the extraction from an image.
-*/
-void extract_information(GdkPixbuf *input, char* grid_output,
-        char* wordlist_output) {
-    //Linked list of clusters
-    Cluster *start = NULL;
-
-    //STEP 1: retrieving EVERY clusters
-    int median_size = 0;
-    int count = retrieve_clusters(input, &start, &median_size);
-    //STEP 2: Filter clusters
-    count = threshold_filter(&start, count, median_size);
-    //STEP 3: Align clusters
-    Cluster ***matrixH, ***matrixV;
-    Line *rows, *cols;
-    Size sizeH, sizeV;
-    align_clusters(start, &matrixH, &matrixV, &rows, &cols,&sizeH,&sizeV);
-    free(rows);
-    free(cols);
-    //STEP 4: Classify clusters
-    classify_clusters(&matrixH,&matrixV,&sizeH,&sizeV);
-
-    //STEP 5: Cut the image into sub-images
-    cut_grid(matrixH,sizeH, grid_output);
-    cut_wordlist(matrixV, sizeV, input, wordlist_output);
-
-    //Freeing memory
-    free_matrix(matrixH,sizeH.rows);
-    free_matrix(matrixV, sizeV.rows);
-    while (start!=NULL) {
-        Cluster *next = start->next;
-        free_cluster(start);
-        start = next;
     }
 }

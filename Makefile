@@ -8,17 +8,15 @@ LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 #All object files needed, categorized in directives:
 INTERFACE = GTK_Window.o Events.o Interface.o
 FILTERING = Filter.o
-EXTRACTION = #Detection.o
+EXTRACTION = Extract.o Extraction_Manager.o
 SOLVING = Solver_Manager.o
 SRC = Core_Manager.o \
 	$(addprefix Interface/, $(INTERFACE)) \
-	$(addprefix Filter/, $(FILTERING))
-#	$(addprefix Extract/, $(EXTRACTION)) \
-	$(addprefix Solving/, $(SOLVING)) #Debug.o
+	$(addprefix Filter/, $(FILTERING)) \
+	$(addprefix Extract/, $(EXTRACTION))
+#	$(addprefix Solving/, $(SOLVING)) #Debug.o
 
 #SOLVER = src/Solving/solver #Independent program, so independant category
-OCR = src/OCR/neural_network #Independent compiling for the first defense
-EXTRACT = src/Extract/extraction #Independent for the first defense
 
 #Put all of them together
 OBJS = main.o \
@@ -34,7 +32,7 @@ $(TARGET): $(OBJS) #Creating all needed files to compile final program
 
 #Clean command used to clean up any object and executable files
 clean:
-	$(RM) $(OBJS) $(TARGET) $(SOLVER) $(OCR) $(EXTRACT) nohup.out
+	$(RM) $(OBJS) $(TARGET) $(SOLVER) nohup.out
 
 #Reset command to clean, clear and make
 remake:
