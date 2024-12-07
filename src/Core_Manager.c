@@ -162,23 +162,35 @@ void ShowNext() {
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), TRUE);
             ShowWidget(GETSTEPDATA(STEP_LOAD));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")), "TO_FILTER");
             break;
         case STEP_FILTER:
             ShowWidget(GETSTEPDATA(STEP_FILTER));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_EXTRACT");
             break;
         case STEP_EXTRACT:
             ShowWidget(GETSTEPDATA(STEP_EXTRACT));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_OCR");
             break;
         case STEP_OCR:
             ShowWidget(GETSTEPDATA(STEP_OCR));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_SOLVE");
             break;
         case STEP_SOLVE:
             ShowWidget(GETSTEPDATA(STEP_SOLVE));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_RECONSTRUCT");
             break;
         case STEP_RECONSTRUCT:
             gtk_widget_set_sensitive(GETWIDGET("next_btn"), FALSE);
             gtk_widget_set_sensitive(GETWIDGET("auto_complete"), FALSE);
             ShowWidget(GETSTEPDATA(STEP_RECONSTRUCT));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"END");
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect format.");
@@ -194,22 +206,34 @@ void ShowPrevious(GtkWidget*, gpointer) {
             gtk_widget_set_sensitive(GETWIDGET("next_btn"), TRUE);
             gtk_widget_set_sensitive(GETWIDGET("auto_complete"), TRUE);
             ShowWidget(GETSTEPDATA(STEP_SOLVE));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_RECONSTRUCT");
             break;
         case STEP_SOLVE:
             ShowWidget(GETSTEPDATA(STEP_OCR));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_SOLVE");
             break;
         case STEP_OCR:
             ShowWidget(GETSTEPDATA(STEP_EXTRACT));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_OCR");
             break;
         case STEP_EXTRACT:
             ShowWidget(GETSTEPDATA(STEP_FILTER));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_EXTRACT");
             break;
         case STEP_FILTER:
             ShowWidget(GETSTEPDATA(STEP_LOAD));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_FILTER");
             break;
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), FALSE);
             ShowWidget(GETWIDGET("import_btn"));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")), "TO_LOAD");
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");
