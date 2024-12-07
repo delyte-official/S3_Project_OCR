@@ -109,17 +109,13 @@ void Build_Interface() {
 }
 
 
-void ShowWidget(GtkWidget *widget) {
-    GtkWidget* display = DISPLAY;
-    GList *children = gtk_container_get_children(GTK_CONTAINER(display));
-    if (children) {
-        g_object_ref(children->data);
-        gtk_container_remove(GTK_CONTAINER(display), children->data);
-    }
-    if (widget != NULL) {
-        gtk_overlay_add_overlay(GTK_OVERLAY(display), widget);
-        gtk_widget_show_all(widget);
-    }
+void ShowPage(const char* page) {
+    gtk_stack_set_visible_child_name(GTK_STACK(DISPLAY), page);
+}
+
+
+void AddPage(const char* page, GtkWidget *widget) {
+    gtk_stack_add_named(GTK_STACK(DISPLAY), widget, page);
 }
 
 

@@ -7,7 +7,7 @@ typedef enum {
 } EXTENSION;
 
 void Build_Interface();
-void ShowWidget(GtkWidget *widget);
+void ShowPage(const char* page);
 GdkPixbuf *resize_from_container(GdkPixbuf* pixbuf, GtkWidget* container);
 int Load_Image();
 int confirm_dialog(char* text);

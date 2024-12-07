@@ -9,7 +9,7 @@
 #define DISPLAY GETWIDGET("display_section")
 #define WINDOW APPSTATE->window
 #define GETSTEPDATA(step) APPSTATE->steps_tracker[step]
-#define SETSTEPDATA(step,widget) APPSTATE->steps_tracker[step]=widget
+#define SETSTEPDATA(step,widget) set_step_data(step,widget)
 #define FREESTEPDATA(step) free_step_data(step)
 
 
@@ -34,6 +34,7 @@ typedef struct {
 } AppState;
 
 AppState *get_appState();
+void set_step_data(STEP step, GtkWidget *data);
 void free_step_data(STEP step);
 void Filter_Params(char** all_params, int len, char* *init_params,
         int *init_size, char* *gtk_params, int *gtk_size);
@@ -41,6 +42,7 @@ void StartUp(char** gtk_params, int gtk_len,
         char** init_params, int init_len);
 int NextStep(GtkWidget*, gpointer);
 void ShowNext();
+const char* STEPtoSTR(STEP step);
 void print(const char *format, ...);
 
 #endif

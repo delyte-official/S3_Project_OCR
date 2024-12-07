@@ -36,14 +36,27 @@ AppState *get_appState() {
     return &state;
 }
 
+/* set_step_data():
+    Set and stores the data of a specific step using a widget.
+*/
+void set_step_data(STEP step, GtkWidget *data) {
+    APPSTATE->steps_tracker[step]=data;
+    gtk_stack_add_named(GTK_STACK(DISPLAY),data,STEPtoSTR(step));
+    gtk_widget_show(data);
+}
+
+
 /* free_step_data():
     Destroys the widget and free all data associated with the step, if any.
 */
 void free_step_data(STEP step) {
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+            STEPtoSTR(step));
+    if (page)
+        gtk_container_remove(GTK_CONTAINER(DISPLAY),page);
     GtkWidget *data = GETSTEPDATA(step);
-    if (data==NULL)
-        return;
-    gtk_widget_destroy(data);
+    if (data)
+        gtk_widget_destroy(data);
 }
 
 
@@ -149,7 +162,8 @@ int NextStep(GtkWidget*, gpointer) {
         default:
             errx(EXIT_FAILURE, "Step format error.");
     }
-    g_log("App",G_LOG_LEVEL_MESSAGE,"Step advanced to %d.",state->step);
+    g_log("App",G_LOG_LEVEL_MESSAGE,"Step advanced to %s.",
+            STEPtoSTR(state->step));
     ShowNext();
     state->step++;
     return 1;
@@ -161,34 +175,35 @@ void ShowNext() {
     switch (state->step) {
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), TRUE);
-            ShowWidget(GETSTEPDATA(STEP_LOAD));
+            ShowPage(STEPtoSTR(state->step));
+            GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")), "TO_FILTER");
             break;
         case STEP_FILTER:
-            ShowWidget(GETSTEPDATA(STEP_FILTER));
+            ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_EXTRACT");
             break;
         case STEP_EXTRACT:
-            ShowWidget(GETSTEPDATA(STEP_EXTRACT));
+            ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_OCR");
             break;
         case STEP_OCR:
-            ShowWidget(GETSTEPDATA(STEP_OCR));
+            ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_SOLVE");
             break;
         case STEP_SOLVE:
-            ShowWidget(GETSTEPDATA(STEP_SOLVE));
+            ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_RECONSTRUCT");
             break;
         case STEP_RECONSTRUCT:
             gtk_widget_set_sensitive(GETWIDGET("next_btn"), FALSE);
             gtk_widget_set_sensitive(GETWIDGET("auto_complete"), FALSE);
-            ShowWidget(GETSTEPDATA(STEP_RECONSTRUCT));
+            ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"END");
             break;
@@ -205,39 +220,59 @@ void ShowPrevious(GtkWidget*, gpointer) {
         case STEP_RECONSTRUCT:
             gtk_widget_set_sensitive(GETWIDGET("next_btn"), TRUE);
             gtk_widget_set_sensitive(GETWIDGET("auto_complete"), TRUE);
-            ShowWidget(GETSTEPDATA(STEP_SOLVE));
+            ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_RECONSTRUCT");
             break;
         case STEP_SOLVE:
-            ShowWidget(GETSTEPDATA(STEP_OCR));
+            ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_SOLVE");
             break;
         case STEP_OCR:
-            ShowWidget(GETSTEPDATA(STEP_EXTRACT));
+            ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_OCR");
             break;
         case STEP_EXTRACT:
-            ShowWidget(GETSTEPDATA(STEP_FILTER));
+            ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_EXTRACT");
             break;
         case STEP_FILTER:
-            ShowWidget(GETSTEPDATA(STEP_LOAD));
+            ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_FILTER");
             break;
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), FALSE);
-            ShowWidget(GETWIDGET("import_btn"));
+            ShowPage("IMPORT");
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")), "TO_LOAD");
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");
     }
+}
+
+
+/* STEPtoSTR():
+    Converts the step value into its string representation.
+*/
+const char* STEPtoSTR(STEP step) {
+    if (step == STEP_LOAD)
+        return "STEP_LOAD";
+    else if (step == STEP_FILTER)
+        return "STEP_FILTER";
+    else if (step == STEP_EXTRACT)
+        return "STEP_EXTRACT";
+    else if (step == STEP_OCR)
+        return "STEP_OCR";
+    else if (step == STEP_SOLVE)
+        return "STEP_SOLVE";
+    else if (step == STEP_RECONSTRUCT)
+        return "STEP_RECONSTRUCT";
+    return "None";
 }
 
 
