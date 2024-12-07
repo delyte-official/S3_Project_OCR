@@ -183,6 +183,21 @@ int confirm_dialog(char* text) {
 }
 
 
+/* error_dialog():
+    Pops up a dialog showing the application is unable to continue.
+*/
+void error_dialog(char *text) {
+    GtkBuilder *builder = gtk_builder_new_from_file(
+            "src/assets/error_dialog.glade");
+    GtkWidget *dialog = GTK_WIDGET(gtk_builder_get_object(builder,"dialog"));
+    gtk_window_set_transient_for(GTK_WINDOW(dialog),GTK_WINDOW(WINDOW));
+    gtk_label_set_text(GTK_LABEL(gtk_builder_get_object(builder,
+                    "error_text")), text);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+}
+
+
 int file_save(void* data, EXTENSION type) {
     //Creating the dialog window
     GtkWidget* dialog = gtk_file_chooser_dialog_new("Save File",

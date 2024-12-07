@@ -130,6 +130,11 @@ int NextStep(GtkWidget*, gpointer) {
                 return 0;
             break;
         case STEP_FILTER:
+            if (state->settings.unsaved_changes) {
+                error_dialog("You have unsaved changes.\n"
+                        " Save or cancel to continue.");
+                return 0;
+            }
             data = GETSTEPDATA(STEP_LOAD);
             if (!Filter_Image(g_object_get_data(G_OBJECT(data),"pixbuf")))
                 return 0;

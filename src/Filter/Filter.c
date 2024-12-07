@@ -5,7 +5,9 @@
 #include "Filter.h"
 
 int Filter_Image(GdkPixbuf *input) {
-    GdkPixbuf *filtered = grayscale_pixbuf(input, 180);
+    GdkPixbuf *filtered = gdk_pixbuf_copy(input);
+    pixbuf_to_grayscale(filtered);
+    binary_threshold(filtered,180);
     //Saving widget
     GdkPixbuf *resized = resize_from_container(filtered, DISPLAY);
     GtkWidget *image = gtk_image_new_from_pixbuf(resized);
@@ -16,37 +18,52 @@ int Filter_Image(GdkPixbuf *input) {
     return 1;
 }
 
-GdkPixbuf *grayscale_pixbuf(GdkPixbuf *origin, int threshold) {
-    //Creating a deep copy to not modify our original input
-    GdkPixbuf *res = gdk_pixbuf_copy(origin);
 
-    //Get back up* the information
-    int width = gdk_pixbuf_get_width(res);
-    int height = gdk_pixbuf_get_height(res);
-    int rowstride = gdk_pixbuf_get_rowstride(res);
-    int channels = gdk_pixbuf_get_n_channels(res);
-    guchar *pixels = gdk_pixbuf_get_pixels(res);
+void get_info_from_pixbuf(GdkPixbuf *input, int *width, int *height,
+        int *rowstride, int *channels, guchar **pixels) {
+    *width = gdk_pixbuf_get_width(input);
+    *height = gdk_pixbuf_get_height(input);
+    *rowstride = gdk_pixbuf_get_rowstride(input);
+    *channels = gdk_pixbuf_get_n_channels(input);
+    *pixels = gdk_pixbuf_get_pixels(input);
+}
 
-    //Iterating over the pixels of pixbuf
+
+void pixbuf_to_grayscale(GdkPixbuf *input) {
+    int width, height, rowstride, N;
+    guchar *pixels;
+    get_info_from_pixbuf(input, &width, &height, &rowstride, &N, &pixels);
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            guchar *pixel = pixels + y * rowstride + x * channels;
+            guchar *p = pixels + y * rowstride + x*N;
             //The RGB values
-            guchar r = pixel[0];
-            guchar g = pixel[1];
-            guchar b = pixel[2];
+            guchar r = p[0];guchar g = p[1];guchar b = p[2];
+            //=>to gray
             guchar gray = (guchar)(0.3 * r + 0.59 * g + 0.11 * b);
-            //threshomd
-            if (gray > threshold)
-                gray = 255;
-            else
-                gray = 0;
-            pixel[0] = gray;
-            pixel[1] = gray;
-            pixel[2] = gray;
+            p[0] = gray;p[1] = gray;p[2] = gray;
         }
     }
-    return res;
+}
+
+
+/* binary_threshold():
+    Returns the same pixbuf but in black and white pixels.
+*/
+void binary_threshold(GdkPixbuf *input, int threshold) {
+    int width, height, rowstride, N;
+    guchar *pixels;
+    get_info_from_pixbuf(input, &width, &height, &rowstride, &N, &pixels);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            guchar *p = pixels + y*rowstride + x*N;
+            unsigned char final;
+            if (p[0] > threshold)
+                final = 255;
+            else
+                final = 0;
+            p[0] = final;p[1]=final;p[2]=final;
+        }
+    }
 }
 
 

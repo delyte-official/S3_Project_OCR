@@ -105,13 +105,6 @@ void _save_curr_step(GtkWidget*, gpointer) {
 }
 
 void _on_change_rotate(GtkWidget*, GtkStack *stack) {
-    //Reset value
-    GtkWidget *scale = GETWIDGET("scale_rotate");
-    gulong handler_id = g_signal_handler_find(scale, G_SIGNAL_MATCH_FUNC,
-            0, 0, NULL, (GCallback)_on_rotate_value, NULL);
-    g_signal_handler_block(scale, handler_id);
-    gtk_range_set_value(GTK_RANGE(scale),0);
-    g_signal_handler_unblock(scale,handler_id);
     //Show page
     gtk_stack_set_visible_child_name(stack,"INPUT_ROTATE");
     gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
@@ -126,6 +119,13 @@ void _on_change_rotate(GtkWidget*, GtkStack *stack) {
     g_object_ref(modified_pix);
     AddPage("MODIFY",modified_img);
     ShowPage("MODIFY");
+    //Reset value
+    GtkWidget *scale = GETWIDGET("scale_rotate");
+    gulong handler_id = g_signal_handler_find(scale, G_SIGNAL_MATCH_FUNC,
+            0, 0, NULL, (GCallback)_on_rotate_value, NULL);
+    g_signal_handler_block(scale, handler_id);
+    gtk_range_set_value(GTK_RANGE(scale),0);
+    g_signal_handler_unblock(scale,handler_id);
 }
 
 void _on_save_rotate(GtkWidget*, GtkStack *stack) {
@@ -167,10 +167,8 @@ void _on_rotate_value(GtkWidget* range, gpointer) {
     double value = gtk_range_get_value(GTK_RANGE(range));
     if (value!=0)
         APPSTATE->settings.unsaved_changes = TRUE;
-    else {
+    else
         APPSTATE->settings.unsaved_changes = FALSE;
-        print("VALUE IS 0");
-    }
     GtkWidget *data = GETSTEPDATA(APPSTATE->step-1);
     GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(data),"pixbuf");
     GdkPixbuf *new_pix = resize_from_container(rotate_pixbuf(pixbuf,value),
