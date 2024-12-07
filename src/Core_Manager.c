@@ -46,17 +46,20 @@ void set_step_data(STEP step, GtkWidget *data) {
 }
 
 
+void free_all_steps(STEP from, STEP to) {
+    for (int i = from; i <= (int)to; i++)
+        free_step_data(i);
+}
+
+
 /* free_step_data():
     Destroys the widget and free all data associated with the step, if any.
 */
 void free_step_data(STEP step) {
-    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
-            STEPtoSTR(step));
-    if (page)
-        gtk_container_remove(GTK_CONTAINER(DISPLAY),page);
     GtkWidget *data = GETSTEPDATA(step);
     if (data)
         gtk_widget_destroy(data);
+    APPSTATE->steps_tracker[step]=NULL;
 }
 
 
@@ -176,7 +179,6 @@ void ShowNext() {
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), TRUE);
             ShowPage(STEPtoSTR(state->step));
-            GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")), "TO_FILTER");
             break;

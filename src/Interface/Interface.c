@@ -116,6 +116,7 @@ void ShowPage(const char* page) {
 
 void AddPage(const char* page, GtkWidget *widget) {
     gtk_stack_add_named(GTK_STACK(DISPLAY), widget, page);
+    gtk_widget_show(widget);
 }
 
 

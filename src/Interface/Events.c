@@ -1,4 +1,5 @@
 ////HEADERS
+#define _GNU_SOURCE
 #include <err.h>
 #include <stdio.h>
 #include <string.h>
@@ -7,6 +8,7 @@
 #include "../Core_Manager.h"
 #include "Events.h"
 #include "Interface.h"
+#include "../Filter/Filter.h"
 
 
 void Standard_Signals() {
@@ -52,12 +54,7 @@ void _on_import_btn(GtkWidget*, gpointer) {
     else if (confirm_dialog("Further steps will be deleted.")) {
         if (Load_Image()) {
             //Reset steps
-            for (int i = STEP_FILTER; i < STEP_END; i++) {
-                GtkWidget *stepdata = GETSTEPDATA(i);
-                if (stepdata!=NULL)
-                    g_object_unref(GETSTEPDATA(i));
-                SETSTEPDATA(i,NULL);
-            }
+            free_all_steps(STEP_FILTER, STEP_RECONSTRUCT);
             ShowNext();
             APPSTATE->step++;
         }
@@ -105,4 +102,80 @@ void _on_logs_change(GtkTextBuffer *buffer, GtkTextView *text_view) {
 
 void _save_curr_step(GtkWidget*, gpointer) {
     save_step(APPSTATE->step-1);
+}
+
+void _on_change_rotate(GtkWidget*, GtkStack *stack) {
+    //Reset value
+    GtkWidget *scale = GETWIDGET("scale_rotate");
+    gulong handler_id = g_signal_handler_find(scale, G_SIGNAL_MATCH_FUNC,
+            0, 0, NULL, (GCallback)_on_rotate_value, NULL);
+    g_signal_handler_block(scale, handler_id);
+    gtk_range_set_value(GTK_RANGE(scale),0);
+    g_signal_handler_unblock(scale,handler_id);
+    //Show page
+    gtk_stack_set_visible_child_name(stack,"INPUT_ROTATE");
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_NONE);
+    GtkWidget *original_img = GETSTEPDATA(APPSTATE->step-1);
+    GdkPixbuf *original_pix = g_object_get_data(G_OBJECT(original_img),
+                "pixbuf");
+    GdkPixbuf *modified_pix = gdk_pixbuf_copy(original_pix);
+    GtkWidget *modified_img = gtk_image_new_from_pixbuf(
+            gtk_image_get_pixbuf(GTK_IMAGE(original_img)));
+    g_object_set_data(G_OBJECT(modified_img),"pixbuf",modified_pix);
+    g_object_ref(modified_pix);
+    AddPage("MODIFY",modified_img);
+    ShowPage("MODIFY");
+}
+
+void _on_save_rotate(GtkWidget*, GtkStack *stack) {
+    if (!APPSTATE->settings.unsaved_changes) {
+        _on_cancel_rotate(NULL,stack);
+        return;
+    }
+    gtk_stack_set_visible_child_name(stack, "OUTPUT");
+    APPSTATE->settings.unsaved_changes = FALSE;
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+            "MODIFY");
+    //Update original image
+    GtkWidget *official = GETSTEPDATA(APPSTATE->step-1);
+    g_object_set_data(G_OBJECT(official), "pixbuf",
+            GDK_PIXBUF(g_object_get_data(G_OBJECT(page),"pixbuf")));
+    gtk_image_set_from_pixbuf(GTK_IMAGE(official),
+            gtk_image_get_pixbuf(GTK_IMAGE(page)));
+    //Render results
+    ShowPage(STEPtoSTR(APPSTATE->step-1));
+    gtk_container_remove(GTK_CONTAINER(DISPLAY),page);
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+    free_all_steps(APPSTATE->step,STEP_RECONSTRUCT);
+}
+
+void _on_cancel_rotate(GtkWidget*, GtkStack *stack) {
+    ShowPage(STEPtoSTR(APPSTATE->step-1));
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+            "MODIFY");
+    if (page)
+        gtk_container_remove(GTK_CONTAINER(DISPLAY),page);
+    gtk_stack_set_visible_child_name(stack, "OUTPUT");
+    APPSTATE->settings.unsaved_changes = FALSE;
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+}
+
+void _on_rotate_value(GtkWidget* range, gpointer) {
+    double value = gtk_range_get_value(GTK_RANGE(range));
+    if (value!=0)
+        APPSTATE->settings.unsaved_changes = TRUE;
+    else {
+        APPSTATE->settings.unsaved_changes = FALSE;
+        print("VALUE IS 0");
+    }
+    GtkWidget *data = GETSTEPDATA(APPSTATE->step-1);
+    GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(data),"pixbuf");
+    GdkPixbuf *new_pix = resize_from_container(rotate_pixbuf(pixbuf,value),
+            DISPLAY);
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),"MODIFY");
+    gtk_image_set_from_pixbuf(GTK_IMAGE(page), new_pix);
+    g_object_set_data(G_OBJECT(page),"pixbuf",new_pix);
 }

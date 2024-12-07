@@ -24,9 +24,14 @@ typedef enum {
 } STEP;
 
 typedef struct {
+    gboolean unsaved_changes;
+} Settings;
+
+typedef struct {
     GtkBuilder *builder; //App builder
     GtkWidget *window;
     GtkWidget *display;
+    Settings settings;
     STEP step; //Current step
     int width, height; //Window SIZE
     int alloc_width, alloc_height; //Content area SIZE
@@ -35,6 +40,7 @@ typedef struct {
 
 AppState *get_appState();
 void set_step_data(STEP step, GtkWidget *data);
+void free_all_steps(STEP from, STEP to);
 void free_step_data(STEP step);
 void Filter_Params(char** all_params, int len, char* *init_params,
         int *init_size, char* *gtk_params, int *gtk_size);

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <math.h>
 #include "Extract.h"
+#define THRESHOLD_MIN 10
+
 
 /* free_matrix():
     Free a dynamically allocated matrix but not its content.
@@ -66,9 +68,11 @@ Pixel *dfs(Cluster *end, Pixel *old, int x, int y, gboolean** visit,
     guchar* pixels = gdk_pixbuf_get_pixels(pixbuf);
     int N = gdk_pixbuf_get_n_channels(pixbuf);
     int rowstride = gdk_pixbuf_get_rowstride(pixbuf);
-    for (int i = 0; i < 8; i++) { //Calculating new coordinates
-        int new_x = i < 3 ? x-1 : i<5 ? x : x+1;
-        int new_y = i < 3 ? y-1+i%3 : i<5 ? y+1+(i-4)*2: y-1+(i-2)%3;
+    int dx[] = {-1,0,0,1};
+    int dy[] = {0,-1,1,0};
+    for (int i = 0; i < 4; i++) { //Calculating new coordinates
+        int new_x =x+dx[i];
+        int new_y = y+dy[i];
         if (new_x < 0 || new_y < 0 || new_y >= height ||new_x >= width)
             continue;
         guchar *p = pixels + new_x * N + new_y*rowstride;
@@ -104,6 +108,8 @@ Cluster* initCluster(int x, int y, gboolean** visit,
     dfs(end, pixel, x, y, visit, pixbuf);
     end->centerX = (end->minX + end->maxX)/2;
     end->centerY = (end->minY + end->maxY)/2;
+    if (end->size < THRESHOLD_MIN)
+        return NULL;
     return end;
 }
 
@@ -144,6 +150,8 @@ int retrieve_clusters(GdkPixbuf *input, Cluster **last, int *median) {
             guchar *pixel = pixels + y * rowstride + x * N;
             if (is_black(pixel) && !visited[x][y]) {//0 means a black pixel
                 Cluster *new_C = initCluster(x, y, visited, input);
+                if (new_C==NULL)
+                    continue;
                 if (start == NULL) {
                     start = new_C;
                     end = start;
@@ -171,7 +179,7 @@ int retrieve_clusters(GdkPixbuf *input, Cluster **last, int *median) {
     Filter all clusters according to a threshold.
 */
 int threshold_filter(Cluster **clusters, int count, int median) {
-    const int threshold = 0.85f * median;
+    const int threshold = 0.9f *median;
     //Iterating
     Cluster *prev = NULL;
     Cluster *curr = *clusters;

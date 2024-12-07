@@ -100,6 +100,35 @@ GdkPixbuf *view_wordlist(Cluster ***matrix, Size size, GdkPixbuf *pixbuf) {
 }
 
 
+void mark_clusters(Cluster *first, GdkPixbuf *pixbuf, const char* name) {
+    //Finding out grid bounds
+    GdkPixbuf *res = gdk_pixbuf_copy(pixbuf);
+    guchar* pixels = gdk_pixbuf_get_pixels(res);
+    int N = gdk_pixbuf_get_n_channels(res);
+    int rowstride = gdk_pixbuf_get_rowstride(res);
+    guchar *p;
+    //Iterating over the clusters
+    guchar r = 255, g = 0, b = 0;
+    while (first!=NULL) {
+        //Coloring into red the whole cluster
+        for (int x = first->minX; x <= first->maxX; x++) {
+            p = pixels + first->minY*rowstride + x*N;
+            p[0] = r;p[1]=g;p[2]=b;
+            p = pixels + first->maxY*rowstride +x*N;
+            p[0] = r;p[1]=g;p[2]=b;
+        }
+        for (int y = first->minY; y <= first->maxY; y++) {
+            p = pixels + y*rowstride +first->minX*N;
+            p[0] = r;p[1]=g;p[2]=b;
+            p = pixels + y*rowstride +first->maxX*N;
+            p[0] = r;p[1]=g;p[2]=b;
+        }
+        first=first->next;
+    }
+    gdk_pixbuf_save(res,name,"png",NULL,NULL);
+}
+
+
 
 /* Extract_Data():
     Retrieves the grid and wordlist.
