@@ -150,6 +150,11 @@ int NextStep(GtkWidget*, gpointer) {
                 return 0;
             break;
         case STEP_SOLVE:
+            if (state->settings.unsaved_changes) {
+                error_dialog("You have unsaved changes.\n"
+                        " Save or cancel to continue.");
+                return 0;
+            }
             data = GETSTEPDATA(STEP_EXTRACT);
             int count = *(int*)g_object_get_data(G_OBJECT(data),"word_count");
             if (!Solve("src/bin/grid","src/bin/wordlist",count))

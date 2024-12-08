@@ -14,5 +14,9 @@ void _on_change_rotate(GtkWidget*, GtkStack *stack);
 void _on_save_rotate(GtkWidget*, GtkStack *stack);
 void _on_cancel_rotate(GtkWidget*, GtkStack *stack);
 void _on_rotate_value(GtkWidget *range, gpointer);
+void _on_change_ocr(GtkWidget*, GtkStack *stack);
+void _on_save_ocr(GtkWidget*, GtkStack *stack);
+void _on_cancel_ocr(GtkWidget*, GtkStack *stack);
+void _on_ocr_value(GtkWidget*, gpointer);
 
 #endif

@@ -14,8 +14,7 @@ int Identify_Characters() {
         return 0;
     gtk_text_buffer_set_text(buffer,content,-1);
     //Write file
-    GError *error = NULL;
-    if (!g_file_set_contents("src/bin/grid",content,-1,&error)) {
+    if (!g_file_set_contents("src/bin/grid",content,-1,NULL)) {
         g_log("GLib",G_LOG_LEVEL_ERROR,"Impossible to write to "
                 "'src/bin/grid'.");
         return 0;
@@ -28,8 +27,7 @@ int Identify_Characters() {
         return 0;
     gtk_text_buffer_set_text(buffer,content,-1);
     //Write file
-    error = NULL;
-    if (!g_file_set_contents("src/bin/wordlist",content,-1,&error)) {
+    if (!g_file_set_contents("src/bin/wordlist",content,-1,NULL)) {
         g_log("GLib",G_LOG_LEVEL_ERROR,"Impossible to write to "
                 "'src/bin/wordlist'.");
         return 0;
@@ -37,6 +35,7 @@ int Identify_Characters() {
     g_object_set_data(G_OBJECT(widget),"wordlist_buffer",buffer);
     g_free(content);
     //Save results
+    g_object_set_data(G_OBJECT(widget), "builder",builder);
     FREESTEPDATA(STEP_OCR);
     SETSTEPDATA(STEP_OCR,widget);
     return 1;

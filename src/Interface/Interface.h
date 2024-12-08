@@ -14,5 +14,6 @@ int Load_Image();
 int confirm_dialog(char* text);
 void error_dialog(char* text);
 void save_step(STEP step);
+gchar* read_from_buffer(GtkTextBuffer *buffer);
 
 #endif

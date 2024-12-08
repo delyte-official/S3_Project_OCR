@@ -145,7 +145,7 @@ void _on_save_rotate(GtkWidget*, GtkStack *stack) {
             gtk_image_get_pixbuf(GTK_IMAGE(page)));
     //Render results
     ShowPage(STEPtoSTR(APPSTATE->step-1));
-    gtk_container_remove(GTK_CONTAINER(DISPLAY),page);
+    gtk_widget_destroy(page);
     gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
             GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
     free_all_steps(APPSTATE->step,STEP_RECONSTRUCT);
@@ -156,7 +156,7 @@ void _on_cancel_rotate(GtkWidget*, GtkStack *stack) {
     GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
             "MODIFY");
     if (page)
-        gtk_container_remove(GTK_CONTAINER(DISPLAY),page);
+        gtk_widget_destroy(page);
     gtk_stack_set_visible_child_name(stack, "OUTPUT");
     APPSTATE->settings.unsaved_changes = FALSE;
     gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
@@ -176,4 +176,108 @@ void _on_rotate_value(GtkWidget* range, gpointer) {
     GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),"MODIFY");
     gtk_image_set_from_pixbuf(GTK_IMAGE(page), new_pix);
     g_object_set_data(G_OBJECT(page),"pixbuf",new_pix);
+}
+
+
+void _on_change_ocr(GtkWidget*, GtkStack *stack) {
+    //Show page
+    gtk_stack_set_visible_child_name(stack,"INPUT_BUFFERS");
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_NONE);
+    GtkWidget *original_img = GETSTEPDATA(STEP_LOAD);
+    GdkPixbuf *original_pix = g_object_get_data(G_OBJECT(original_img),
+                "pixbuf");
+    GdkPixbuf *modified_pix = gdk_pixbuf_copy(original_pix);
+    GtkWidget *modified_img = gtk_image_new_from_pixbuf(
+            gtk_image_get_pixbuf(GTK_IMAGE(original_img)));
+    g_object_set_data(G_OBJECT(modified_img),"pixbuf",modified_pix);
+    g_object_ref(modified_pix);
+    AddPage("MODIFY",modified_img);
+    ShowPage("MODIFY");
+    //Write in the buffers
+    GtkWidget *data = GETSTEPDATA(STEP_OCR);
+    GtkBuilder *builder = GTK_BUILDER(g_object_get_data(G_OBJECT(data),
+                "builder"));
+    GtkTextBuffer *buffer_g = GTK_TEXT_BUFFER(
+            gtk_builder_get_object(builder,"grid"));
+    gchar *text = read_from_buffer(buffer_g);
+    GtkTextBuffer *buffer_mg=GTK_TEXT_BUFFER(
+            gtk_builder_get_object(APPSTATE->builder,"buffer_grid_modify"));
+    gtk_text_buffer_set_text(buffer_mg,text,-1);
+    g_free(text);
+    GtkTextBuffer *buffer_w = GTK_TEXT_BUFFER(
+            gtk_builder_get_object(builder,"wordlist"));
+    text = read_from_buffer(buffer_w);
+    GtkTextBuffer *buffer_mw=GTK_TEXT_BUFFER(gtk_builder_get_object(
+                APPSTATE->builder,"buffer_wordlist_modify"));
+    gtk_text_buffer_set_text(buffer_mw,text,-1);
+    g_free(text);
+}
+
+
+void _on_save_ocr(GtkWidget*, GtkStack *stack) {
+    if (!APPSTATE->settings.unsaved_changes) {
+        _on_cancel_ocr(NULL,stack);
+        return;
+    }
+    gtk_stack_set_visible_child_name(stack, "OUTPUT");
+    APPSTATE->settings.unsaved_changes = FALSE;
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+            "MODIFY");
+    //Update original image
+    GtkTextBuffer *buffer_og=GTK_TEXT_BUFFER(gtk_builder_get_object(
+                APPSTATE->builder,"buffer_grid_modify"));
+    GtkTextBuffer *buffer_ow = GTK_TEXT_BUFFER(gtk_builder_get_object(
+                APPSTATE->builder,"buffer_wordlist_modify"));
+    gchar *text = read_from_buffer(buffer_og);
+    GtkWidget *data = GETSTEPDATA(STEP_OCR);
+    GtkBuilder *builder = GTK_BUILDER(g_object_get_data(G_OBJECT(data),
+                "builder"));
+    GtkTextBuffer *buffer_g = GTK_TEXT_BUFFER(
+            gtk_builder_get_object(builder,"grid"));
+    gtk_text_buffer_set_text(buffer_g,text,-1);
+    //Rewriting grid file
+    if (!g_file_set_contents("src/bin/grid",text,-1,NULL)) {
+        g_log("GLib",G_LOG_LEVEL_ERROR,"Impossible to write to "
+                "'src/bin/grid'.");
+        return;
+    }
+    //Wordlist
+    text = read_from_buffer(buffer_ow);
+    GtkTextBuffer *buffer_w = GTK_TEXT_BUFFER(
+            gtk_builder_get_object(builder,"wordlist"));
+    gtk_text_buffer_set_text(buffer_w,text,-1);
+    //Rewriting wordlist file
+    if (!g_file_set_contents("src/bin/wordlist",text,-1,NULL)) {
+        g_log("GLib",G_LOG_LEVEL_ERROR,"Impossible to write to "
+                "'src/bin/wordlist'.");
+        return;
+    }
+    //Render results
+    ShowPage(STEPtoSTR(APPSTATE->step-1));
+    gtk_widget_destroy(page);
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+    free_all_steps(APPSTATE->step,STEP_RECONSTRUCT);
+    g_free(text);
+}
+
+
+void _on_cancel_ocr(GtkWidget*, GtkStack *stack) {
+        ShowPage("STEP_OCR");
+        GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+                "MODIFY");
+        if (page) {
+            gtk_container_remove(GTK_CONTAINER(DISPLAY),page);
+            gtk_widget_destroy(page);
+        }
+        gtk_stack_set_visible_child_name(stack, "OUTPUT");
+        APPSTATE->settings.unsaved_changes = FALSE;
+        gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+                GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+}
+
+
+void _on_ocr_value(GtkWidget*, gpointer) {
+    APPSTATE->settings.unsaved_changes = TRUE;
 }
