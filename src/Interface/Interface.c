@@ -288,3 +288,14 @@ gchar* read_from_buffer(GtkTextBuffer *buffer) {
     gtk_text_buffer_get_end_iter(buffer,&end);
     return gtk_text_buffer_get_text(buffer,&start,&end,FALSE);
 }
+
+
+void label_set_font_color(GtkWidget *label, guint8 r, guint8 g, guint8 b) {
+    guint16 red = r*257, green = g * 257, blue = b*257;
+    PangoAttrList *attr_list = gtk_label_get_attributes(GTK_LABEL(label));
+    PangoAttribute *color_attr = pango_attr_foreground_new(red,green,blue);
+    if (attr_list == NULL)
+        attr_list = pango_attr_list_new();
+    pango_attr_list_insert(attr_list,color_attr);
+    gtk_label_set_attributes(GTK_LABEL(label),attr_list);
+}

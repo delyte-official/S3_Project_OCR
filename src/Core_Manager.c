@@ -1,4 +1,5 @@
 /*
+ * i
       ##############################################################
       #                                                            #
       #                       Core_Manager.c                       #
@@ -197,32 +198,60 @@ int NextStep(GtkWidget*, gpointer) {
 
 void ShowNext() {
     AppState *state=APPSTATE;
+    GtkAdjustment *adj = GTK_ADJUSTMENT(gtk_builder_get_object(
+                APPSTATE->builder,"step_show_adj"));
+    GtkWidget *label;
     switch (state->step) {
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), TRUE);
             ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")), "TO_FILTER");
+            gtk_adjustment_set_value(adj, 100);
+            label=GETWIDGET("label_filter");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_load");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_FILTER:
             ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_EXTRACT");
+            gtk_adjustment_set_value(adj,200);
+            label=GETWIDGET("label_extract");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_filter");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_EXTRACT:
             ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_OCR");
+            gtk_adjustment_set_value(adj,300);
+            label=GETWIDGET("label_ocr");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_extract");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_OCR:
             ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_SOLVE");
+            gtk_adjustment_set_value(adj,400);
+            label=GETWIDGET("label_solve");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_ocr");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_SOLVE:
             ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_RECONSTRUCT");
+            gtk_adjustment_set_value(adj,500);
+            label=GETWIDGET("label_reconstruct");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_solve");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_RECONSTRUCT:
             gtk_widget_set_sensitive(GETWIDGET("next_btn"), FALSE);
@@ -230,6 +259,11 @@ void ShowNext() {
             ShowPage(STEPtoSTR(state->step));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"END");
+            gtk_adjustment_set_value(adj,600);
+            label=GETWIDGET("label_save");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_reconstruct");
+            label_set_font_color(label,180,180,180);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect format.");
@@ -240,6 +274,9 @@ void ShowNext() {
 void ShowPrevious(GtkWidget*, gpointer) {
     AppState *state = APPSTATE;
     state->step--;
+    GtkAdjustment *adj = GTK_ADJUSTMENT(gtk_builder_get_object(
+            APPSTATE->builder,"step_show_adj"));
+    GtkWidget *label;
     switch (state->step) {
         case STEP_RECONSTRUCT:
             gtk_widget_set_sensitive(GETWIDGET("next_btn"), TRUE);
@@ -247,32 +284,62 @@ void ShowPrevious(GtkWidget*, gpointer) {
             ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_RECONSTRUCT");
+            gtk_adjustment_set_value(adj,500);
+            label=GETWIDGET("label_reconstruct");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_save");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_SOLVE:
             ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_SOLVE");
+            gtk_adjustment_set_value(adj,400);
+            label=GETWIDGET("label_solve");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_reconstruct");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_OCR:
             ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_OCR");
+            gtk_adjustment_set_value(adj,300);
+            label=GETWIDGET("label_ocr");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_solve");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_EXTRACT:
             ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_EXTRACT");
+            gtk_adjustment_set_value(adj,200);
+            label=GETWIDGET("label_extract");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_ocr");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_FILTER:
             ShowPage(STEPtoSTR(state->step-1));
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")),"TO_FILTER");
+            gtk_adjustment_set_value(adj,100);
+            label=GETWIDGET("label_filter");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_extract");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_LOAD:
             gtk_widget_set_sensitive(GETWIDGET("previous_btn"), FALSE);
             ShowPage("IMPORT");
             gtk_stack_set_visible_child_name(GTK_STACK(
                         GETWIDGET("input_section")), "TO_LOAD");
+            gtk_adjustment_set_value(adj,0);
+            label=GETWIDGET("label_load");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_filter");
+            label_set_font_color(label,180,180,180);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");

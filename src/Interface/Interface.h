@@ -15,5 +15,6 @@ int confirm_dialog(char* text);
 void error_dialog(char* text);
 void save_step(STEP step);
 gchar* read_from_buffer(GtkTextBuffer *buffer);
+void label_set_font_color(GtkWidget *label, guint8 r, guint8 g, guint8 b);
 
 #endif
