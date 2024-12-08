@@ -38,7 +38,7 @@ int retrieve_clusters(GdkPixbuf *input, Cluster **last, int *median);
 int threshold_filter(Cluster **clusters, int count, int median);
 void align_clusters(Cluster *clusters,Cluster ****matrixH,Cluster ****matrixV,
         Line **rows_p, Line **cols_p, Size *sizeH, Size *sizeV);
-void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
+int classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
         Size *sizeV);
 void cut_grid(Cluster ***grid, Size size, char *output);
 void cut_wordlist(Cluster ***wordlist, Size size, GdkPixbuf *input,

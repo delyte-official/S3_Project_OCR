@@ -116,6 +116,12 @@ void StartUp(char** gtk_params, int gtk_len,
 }
 
 
+/* NextStep():
+    Performs the next step. Do so by calling each function. Interpretation:
+    1: No errors.
+    0: Code stop => normal.
+    -1: Error.
+*/
 int NextStep(GtkWidget*, gpointer) {
     AppState *state = APPSTATE;
     GtkWidget *data;
@@ -141,8 +147,14 @@ int NextStep(GtkWidget*, gpointer) {
             break;
         case STEP_EXTRACT:
             data = GETSTEPDATA(STEP_FILTER);
-            if (!Extract_Data(g_object_get_data(G_OBJECT(data),"pixbuf"),
-                    "src/bin/"))
+            int err =Extract_Data(g_object_get_data(G_OBJECT(data),"pixbuf"),
+                    "src/bin/");
+            if (err == -1) {
+                error_dialog("Data could not be found automatically.\n"
+                        " Please provide a clearer image.");
+                return 0;
+            }
+            if (!err)
                 return 0;
             break;
         case STEP_OCR:

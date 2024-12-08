@@ -729,7 +729,7 @@ void filter_wordlist(Cluster ****wordlist, Size *size, Cluster ***matrixH,
     Classify clusters into the grid or word list. If it does not fit either
     of them, it gets deleted.
 */
-void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
+int classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
         Size *sizeV) {
     Cluster ***matrixH = *grid; Cluster ***matrixV = *wordlist;
     *grid = NULL; *wordlist = NULL;
@@ -742,8 +742,9 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
         transpose_matrix(&gridV,&gridSV);
 
     if (gridSH.rows==-1 && gridSV.rows ==-1) {
-        printf("Grid not found. Error.\n");
-        return;
+        g_log("App",G_LOG_LEVEL_ERROR,"Could not find the grid. Manual"
+                " input required.");
+        return -1;
     }
     Size gridS;
     if (gridSV.rows==-1 || gridSH.rows*gridSH.cols >= gridSV.rows*gridSV.cols) {
@@ -763,13 +764,18 @@ void classify_clusters(Cluster ****grid, Cluster ****wordlist, Size *sizeH,
 
     //FIND WORD LIST - ASSUME GRID HAS BEEN FOUND
     Size wordS=find_wordlist(matrixH,matrixV,*sizeH,*sizeV,wordlist);
+    if (wordS.rows == 0 || wordS.cols==0) {
+        g_log("App",G_LOG_LEVEL_ERROR,"Could not find the wordlist. Manual"
+                " input required.");
+        return -1;
+    }
     filter_wordlist(wordlist,&wordS,matrixH,*sizeH,matrixV,*sizeV);
-
     //Free memory
     free_matrix(matrixH,sizeH->rows);
     free_matrix(matrixV,sizeV->rows);
     //Set data
     *sizeH = gridS; *sizeV = wordS;
+    return 1;
 }
 
 

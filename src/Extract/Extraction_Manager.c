@@ -139,8 +139,12 @@ int Extract_Data(GdkPixbuf *input, char* bin_filename) {
     //STEP 1: retrieving EVERY clusters
     int median_size = 0;
     int count = retrieve_clusters(input, &start, &median_size);
+    if (count == -1)
+        return -1;
     //STEP 2: Filter clusters
     count = threshold_filter(&start, count, median_size);
+    if (count == -1)
+        return -1;
     //STEP 3: Align clusters
     Cluster ***matrixH, ***matrixV;
     Line *rows, *cols;
@@ -149,7 +153,9 @@ int Extract_Data(GdkPixbuf *input, char* bin_filename) {
     free(rows);
     free(cols);
     //STEP 4: Classify clusters
-    classify_clusters(&matrixH,&matrixV,&sizeH,&sizeV);
+    int err = classify_clusters(&matrixH,&matrixV,&sizeH,&sizeV);
+    if (err == -1)
+        return -1;
     //STEP 5: Cut the image into sub-images
     cut_grid(matrixH,sizeH, bin_filename);
     cut_wordlist(matrixV, sizeV, input, bin_filename);
