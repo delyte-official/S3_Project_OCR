@@ -159,8 +159,14 @@ int NextStep(GtkWidget*, gpointer) {
                 return 0;
             break;
         case STEP_OCR:
-            if (!Identify_Characters())
+            GObject *obj2 = G_OBJECT(GETSTEPDATA(STEP_EXTRACT));
+            Size sizeG =*(Size*)g_object_get_data(obj2,"grid_size");
+            int wcount =*(int*)g_object_get_data(obj2,"word_count");
+            Cluster ***wordlist2=g_object_get_data(obj2,"wordlist");
+            printf("BEFORE\n");
+            if (!Identify_Characters(sizeG, wcount, wordlist2))
                 return 0;
+            printf("AFTER\n");
             break;
         case STEP_SOLVE:
             if (state->settings.unsaved_changes) {
@@ -177,12 +183,12 @@ int NextStep(GtkWidget*, gpointer) {
             GObject *obj = G_OBJECT(GETSTEPDATA(STEP_LOAD));
             GdkPixbuf *pixbuf = g_object_get_data(obj,"pixbuf");
             obj = G_OBJECT(GETSTEPDATA(STEP_EXTRACT));
-            int wcount =*(int*)g_object_get_data(obj,"word_count");
+            int wcount2 =*(int*)g_object_get_data(obj,"word_count");
             Cluster ***grid=g_object_get_data(obj,"grid");
             Cluster ***wordlist=g_object_get_data(obj,"wordlist");
             obj = G_OBJECT(GETSTEPDATA(STEP_SOLVE));
             Solution* *solutions = g_object_get_data(obj,"solutions");
-            if (!Reconstruct(pixbuf,grid,wordlist,solutions,wcount))
+            if (!Reconstruct(pixbuf,grid,wordlist,solutions,wcount2))
                 return 0;
             break;
         default:

@@ -1,7 +1,7 @@
 CC := gcc
 
 ###FLAGS
-CFLAGS := -Wall -Wextra `pkg-config --cflags gtk+-3.0` -rdynamic
+CFLAGS := -Wall -Wextra `pkg-config --cflags gtk+-3.0` -rdynamic -g
 LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 
 
@@ -9,7 +9,7 @@ LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 INTERFACE = GTK_Window.o Events.o Interface.o
 FILTERING = Filter.o
 EXTRACTION = Extract.o Extraction_Manager.o
-OCR = OCR_Manager.o
+OCR = OCR_Manager.o TRAIN.o data.o NN.o
 SOLVING = Solver_Manager.o
 RECONSTRUCT = Reconstruct.o
 SRC = Core_Manager.o \

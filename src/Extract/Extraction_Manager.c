@@ -167,8 +167,12 @@ int Extract_Data(GdkPixbuf *input, char* bin_filename) {
     //Pure data
     g_object_set_data(G_OBJECT(image), "pixbuf", final_img);
     int *word_count = g_new(int,1);
+    Size *sizeG = malloc(sizeof(Size));
+    sizeG->rows=sizeH.rows;
+    sizeG->cols=sizeH.cols;
     *word_count = sizeV.rows;
     g_object_set_data(G_OBJECT(image), "word_count",word_count);
+    g_object_set_data(G_OBJECT(image), "grid_size",sizeG);
     g_object_set_data(G_OBJECT(image), "grid", matrixH);
     g_object_set_data(G_OBJECT(image), "wordlist", matrixV);
     //Redirecting results
