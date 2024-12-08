@@ -59,25 +59,11 @@
                 <property name="can-focus">False</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkButton" id="auto_complete">
-                    <property name="label" translatable="yes">Auto Complete</property>
-                    <property name="height-request">12</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <signal name="clicked" handler="_on_auto_btn" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkBox">
-                    <property name="height-request">13</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="halign">center</property>
+                    <property name="valign">center</property>
                     <child>
                       <object class="GtkButton" id="previous_btn">
                         <property name="width-request">9</property>
@@ -85,6 +71,8 @@
                         <property name="sensitive">False</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
+                        <property name="halign">center</property>
+                        <property name="valign">center</property>
                         <property name="always-show-image">True</property>
                         <signal name="clicked" handler="ShowPrevious" swapped="no"/>
                         <child>
@@ -97,7 +85,7 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
+                        <property name="fill">False</property>
                         <property name="position">0</property>
                       </packing>
                     </child>
@@ -107,6 +95,8 @@
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
+                        <property name="halign">center</property>
+                        <property name="valign">center</property>
                         <property name="image-position">top</property>
                         <property name="always-show-image">True</property>
                         <signal name="clicked" handler="NextStep" swapped="no"/>
@@ -120,14 +110,30 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
+                        <property name="fill">False</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
                   </object>
                   <packing>
                     <property name="expand">False</property>
-                    <property name="fill">True</property>
+                    <property name="fill">False</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="auto_complete">
+                    <property name="label" translatable="yes">Auto Complete</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                    <property name="halign">center</property>
+                    <property name="valign">center</property>
+                    <signal name="clicked" handler="_on_auto_btn" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
