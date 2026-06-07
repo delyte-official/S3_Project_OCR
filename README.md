@@ -60,3 +60,7 @@ and returns the solution graphically on a reconstruction.
 * Non-uniform spacing with letters in cells, grid and between other letters
 * Other big EMPTY elements (drawed with outlines only)
 ![Input/Output comparison of image LEVEL 4](assets/input_output_comparison_level4.png)
+
+## Full process demonstration
+
+<img src="assets/s3_freegalane_ocr_full_demonstration.gif" width="100%">
