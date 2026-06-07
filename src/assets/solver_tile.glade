@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.38.2 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkTextBuffer" id="solutions"/>
+  <object class="GtkScrolledWindow" id="toplvl">
+    <property name="visible">True</property>
+    <property name="can-focus">True</property>
+    <property name="hexpand">False</property>
+    <property name="vexpand">False</property>
+    <property name="shadow-type">in</property>
+    <child>
+      <object class="GtkTextView">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="hexpand">False</property>
+        <property name="vexpand">False</property>
+        <property name="editable">False</property>
+        <property name="cursor-visible">False</property>
+        <property name="buffer">solutions</property>
+        <property name="accepts-tab">False</property>
+      </object>
+    </child>
+  </object>
+</interface>

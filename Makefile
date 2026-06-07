@@ -1,24 +1,27 @@
 CC := gcc
 
 ###FLAGS
-CFLAGS := -Wall -Wextra `pkg-config --cflags gtk+-3.0`
+CFLAGS := -Wall -Wextra `pkg-config --cflags gtk+-3.0` -rdynamic -g
 LDFLAGS := `pkg-config --libs gtk+-3.0` -lm
 
 
 #All object files needed, categorized in directives:
-INTERFACE = Events.o GTK_Window.o Interface_Manager.o
-FILTERING = Prefilter.o filter.o
-EXTRACTION = #Detection.o
+INTERFACE = GTK_Window.o Events.o Interface.o
+FILTERING = Filter.o
+EXTRACTION = Extract.o Extraction_Manager.o
+OCR = OCR_Manager.o TRAIN.o data.o NN.o
 SOLVING = Solver_Manager.o
+RECONSTRUCT = Reconstruct.o
 SRC = Core_Manager.o \
 	$(addprefix Interface/, $(INTERFACE)) \
-	$(addprefix Filtering/, $(FILTERING)) \
-	$(addprefix Extraction/, $(EXTRACTION)) \
-	$(addprefix Solving/, $(SOLVING)) #Debug.o
+	$(addprefix Filter/, $(FILTERING)) \
+	$(addprefix Extract/, $(EXTRACTION)) \
+	$(addprefix OCR/, $(OCR)) \
+	$(addprefix Solving/, $(SOLVING)) \
+	$(addprefix Reconstruct/, $(RECONSTRUCT))
 
 SOLVER = src/Solving/solver #Independent program, so independant category
-OCR = src/OCR/neural_network #Independent compiling for the first defense
-EXTRACT = src/Extraction/extraction #Independent for the first defense
+CUT_IMAGES = src/bin/grid* src/bin/word*
 
 #Put all of them together
 OBJS = main.o \
@@ -28,13 +31,11 @@ TARGET = main
 all: $(TARGET) #All command, the default command ran by writing "make"
 $(TARGET): $(OBJS) #Creating all needed files to compile final program
 	$(CC) -o $(SOLVER) $(addsuffix .c, $(SOLVER))
-	$(CC) -o $(OCR) $(addsuffix .c, $(OCR)) -lm
-	$(CC) $(CFLAGS) -o $(EXTRACT) $(addsuffix .c, $(EXTRACT)) $(LDFLAGS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 #Clean command used to clean up any object and executable files
 clean:
-	$(RM) $(OBJS) $(TARGET) $(SOLVER) $(OCR) $(EXTRACT) nohup.out
+	$(RM) $(OBJS) $(TARGET) $(SOLVER) nohup.out $(CUT_IMAGES)
 
 #Reset command to clean, clear and make
 remake:

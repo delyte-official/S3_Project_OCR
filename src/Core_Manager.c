@@ -1,4 +1,5 @@
 /*
+ * i
       ##############################################################
       #                                                            #
       #                       Core_Manager.c                       #
@@ -7,158 +8,82 @@
       #      between every systems of the Project Application.     #
       #                                                            #
       ##############################################################
-
-List of all functions written in this file (and their type):
-[See more description on their purpose and parameters down below]
-
-STEP* get_step();
-GtkWidget* get_display(GtkWidget**);
-void set_display(GtkWidget*);
-GtkWidget* step_widget(int step, GtkWidget* widget);
-int recognized(char**,size_t,char*);
-void Filter_Params(char**,size_t,char***,size_t*,char***,size_t*);
-void StartUp(char**,size_t,char**,size_t);
-void NextStep(GtkWidget,int);
-void PreviousStep(GtkWidget,int);
 */
 
 
-////HEADERS Files
-//Integrated C Libraries
+////HEADERS
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <err.h>
-//Project Headers
-#include "Interface/GTK_Window.h"
-#include "Interface/Interface_Manager.h"
-#include "Interface/Events.h"
-#include "Solving/Solver_Manager.h"
-//#include "Debug.h"
-#include "Core_Manager.h"
-#include "Filtering/filter.h" 
-//Tools
 #include <gtk/gtk.h>
-////END HEADERS
+//Project Headers
+#include "Core_Manager.h"
+#include "Interface/GTK_Window.h"
+#include "Interface/Events.h"
+#include "Interface/Interface.h"
+#include "Filter/Filter.h"
+#include "Extract/Extraction_Manager.h"
+#include "OCR/OCR_Manager.h"
+#include "Solving/Solver_Manager.h"
+#include "Reconstruct/Reconstruct.h"
 ////DEFINING
-//Constants
 #define ID_INIT_SIZE 1
-static const char* ID_INIT_PARAMS[ID_INIT_SIZE] = {"--force"};
-int global_width, global_height = 0;
-////END DEFINING
+static const char* ID_INIT_PARAMS[ID_INIT_SIZE] =  {"--force"};
 
 
-/* get_step():
-    Returns a pointer to the static variable representing the current
-    step that the program is at.
+AppState *get_appState() {
+    static AppState state = (AppState) {0};
+    return &state;
+}
+
+/* set_step_data():
+    Set and stores the data of a specific step using a widget.
 */
-STEP* get_step() {
-    static STEP curr_step = 0;
-    return &curr_step;
+void set_step_data(STEP step, GtkWidget *data) {
+    APPSTATE->steps_tracker[step]=data;
+    gtk_stack_add_named(GTK_STACK(DISPLAY),data,STEPtoSTR(step));
+    gtk_widget_show(data);
 }
 
 
-/* get_display():
-    Returns the the display section and its child thru the pointer
-    Initialize on first call.
-*/
-GtkWidget* get_display(GtkWidget** widget) {
-    static GtkWidget* display;
-    if (display==NULL)
-        display = *widget;
-    if (widget != NULL && 1 == 0) {
-        GList *children = gtk_container_get_children(GTK_CONTAINER(display));
-        if (children)
-            *widget = GTK_WIDGET(children->data);
-    }
-    return display;
+void free_all_steps(STEP from, STEP to) {
+    for (int i = from; i <= (int)to; i++)
+        free_step_data(i);
 }
 
 
-/* set_display():
-    Change the child of the display section or clear it
+/* free_step_data():
+    Destroys the widget and free all data associated with the step, if any.
 */
-void set_display(GtkWidget* widget) {
-    GtkWidget* display = get_display(NULL);
-    GList *children = gtk_container_get_children(GTK_CONTAINER(display));
-    if (children) {
-        g_object_ref(children->data);
-        gtk_container_remove(GTK_CONTAINER(display), children->data);
-    }
-    if (widget != NULL) {
-        gtk_overlay_add_overlay(GTK_OVERLAY(display), widget);
-        gtk_widget_show_all(widget);
-    }
+void free_step_data(STEP step) {
+    GtkWidget *data = GETSTEPDATA(step);
+    if (data)
+        gtk_widget_destroy(data);
+    APPSTATE->steps_tracker[step]=NULL;
 }
 
 
-/* step_widget():
-    Set the value of the widget associated with step
-    Returns the widget associated with the given step
-*/
-GtkWidget* step_widget(int step, GtkWidget* set) {
-    static GtkWidget* step_widgets[6] = {NULL};
-    if (step < 0) {
-        int new_step = step * (-1);
-        if (step_widgets[new_step] != NULL) {
-            gtk_widget_destroy(step_widgets[new_step]);
-            step_widgets[new_step] = NULL;
-        }
-        return NULL;
-    }
-    if (set != NULL)
-        step_widgets[step] = set;
-    return step_widgets[step];
-}
-
-
-/*  recognized():
-  Returns if an element is present or not in the given parameters list.
-
-Requisites assumed:
-  The given parameters list is correct.
-  The parameter to check is in correct format.
-*/
-int recognized(const char** PARAMS, int len, char* to_check) {
+int check_param(const char** PARAMS, int len, char* to_check) {
     for (int i = 0; i < len; i++) {
-        if (to_check == PARAMS[i]) //Found
-            return 1;
+        if (to_check == PARAMS[i])
+            return 1; //Found
     }
     return 0; //Not found
 }
 
 
-/*  Filter_Params():
-  Filters every given parameters into two categories:
-  - GTK parameters
-  - Application parameters
-  Returns them in given arrays, and their sizes.
-  Every unrecognized parameters will be thrown away.
-
-Requisites assumed:
-  The pointed arrays have enough space to hold every parameters by themselves.
-  The pointed arrays and size_t are already initialized and empty.
-*/
-void Filter_Params( //Parameters
-        char** all_params, //The given command-line parameters
-        int len, //The size of all_parameters
-        char* *init_params, //Array to write initialization parameters
-        int *init_size, //To store size of init_params
-        char* *gtk_params, //Array to write Application parameters
-        int *gtk_size) { //To store size of run_params
-    //Iterating through the given parameters
+void Filter_Params(char** all_params, int len, char* *init_params,
+        int *init_size, char* *gtk_params, int *gtk_size) {
     for (char** curr = all_params; curr < all_params + len; curr++) {
         size_t length = strlen(*curr);
-        if (length < 2) //Skipping unformalized parameters
+        if (length < 2) //Wrong format
             continue;
-
-        //Checking if it is a recognized parameter
-        if (recognized(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) {
-            //Putting the parameter into its corresponding category
+        if (check_param(ID_INIT_PARAMS, ID_INIT_SIZE, *curr)) { //Init param
             *init_params = *curr;
             init_params++;
             (*init_size)++;
-        } else { //Is a garbage parameter or a GTK Parameter
-                 //We let GTK treat them however it wants
+        } else { //Sent to GTK
             *gtk_params = *curr;
             gtk_params++;
             (*gtk_size)++;
@@ -167,274 +92,305 @@ void Filter_Params( //Parameters
 }
 
 
-/*  StartUp():
-  Initialize all systems necessary for the projects:
-  - C Libraries
-  - Signals Tracking
-  - SDL/GTK Systems
-  - Others
-  Then run the application.
-
-Requisites assumed:
-  It must be the first and last time that this function is called.
-  Any error in this function must terminate the entire processus.
-  The given parameters are valid, and their number correct.
-*/
-void StartUp( //Parameters:
-        char** gtk_params, //Given parameters for gtk_initialization
-        int gtk_len, //Size of gtk_params
-        char** init_params, //Given parameters for developper testing
-        int init_len) { //Size of init_params
-    //Unused parameters - TO REMOVE)
-    (void) init_params;
+void StartUp(char** gtk_params, int gtk_len,
+        char** init_params, int init_len) {
+    (void) init_params; //No possible init parameters.
     (void) init_len;
-    //Initialize GTK3 and its sub-systems
-    gtk_init(&gtk_len, &gtk_params);
 
-    //Defining necessary variables for Window_Init
-    GtkWidget *window;
-    char* title = "OCR Word Search Solver";
+    gtk_init(&gtk_len, &gtk_params);
+    AppState *state = APPSTATE;
+
+    //Creation of the window
+    char* title = "#Free Galane - Word Search Solver";
     GdkRectangle geometry;
     get_screen_size(&geometry);
-    global_width = geometry.width;
-    global_height = geometry.height;
+    state->width = geometry.width;
+    state->height = geometry.height;
     int type = GTK_WINDOW_TOPLEVEL;
-
-    //Initialize GTK Main Project Window
-    window = create_window(type, title, global_width, global_height);
-
-    //Link all standar signals and events of the window
-    Standard_Signals(window);
-    gtk_widget_show(window);
-
-    //Running the application
+    WINDOW = create_window(type, title, state->width, state->height);
+    //Redirecting logs
+    g_log_set_default_handler(_log_handler,NULL);
+    //Run the application
+    Standard_Signals();
+    gtk_widget_show_all(WINDOW);
     gtk_main();
 }
 
 
-/* ShowNext():
-    Show the next operation that has already been done.
-*/
-void ShowNext() {
-    STEP* curr_step = get_step();
-    switch (*curr_step) {
-        case STEP_LOAD:
-            //Grab the image to display
-            GtkWidget *image1 = step_widget(1, NULL);
-            set_display(image1);
-            
-            GtkWidget* control03_btn;
-            get_controls(0, &control03_btn);
-            gtk_widget_set_sensitive(control03_btn, TRUE);
-            get_controls(3, &control03_btn);
-            gtk_widget_set_sensitive(control03_btn, TRUE);
-            get_controls(4, &control03_btn);
-            gtk_widget_show(control03_btn);
-            break;
-        case STEP_FILTER:
-            //Grab the image to display
-            GtkWidget *image2 = step_widget(2, NULL);
-            set_display(image2);
-
-            GtkWidget* control4_btn;
-            get_controls(4, &control4_btn);
-            gtk_widget_hide(control4_btn);
-            break;
-        case STEP_EXTRACT:
-            //Grab the container to display
-            GtkWidget *container3 = step_widget(3, NULL);
-            set_display(container3);
-            break;
-        case STEP_SOLVE:
-            //Grab the widget to display
-            GtkWidget *widget = step_widget(STEP_SOLVE+1, NULL);
-            set_display(widget);
-            break;
-        case STEP_RECONSTRUCT:
-            //Grab the image to display
-            GtkWidget *reconstruct = step_widget(STEP_RECONSTRUCT+1, NULL);
-            set_display(reconstruct);
-
-            GtkWidget* control12_btn;
-            get_controls(1, &control12_btn);
-            gtk_widget_set_sensitive(control12_btn, FALSE);
-            get_controls(2, &control12_btn);
-            gtk_widget_set_sensitive(control12_btn, FALSE);
-            break;
-        default:
-            errx(EXIT_FAILURE, "STEP is in incorrect format.");
-    }
-}
-
-
 /* NextStep():
-    Performs the next operation of the OCR Word Search program.
-    Returns true if operation succeeded.
+    Performs the next step. Do so by calling each function. Interpretation:
+    1: No errors.
+    0: Code stop => normal.
+    -1: Error.
 */
 int NextStep(GtkWidget*, gpointer) {
-    STEP* curr_step = get_step();
-    if (step_widget(*curr_step + 1, NULL) != NULL) {
+    AppState *state = APPSTATE;
+    GtkWidget *data;
+    if (state->steps_tracker[state->step]!=NULL) {
         ShowNext();
-        (*curr_step)++; //Readjusting the current step
-        return !EXIT_SUCCESS;
+        state->step++;
+        return 1;
     }
-
-    //Performing operation according to curr_step
-    switch (*curr_step) {
+    switch (state->step) {
         case STEP_LOAD:
-            if (!file_selector(NULL, NULL))
-                return !EXIT_FAILURE;
-            //Add to history
-            add_history_step(STEP_LOAD);
-            ShowNext();
+            if (!Load_Image())
+                return 0;
             break;
         case STEP_FILTER:
-            GtkWidget *image = step_widget(1, NULL);
-            GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(image), "pixbuf");
-            //Defining the constant variables for the filtering
-            int threshold = 180;
-            GdkPixbuf *new_pixbuf = grayscale_pixbuf(pixbuf, threshold);
-            //Resizing for display
-            GdkPixbuf *resized = resize_from_container(new_pixbuf,
-                    get_display(NULL));
-            GtkWidget *new_image = gtk_image_new_from_pixbuf(resized);
-            g_object_set_data(G_OBJECT(new_image), "pixbuf", new_pixbuf);
-            g_object_ref(new_pixbuf);
-            //Display
-            step_widget(2, new_image);
-            add_history_step(STEP_FILTER);
-            ShowNext();
+            if (state->settings.unsaved_changes) {
+                error_dialog("You have unsaved changes.\n"
+                        " Save or cancel to continue.");
+                return 0;
+            }
+            data = GETSTEPDATA(STEP_LOAD);
+            if (!Filter_Image(g_object_get_data(G_OBJECT(data),"pixbuf")))
+                return 0;
             break;
         case STEP_EXTRACT:
-            //TO REPLACE WITH NOE's FUNCTION:
-            GtkWidget *widget = gtk_scrolled_window_new(NULL, NULL);
-            GtkWidget *text_view1 = gtk_text_view_new();
-            GtkWidget *text_view2 = gtk_text_view_new();
-            GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-            gtk_container_add(GTK_CONTAINER(widget), box);
-            gtk_box_pack_start(GTK_BOX(box), text_view1, TRUE, TRUE, 0);
-            gtk_box_pack_start(GTK_BOX(box), text_view2, TRUE, TRUE, 0);
-            GtkTextBuffer *buffer = gtk_text_view_get_buffer(
-                    GTK_TEXT_VIEW(text_view1));
-            FILE* file = fopen("src/bin/grid", "r");
-            //Assume no erros
-            char line[1024];
-            while (fgets(line, sizeof(line), file)) {
-                gtk_text_buffer_insert_at_cursor(buffer, line, -1);
+            data = GETSTEPDATA(STEP_FILTER);
+            int err =Extract_Data(g_object_get_data(G_OBJECT(data),"pixbuf"),
+                    "src/bin/");
+            if (err == -1) {
+                error_dialog("Data could not be found automatically.\n"
+                        " Please provide a clearer image.");
+                return 0;
             }
-            fclose(file);
-            GtkTextBuffer *buffer2 = gtk_text_view_get_buffer(
-                    GTK_TEXT_VIEW(text_view2));
-            FILE *file2 = fopen("src/bin/word_list", "r");
-            while (fgets(line, sizeof(line), file2))
-                gtk_text_buffer_insert_at_cursor(buffer2, line, -1);
-            fclose(file2);
-            g_object_set_data(G_OBJECT(widget), "path:grid", "src/bin/grid");
-            g_object_set_data(G_OBJECT(widget), "path:wordlist",
-                    "src/bin/word_list");
-            g_object_set_data(G_OBJECT(widget), "buffer", buffer);
-            g_object_set_data(G_OBJECT(widget), "buffer:words", buffer2);
-            g_object_set_data(G_OBJECT(widget), "size:wordlist",
-                    GINT_TO_POINTER(8));
-            step_widget(STEP_SOLVE, widget);
-            //END OF REPLACING
-            add_history_step(STEP_EXTRACT);
-            ShowNext();
+            if (!err)
+                return 0;
+            break;
+        case STEP_OCR:
+            GObject *obj2 = G_OBJECT(GETSTEPDATA(STEP_EXTRACT));
+            Size sizeG =*(Size*)g_object_get_data(obj2,"grid_size");
+            int wcount =*(int*)g_object_get_data(obj2,"word_count");
+            Cluster ***wordlist2=g_object_get_data(obj2,"wordlist");
+            printf("BEFORE\n");
+            if (!Identify_Characters(sizeG, wcount, wordlist2))
+                return 0;
+            printf("AFTER\n");
             break;
         case STEP_SOLVE:
-            GtkWidget *extracted = step_widget(STEP_EXTRACT+1, NULL);
-            char* grid = g_object_get_data(G_OBJECT(extracted),
-                    "path:grid");
-            char* wordlist = g_object_get_data(G_OBJECT(extracted),
-                    "path:wordlist");
-            int size = GPOINTER_TO_INT(g_object_get_data(
-                        G_OBJECT(extracted), "size:wordlist"));
-            Solver_Run(grid, wordlist, size);
-            add_history_step(STEP_SOLVE);
-            ShowNext();
+            if (state->settings.unsaved_changes) {
+                error_dialog("You have unsaved changes.\n"
+                        " Save or cancel to continue.");
+                return 0;
+            }
+            data = GETSTEPDATA(STEP_EXTRACT);
+            int count = *(int*)g_object_get_data(G_OBJECT(data),"word_count");
+            if (!Solve("src/bin/grid","src/bin/wordlist",count))
+                return 0;
             break;
         case STEP_RECONSTRUCT:
-            //CHANGE THIS WITH RECONSTRUCTION
-            GtkWidget *imageR = step_widget(1, NULL);
-            GdkPixbuf *pixbufR = g_object_get_data(G_OBJECT(imageR), "pixbuf");
-            GdkPixbuf *new_pixbufR = gdk_pixbuf_copy(pixbufR);
-            //Resized
-            GdkPixbuf *resizedR = resize_from_container(new_pixbufR,
-                    get_display(NULL));
-            GtkWidget *new_imageR = gtk_image_new_from_pixbuf(resizedR);
-            g_object_set_data(G_OBJECT(new_imageR), "pixbuf", new_pixbufR);
-            g_object_ref(new_pixbufR);
-            step_widget(STEP_RECONSTRUCT+1, new_imageR);
-            //TO PLACE IN ZYPAW FUNCTION (whats between comments)
-            add_history_step(STEP_RECONSTRUCT);
-            ShowNext();
+            GObject *obj = G_OBJECT(GETSTEPDATA(STEP_LOAD));
+            GdkPixbuf *pixbuf = g_object_get_data(obj,"pixbuf");
+            obj = G_OBJECT(GETSTEPDATA(STEP_EXTRACT));
+            int wcount2 =*(int*)g_object_get_data(obj,"word_count");
+            Cluster ***grid=g_object_get_data(obj,"grid");
+            Cluster ***wordlist=g_object_get_data(obj,"wordlist");
+            obj = G_OBJECT(GETSTEPDATA(STEP_SOLVE));
+            Solution* *solutions = g_object_get_data(obj,"solutions");
+            if (!Reconstruct(pixbuf,grid,wordlist,solutions,wcount2))
+                return 0;
+            break;
+        default:
+            errx(EXIT_FAILURE, "Step format error.");
+    }
+    g_log("App",G_LOG_LEVEL_MESSAGE,"Step advanced to %s.",
+            STEPtoSTR(state->step));
+    ShowNext();
+    state->step++;
+    return 1;
+}
+
+
+void ShowNext() {
+    AppState *state=APPSTATE;
+    GtkAdjustment *adj = GTK_ADJUSTMENT(gtk_builder_get_object(
+                APPSTATE->builder,"step_show_adj"));
+    GtkWidget *label;
+    switch (state->step) {
+        case STEP_LOAD:
+            gtk_widget_set_sensitive(GETWIDGET("previous_btn"), TRUE);
+            ShowPage(STEPtoSTR(state->step));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")), "TO_FILTER");
+            gtk_adjustment_set_value(adj, 100);
+            label=GETWIDGET("label_filter");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_load");
+            label_set_font_color(label,180,180,180);
+            break;
+        case STEP_FILTER:
+            ShowPage(STEPtoSTR(state->step));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_EXTRACT");
+            gtk_adjustment_set_value(adj,200);
+            label=GETWIDGET("label_extract");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_filter");
+            label_set_font_color(label,180,180,180);
+            break;
+        case STEP_EXTRACT:
+            ShowPage(STEPtoSTR(state->step));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_OCR");
+            gtk_adjustment_set_value(adj,300);
+            label=GETWIDGET("label_ocr");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_extract");
+            label_set_font_color(label,180,180,180);
+            break;
+        case STEP_OCR:
+            ShowPage(STEPtoSTR(state->step));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_SOLVE");
+            gtk_adjustment_set_value(adj,400);
+            label=GETWIDGET("label_solve");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_ocr");
+            label_set_font_color(label,180,180,180);
+            break;
+        case STEP_SOLVE:
+            ShowPage(STEPtoSTR(state->step));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_RECONSTRUCT");
+            gtk_adjustment_set_value(adj,500);
+            label=GETWIDGET("label_reconstruct");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_solve");
+            label_set_font_color(label,180,180,180);
+            break;
+        case STEP_RECONSTRUCT:
+            gtk_widget_set_sensitive(GETWIDGET("next_btn"), FALSE);
+            gtk_widget_set_sensitive(GETWIDGET("auto_complete"), FALSE);
+            ShowPage(STEPtoSTR(state->step));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"END");
+            gtk_adjustment_set_value(adj,600);
+            label=GETWIDGET("label_save");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_reconstruct");
+            label_set_font_color(label,180,180,180);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect format.");
     }
-    //Advancing the current step
-    (*curr_step)++;
-    return !EXIT_SUCCESS;
 }
 
 
-/* ShowPrevious():
-    Returns to the last step. DOES NOT CANCEL IT:
-    - History is kept
-    - All operations are kept
-    - Only display is changed to visualize a previous step
-*/
 void ShowPrevious(GtkWidget*, gpointer) {
-    STEP* curr_step = get_step();
-    //Performing operation according to curr_step
-    switch (*curr_step) {
-        case STEP_END:
-            //Reshow solution
-            GtkWidget *buffer = step_widget(STEP_SOLVE+1, NULL);
-            set_display(buffer);
-            //Activate control buttons
-            GtkWidget* control12_btn;
-            get_controls(1, &control12_btn);
-            gtk_widget_set_sensitive(control12_btn, TRUE);
-            get_controls(2, &control12_btn);
-            gtk_widget_set_sensitive(control12_btn, TRUE);
-            break;
+    AppState *state = APPSTATE;
+    state->step--;
+    GtkAdjustment *adj = GTK_ADJUSTMENT(gtk_builder_get_object(
+            APPSTATE->builder,"step_show_adj"));
+    GtkWidget *label;
+    switch (state->step) {
         case STEP_RECONSTRUCT:
-            //Reshow extraction
-            GtkWidget *container2 = step_widget(STEP_EXTRACT+1, NULL);
-            set_display(container2);
+            gtk_widget_set_sensitive(GETWIDGET("next_btn"), TRUE);
+            gtk_widget_set_sensitive(GETWIDGET("auto_complete"), TRUE);
+            ShowPage(STEPtoSTR(state->step-1));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_RECONSTRUCT");
+            gtk_adjustment_set_value(adj,500);
+            label=GETWIDGET("label_reconstruct");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_save");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_SOLVE:
-            //Reshow filtered image
-            GtkWidget* image3 = step_widget(STEP_FILTER+1, NULL);
-            set_display(image3);
+            ShowPage(STEPtoSTR(state->step-1));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_SOLVE");
+            gtk_adjustment_set_value(adj,400);
+            label=GETWIDGET("label_solve");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_reconstruct");
+            label_set_font_color(label,180,180,180);
+            break;
+        case STEP_OCR:
+            ShowPage(STEPtoSTR(state->step-1));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_OCR");
+            gtk_adjustment_set_value(adj,300);
+            label=GETWIDGET("label_ocr");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_solve");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_EXTRACT:
-            //Reshow loaded image not filtered
-            GtkWidget* image4 = step_widget(STEP_LOAD+1, NULL);
-            set_display(image4);
-
-            GtkWidget *control4_btn;
-            get_controls(4, &control4_btn);
-            gtk_widget_show(control4_btn);
+            ShowPage(STEPtoSTR(state->step-1));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_EXTRACT");
+            gtk_adjustment_set_value(adj,200);
+            label=GETWIDGET("label_extract");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_ocr");
+            label_set_font_color(label,180,180,180);
             break;
         case STEP_FILTER:
-            //Reshow select file button
-            GtkWidget* btn = step_widget(0, NULL);
-            set_display(btn);
-            //Deactivate button
-            GtkWidget* control03_btn;
-            get_controls(0, &control03_btn);
-            gtk_widget_set_sensitive(control03_btn, FALSE);
-            get_controls(3, &control03_btn);
-            gtk_widget_set_sensitive(control03_btn, FALSE);
-            get_controls(4, &control03_btn);
-            gtk_widget_hide(control03_btn);
+            ShowPage(STEPtoSTR(state->step-1));
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")),"TO_FILTER");
+            gtk_adjustment_set_value(adj,100);
+            label=GETWIDGET("label_filter");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_extract");
+            label_set_font_color(label,180,180,180);
+            break;
+        case STEP_LOAD:
+            gtk_widget_set_sensitive(GETWIDGET("previous_btn"), FALSE);
+            ShowPage("IMPORT");
+            gtk_stack_set_visible_child_name(GTK_STACK(
+                        GETWIDGET("input_section")), "TO_LOAD");
+            gtk_adjustment_set_value(adj,0);
+            label=GETWIDGET("label_load");
+            label_set_font_color(label,255,255,255);
+            label=GETWIDGET("label_filter");
+            label_set_font_color(label,180,180,180);
             break;
         default:
             errx(EXIT_FAILURE, "STEP is in incorrect form.");
     }
+}
 
-    //Regressing the current step
-    (*curr_step)--;
+
+/* STEPtoSTR():
+    Converts the step value into its string representation.
+*/
+const char* STEPtoSTR(STEP step) {
+    if (step == STEP_LOAD)
+        return "STEP_LOAD";
+    else if (step == STEP_FILTER)
+        return "STEP_FILTER";
+    else if (step == STEP_EXTRACT)
+        return "STEP_EXTRACT";
+    else if (step == STEP_OCR)
+        return "STEP_OCR";
+    else if (step == STEP_SOLVE)
+        return "STEP_SOLVE";
+    else if (step == STEP_RECONSTRUCT)
+        return "STEP_RECONSTRUCT";
+    return "None";
+}
+
+
+/* print():
+    Custom print function compatible with the application.
+*/
+void print(const char *format, ...) {
+    va_list args;
+    va_start(args,format);
+    char *result;
+    if (vasprintf(&result,format,args)==-1)
+        return;
+    char *toprint;
+    if (asprintf(&toprint, "| %s",result) ==-1)
+        return;
+    GtkTextIter end;
+    GtkTextView *textview = GTK_TEXT_VIEW(GETWIDGET("logs"));
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(textview);
+    gtk_text_buffer_get_end_iter(buffer,&end);
+    gtk_text_buffer_insert(buffer,&end,toprint,-1);
+    va_end(args);
+    free(result);
+    free(toprint);
 }

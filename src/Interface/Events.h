@@ -4,15 +4,19 @@
 #include <gtk/gtk.h>
 #include "../Core_Manager.h"
 
-void Standard_Signals(GtkWidget *window);
-void _application_init(GtkWidget *window, GtkAllocation *alloc, gpointer);
-void _null_event(GtkWidget*, gpointer);
-void _on_select_image_btn(GtkWidget*, gpointer);
-void _on_auto_btn(GtkWidget* auto_btn, gpointer);
-void _on_save_btn(GtkWidget*, gpointer);
-void _on_modify_btn(GtkWidget*, gpointer);
-void _on_step_save_history(GtkWidget*, STEP step);
-void _on_jumpto_step(GtkWidget*, STEP step);
-void _on_apply_rotation(GtkWidget*, GtkWidget *table[4]);
+void Standard_Signals();
+void _application_init(GtkWidget*, GtkAllocation*, gpointer);
+void _on_auto_btn(GtkWidget *auto_btn, gpointer);
+void _on_import_btn(GtkWidget*,gpointer);
+void _log_handler(const gchar*, GLogLevelFlags log_level,
+        const gchar *message, gpointer);
+void _on_change_rotate(GtkWidget*, GtkStack *stack);
+void _on_save_rotate(GtkWidget*, GtkStack *stack);
+void _on_cancel_rotate(GtkWidget*, GtkStack *stack);
+void _on_rotate_value(GtkWidget *range, gpointer);
+void _on_change_ocr(GtkWidget*, GtkStack *stack);
+void _on_save_ocr(GtkWidget*, GtkStack *stack);
+void _on_cancel_ocr(GtkWidget*, GtkStack *stack);
+void _on_ocr_value(GtkWidget*, gpointer);
 
 #endif

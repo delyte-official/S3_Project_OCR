@@ -1,107 +1,46 @@
-/*
-      ##############################################################
-      #                                                            #
-      #                           Events.c                         #
-      #                                                            #
-      #       Contains all functions receiving, handling and       #
-      #    sending signals and events to other declared systems.   #
-      #                                                            #
-      ##############################################################
-
-List of all functions written in this file (and their type):
-[See more description on their purpose and parameters down below]
-
-void Standard_Signals(GtkWidget);
-void _on_select_image_btn(GtkWidget*, gpointer);
-void _on_auto_btn(GtkWidget*, gpointer);
-void _on_save_btn(GtkWidget*, gpointer);
-*/
-
-////HEADERS Files
-//Integrated C Libraries
+////HEADERS
+#define _GNU_SOURCE
 #include <err.h>
 #include <stdio.h>
 #include <string.h>
-//GTK Libraries
 #include <gtk/gtk.h>
 //Project Headers
-#include "Interface_Manager.h"
 #include "../Core_Manager.h"
-#include "../Filtering/Prefilter.h"
 #include "Events.h"
-////END HEADERS
+#include "Interface.h"
+#include "../Filter/Filter.h"
 
 
-/*  Standard_Signals():
-  Links all events and signals to their designated functions.
-*/
-void Standard_Signals(GtkWidget *window) {
-    //Closing window closes the program
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(window, "size-allocate",
+void Standard_Signals() {
+    AppState *state = APPSTATE;
+    g_signal_connect(state->window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(state->window, "size-allocate",
             G_CALLBACK(_application_init), NULL);
 }
 
 
-/* _application_init():
-    Initialize all the content of the window of the application as soon
-    as the windowh as been realized.
-*/
-void _application_init(
-        GtkWidget *window,
-        GtkAllocation*,
-        gpointer) {
+void _application_init(GtkWidget *window, GtkAllocation*, gpointer) {
+    AppState *state = APPSTATE;
     int width, height;
     gtk_window_get_size(GTK_WINDOW(window), &width, &height);
-    if (width > global_width || height >= global_height)
+    if (width > state->width || height >= state->height)
         return;
-    width = 1920; //Find a way for measure width without the terminal
-                  //restraining it
-    Build_Interface(window, width, height);
+    width = 1920; //Terminal blocks half the screen
+    state->alloc_width = width;
+    state->alloc_height = height;
+    Build_Interface();
     g_signal_handlers_disconnect_matched(window, G_SIGNAL_MATCH_FUNC, 0, 0,
             NULL, G_CALLBACK(_application_init), NULL);
 }
 
 
-/* _null_event():
-    Deactivates any events connected to it.
-*/
-void _null_event(GtkWidget*, gpointer) {}
-
-
-/* _on_select_image_btn():
-    Handles the event of "clicked" from the select image button.
-*/
-void _on_select_image_btn(GtkWidget*, gpointer) {
-    GtkWidget* curr_widget = step_widget(1, NULL);
-    if (curr_widget == NULL) {
-        NextStep(NULL, NULL);
-    } else if (confirm_dialog("This will erase any steps that have not been"
-                " saved.")) {//Ask dialog to continue
-        if (file_selector(NULL, NULL)) {
-            //Reset work
-            for (int i = -2; i > -6; i--) {
-                step_widget(i, NULL);
-            }
-            ShowNext();
-            STEP* curr_step = get_step();
-            (*curr_step)++;
-            //Reset history
-            clear_history_from(STEP_LOAD);
-            //Add the first step again
-            add_history_step(STEP_LOAD);
-        }
-    }
-}
-
-
 /* _on_auto_btn():
-    Handles the event of "clicked" from the auto complete button.
+    Computes all the steps automatically.
 */
 void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
-    STEP* curr_step = get_step();
+    AppState *state = APPSTATE;
     //Perform every step
-    for (int i = *curr_step; i < 5; i++) {
+    for (int i = state->step; i < STEP_END; i++) {
         if (!NextStep(NULL, NULL))
             return; //Error, stop
     }
@@ -109,87 +48,236 @@ void _on_auto_btn(GtkWidget* auto_btn, gpointer) {
 }
 
 
-/* _on_save_btn():
-    Handles the event of "clicked" from the save step button.
-*/
-void _on_save_btn(GtkWidget*, gpointer) {
-    STEP* curr_step = get_step();
-    save_step(*curr_step-1);
+void _on_import_btn(GtkWidget*, gpointer) {
+    if (GETSTEPDATA(STEP_LOAD)==NULL)
+        NextStep(NULL,NULL);
+    else if (confirm_dialog("Further steps will be deleted.")) {
+        if (Load_Image()) {
+            //Reset steps
+            free_all_steps(STEP_FILTER, STEP_RECONSTRUCT);
+            ShowNext();
+            APPSTATE->step++;
+        }
+    }
 }
 
 
-/* _on_modify_btn():
-    Modifies the input image by user input such as rotation.
+/* _log_handler():
+    Redirects stdout and stderr messages from GTK libs to application.
 */
-void _on_modify_btn(GtkWidget*, gpointer) {
-    GtkWidget* next = step_widget(STEP_FILTER+1, NULL);
-    if (next != NULL) { //Already have steps
-        if (confirm_dialog("This will delete any further steps not saved.")) {
-            if (modify_image()) {
-                //Deleting everything behind this
-                for (int i = -1-STEP_FILTER; i > -6; i--) {
-                    step_widget(i, NULL);
-                }
-            }
-        }
+void _log_handler(const gchar* log_domain, GLogLevelFlags log_level,
+        const gchar *message, gpointer) {
+    const char *category;
+    if (log_level & G_LOG_LEVEL_ERROR)
+        category = "ERROR: ";
+    else if (log_level & G_LOG_LEVEL_WARNING)
+        category = "WARNING: ";
+    else if (log_level & G_LOG_LEVEL_INFO)
+        category = "INFO: ";
+    else if (log_level & G_LOG_FLAG_RECURSION)
+        category = "RECURSION: ";
+    else if (log_level & G_LOG_FLAG_FATAL)
+        category = "FATAL: ";
+    else if (log_level & G_LOG_LEVEL_MESSAGE)
+        category = "MESSAGE: ";
+    else if (log_level & G_LOG_LEVEL_DEBUG)
+        category = "DEBUG: ";
+    else if (log_level & G_LOG_LEVEL_CRITICAL)
+        category = "CRITICAL: ";
+    else
+        category = "";
+    print("%s-%s%s\n",log_domain,category,message);
+}
+
+
+void _on_logs_change(GtkTextBuffer *buffer, GtkTextView *text_view) {
+    GtkTextIter end_iter;
+    GtkTextMark *end_mark;
+    gtk_text_buffer_get_end_iter(buffer,&end_iter);
+    end_mark = gtk_text_buffer_create_mark(buffer,NULL,&end_iter,FALSE);
+    gtk_text_view_scroll_to_mark(text_view,end_mark,0.0,TRUE,0.0,1.0);
+    gtk_text_buffer_delete_mark(buffer,end_mark);
+}
+
+
+void _save_curr_step(GtkWidget*, gpointer) {
+    save_step(APPSTATE->step-1);
+}
+
+void _on_change_rotate(GtkWidget*, GtkStack *stack) {
+    //Show page
+    gtk_stack_set_visible_child_name(stack,"INPUT_ROTATE");
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_NONE);
+    GtkWidget *original_img = GETSTEPDATA(APPSTATE->step-1);
+    GdkPixbuf *original_pix = g_object_get_data(G_OBJECT(original_img),
+                "pixbuf");
+    GdkPixbuf *modified_pix = gdk_pixbuf_copy(original_pix);
+    GtkWidget *modified_img = gtk_image_new_from_pixbuf(
+            gtk_image_get_pixbuf(GTK_IMAGE(original_img)));
+    g_object_set_data(G_OBJECT(modified_img),"pixbuf",modified_pix);
+    g_object_ref(modified_pix);
+    AddPage("MODIFY",modified_img);
+    ShowPage("MODIFY");
+    //Reset value
+    GtkWidget *scale = GETWIDGET("scale_rotate");
+    gulong handler_id = g_signal_handler_find(scale, G_SIGNAL_MATCH_FUNC,
+            0, 0, NULL, (GCallback)_on_rotate_value, NULL);
+    g_signal_handler_block(scale, handler_id);
+    gtk_range_set_value(GTK_RANGE(scale),0);
+    g_signal_handler_unblock(scale,handler_id);
+}
+
+void _on_save_rotate(GtkWidget*, GtkStack *stack) {
+    if (!APPSTATE->settings.unsaved_changes) {
+        _on_cancel_rotate(NULL,stack);
         return;
     }
-    modify_image();
+    gtk_stack_set_visible_child_name(stack, "OUTPUT");
+    APPSTATE->settings.unsaved_changes = FALSE;
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+            "MODIFY");
+    //Update original image
+    GtkWidget *official = GETSTEPDATA(APPSTATE->step-1);
+    g_object_set_data(G_OBJECT(official), "pixbuf",
+            GDK_PIXBUF(g_object_get_data(G_OBJECT(page),"pixbuf")));
+    gtk_image_set_from_pixbuf(GTK_IMAGE(official),
+            gtk_image_get_pixbuf(GTK_IMAGE(page)));
+    //Render results
+    ShowPage(STEPtoSTR(APPSTATE->step-1));
+    gtk_widget_destroy(page);
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+    free_all_steps(APPSTATE->step,STEP_RECONSTRUCT);
 }
 
-/* _on_step_save_history():
-    Saves the step of the clicked history tile.
-*/
-void _on_step_save_history(GtkWidget*, STEP step) {
-    save_step(step);
+void _on_cancel_rotate(GtkWidget*, GtkStack *stack) {
+    ShowPage(STEPtoSTR(APPSTATE->step-1));
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+            "MODIFY");
+    if (page)
+        gtk_widget_destroy(page);
+    gtk_stack_set_visible_child_name(stack, "OUTPUT");
+    APPSTATE->settings.unsaved_changes = FALSE;
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+}
+
+void _on_rotate_value(GtkWidget* range, gpointer) {
+    double value = gtk_range_get_value(GTK_RANGE(range));
+    if (value!=0)
+        APPSTATE->settings.unsaved_changes = TRUE;
+    else
+        APPSTATE->settings.unsaved_changes = FALSE;
+    GtkWidget *data = GETSTEPDATA(APPSTATE->step-1);
+    GdkPixbuf *pixbuf = g_object_get_data(G_OBJECT(data),"pixbuf");
+    GdkPixbuf *new_pix = resize_from_container(rotate_pixbuf(pixbuf,value),
+            DISPLAY);
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),"MODIFY");
+    gtk_image_set_from_pixbuf(GTK_IMAGE(page), new_pix);
+    g_object_set_data(G_OBJECT(page),"pixbuf",new_pix);
 }
 
 
-/* _on_jumpto_step():
-    Jump to the specified step.
-*/
-void _on_jumpto_step(GtkWidget*, STEP step) {
-    int dst = (int)step+1;
-    STEP *curr_step = get_step();
-    int src = (int)(*curr_step);
-    if (dst-src > 0) {
-        for (int i = src; i < dst; i++) {
-            //We know the steps have already been computed.
-            NextStep(NULL, NULL);
-        }
-    } else if (dst-src < 0) {
-        for (int i = src; i > dst; i--) {
-            ShowPrevious(NULL, NULL);
-        }
-    }
+void _on_change_ocr(GtkWidget*, GtkStack *stack) {
+    //Show page
+    gtk_stack_set_visible_child_name(stack,"INPUT_BUFFERS");
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_NONE);
+    GtkWidget *original_img = GETSTEPDATA(STEP_LOAD);
+    GdkPixbuf *original_pix = g_object_get_data(G_OBJECT(original_img),
+                "pixbuf");
+    GdkPixbuf *modified_pix = gdk_pixbuf_copy(original_pix);
+    GtkWidget *modified_img = gtk_image_new_from_pixbuf(
+            gtk_image_get_pixbuf(GTK_IMAGE(original_img)));
+    g_object_set_data(G_OBJECT(modified_img),"pixbuf",modified_pix);
+    g_object_ref(modified_pix);
+    AddPage("MODIFY",modified_img);
+    ShowPage("MODIFY");
+    //Write in the buffers
+    GtkWidget *data = GETSTEPDATA(STEP_OCR);
+    GtkBuilder *builder = GTK_BUILDER(g_object_get_data(G_OBJECT(data),
+                "builder"));
+    GtkTextBuffer *buffer_g = GTK_TEXT_BUFFER(
+            gtk_builder_get_object(builder,"grid"));
+    gchar *text = read_from_buffer(buffer_g);
+    GtkTextBuffer *buffer_mg=GTK_TEXT_BUFFER(
+            gtk_builder_get_object(APPSTATE->builder,"buffer_grid_modify"));
+    gtk_text_buffer_set_text(buffer_mg,text,-1);
+    g_free(text);
+    GtkTextBuffer *buffer_w = GTK_TEXT_BUFFER(
+            gtk_builder_get_object(builder,"wordlist"));
+    text = read_from_buffer(buffer_w);
+    GtkTextBuffer *buffer_mw=GTK_TEXT_BUFFER(gtk_builder_get_object(
+                APPSTATE->builder,"buffer_wordlist_modify"));
+    gtk_text_buffer_set_text(buffer_mw,text,-1);
+    g_free(text);
 }
 
 
-/* _on_apply_rotation():
-    Apply the rotation from the user input.
-*/
-void _on_apply_rotation(GtkWidget*, GtkWidget *table[4]) {
-    GtkEntry *entry = GTK_ENTRY(table[0]);
-    const char *angle_txt = gtk_entry_get_text(entry);
-    //Convert to double
-    char* end;
-    errno = 0;
-    double angle = strtod(angle_txt, &end);
-    if (end == angle_txt || errno == ERANGE || *end != '\0') {
-        //Error in string
-        gtk_widget_show(table[2]);
+void _on_save_ocr(GtkWidget*, GtkStack *stack) {
+    if (!APPSTATE->settings.unsaved_changes) {
+        _on_cancel_ocr(NULL,stack);
         return;
     }
-    //Clamping angle
-    while (angle < -360.0)
-        angle += 360.0;
-    while (angle > 360.0)
-        angle -= 360.0;
-    //Rotate
-    GtkImage *dis_image = GTK_IMAGE(table[1]);
-    GObject *curr_image = G_OBJECT(step_widget(STEP_LOAD+1, NULL));
-    GdkPixbuf *pixbuf = g_object_get_data(curr_image, "pixbuf");
-    GdkPixbuf *rotated = rotate_pixbuf(pixbuf, angle);
-    gtk_image_set_from_pixbuf(dis_image, rotated);
-    g_object_set_data(G_OBJECT(dis_image), "pixbuf", rotated);
+    gtk_stack_set_visible_child_name(stack, "OUTPUT");
+    APPSTATE->settings.unsaved_changes = FALSE;
+    GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+            "MODIFY");
+    //Update original image
+    GtkTextBuffer *buffer_og=GTK_TEXT_BUFFER(gtk_builder_get_object(
+                APPSTATE->builder,"buffer_grid_modify"));
+    GtkTextBuffer *buffer_ow = GTK_TEXT_BUFFER(gtk_builder_get_object(
+                APPSTATE->builder,"buffer_wordlist_modify"));
+    gchar *text = read_from_buffer(buffer_og);
+    GtkWidget *data = GETSTEPDATA(STEP_OCR);
+    GtkBuilder *builder = GTK_BUILDER(g_object_get_data(G_OBJECT(data),
+                "builder"));
+    GtkTextBuffer *buffer_g = GTK_TEXT_BUFFER(
+            gtk_builder_get_object(builder,"grid"));
+    gtk_text_buffer_set_text(buffer_g,text,-1);
+    //Rewriting grid file
+    if (!g_file_set_contents("src/bin/grid",text,-1,NULL)) {
+        g_log("GLib",G_LOG_LEVEL_ERROR,"Impossible to write to "
+                "'src/bin/grid'.");
+        return;
+    }
+    //Wordlist
+    text = read_from_buffer(buffer_ow);
+    GtkTextBuffer *buffer_w = GTK_TEXT_BUFFER(
+            gtk_builder_get_object(builder,"wordlist"));
+    gtk_text_buffer_set_text(buffer_w,text,-1);
+    //Rewriting wordlist file
+    if (!g_file_set_contents("src/bin/wordlist",text,-1,NULL)) {
+        g_log("GLib",G_LOG_LEVEL_ERROR,"Impossible to write to "
+                "'src/bin/wordlist'.");
+        return;
+    }
+    //Render results
+    ShowPage(STEPtoSTR(APPSTATE->step-1));
+    gtk_widget_destroy(page);
+    gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+            GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+    free_all_steps(APPSTATE->step,STEP_RECONSTRUCT);
+    g_free(text);
+}
+
+
+void _on_cancel_ocr(GtkWidget*, GtkStack *stack) {
+        ShowPage("STEP_OCR");
+        GtkWidget *page = gtk_stack_get_child_by_name(GTK_STACK(DISPLAY),
+                "MODIFY");
+        if (page) {
+            gtk_container_remove(GTK_CONTAINER(DISPLAY),page);
+            gtk_widget_destroy(page);
+        }
+        gtk_stack_set_visible_child_name(stack, "OUTPUT");
+        APPSTATE->settings.unsaved_changes = FALSE;
+        gtk_stack_set_transition_type(GTK_STACK(DISPLAY),
+                GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
+}
+
+
+void _on_ocr_value(GtkWidget*, gpointer) {
+    APPSTATE->settings.unsaved_changes = TRUE;
 }
